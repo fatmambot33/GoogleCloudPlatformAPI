@@ -8,8 +8,9 @@ load_dotenv()
 
 
 class ClientCredentials:
-    credentials_path: Optional[str] = os.environ.get(
-        "GOOGLE_APPLICATION_CREDENTIALS")
+    def __init__(self):
+        self.credentials_path = os.environ.get(
+            "GOOGLE_APPLICATION_CREDENTIALS")
 
     @property
     def gcp_credentials(self):
