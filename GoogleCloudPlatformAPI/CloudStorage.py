@@ -7,7 +7,6 @@ from typing import List, Optional
 from google.cloud import storage
 
 from .ServiceAccount import ServiceAccount
-from .Utils import DEFAULT_GCS_BUCKET
 
 
 class CloudStorage:
@@ -64,7 +63,7 @@ class CloudStorage:
             data: str,
             override: bool = False):
         if bucket_name is None:
-            bucket_name = DEFAULT_GCS_BUCKET
+            bucket_name = os.environ.get("DEFAULT_GCS_BUCKET")  # type: ignore
         logging.info(f"CloudStorage::upload_from_string")
         if not self.file_exists(destination_blob_name, bucket_name) or override:
             logging.info("File {} upload start".format(destination_blob_name))
@@ -115,7 +114,7 @@ class CloudStorage:
         for file in files:
             self.delete_file(bucket_name=bucket_name, filename=file)
         if len(files) == 100:
-            self.delete_files(prefix)
+            self.delete_files(bucket_name=bucket_name, prefix=prefix)
 
     def copy_file(self,
                   bucket_name: str,
