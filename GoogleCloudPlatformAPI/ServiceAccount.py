@@ -2,6 +2,9 @@ from typing import List, Optional
 from google.oauth2 import service_account, credentials
 from googleads import oauth2
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class ClientCredentials:
@@ -14,7 +17,7 @@ class ClientCredentials:
         if self.credentials_path is not None:
             return service_account.Credentials.from_service_account_file(filename=self.credentials_path, scopes=scopes)
         else:
-            return credentials.Credentials(scopes=scopes)
+            return credentials.Credentials(scopes=scopes)  # type: ignore
 
     @property
     def get_service_account_client(self):
@@ -29,18 +32,21 @@ class ClientCredentials:
         if credentials_path is not None:
             return service_account.Credentials.from_service_account_file(filename=credentials_path, scopes=scopes)
         else:
-            return credentials.Credentials(scopes=scopes)
+            return credentials.Credentials(scopes=scopes)  # type: ignore
 
 
 class ServiceAccount:
     @staticmethod
-    def from_service_account_file(credentials: Optional[str] = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+    def from_service_account_file(credentials: Optional[str] = None,
                                   scopes: Optional[List[str]] = ["https://www.googleapis.com/auth/cloud-platform"]):
-
+        if credentials is None:
+            credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         return service_account.Credentials.from_service_account_file(filename=credentials, scopes=scopes)
 
     @staticmethod
-    def get_service_account_client(credentials: Optional[str] = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+    def get_service_account_client(credentials: Optional[str] = None,
                                    scope: Optional[str] = "ad_manager"):
+        if credentials is None:
+            credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         return oauth2.GoogleServiceAccountClient(key_file=credentials,
                                                  scope=oauth2.GetAPIScope(scope))
