@@ -8,15 +8,6 @@ from typing import List, Optional, Union
 from dotenv import load_dotenv
 
 load_dotenv()
-DATA_PATH = os.environ.get("DATA_PATH")
-DEFAULT_GCS_BUCKET = os.environ.get("DEFAULT_GCS_BUCKET")
-DEFAULT_BQ_DATASET = os.environ.get("DEFAULT_BQ_DATASET")
-
-
-GAM_VERSION = "v202305"
-PYTZ_TIMEZONE = "GMT"
-NETWORK_CODE = '5574'
-APP_NAME = 'AdManager'
 
 
 class FileHelper:
