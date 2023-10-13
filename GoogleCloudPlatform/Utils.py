@@ -5,7 +5,9 @@ import os
 import pathlib
 from glob import glob
 from typing import List, Optional, Union
+from dotenv import load_dotenv
 
+load_dotenv()
 DATA_PATH = os.environ.get("DATA_PATH")
 DEFAULT_GCS_BUCKET = os.environ.get("DEFAULT_GCS_BUCKET")
 DEFAULT_BQ_DATASET = os.environ.get("DEFAULT_BQ_DATASET")

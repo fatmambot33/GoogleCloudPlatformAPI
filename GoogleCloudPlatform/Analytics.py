@@ -5,7 +5,6 @@ import pandas as pd
 from googleapiclient.discovery import build
 import datetime
 from .ServiceAccount import ServiceAccount
-from .Utils import ListHelper
 
 
 class Analytics():

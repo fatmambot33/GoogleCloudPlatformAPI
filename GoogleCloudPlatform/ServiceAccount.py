@@ -2,8 +2,7 @@ from typing import List, Optional
 from google.oauth2 import service_account, credentials
 from googleads import oauth2
 import os
-
-from . import CREDENTIALS
+CREDENTIALS = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
 
 class ClientCredentials:
@@ -15,7 +14,7 @@ class ClientCredentials:
         if self.credentials_path is not None:
             return service_account.Credentials.from_service_account_file(filename=self.credentials_path, scopes=scopes)
         elif CREDENTIALS is not None:
-            return service_account.Credentials.from_service_account_file(filename=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"), scopes=scopes)
+            return service_account.Credentials.from_service_account_file(filename=CREDENTIALS, scopes=scopes)
         else:
             return credentials.Credentials(scopes=scopes)
 
@@ -25,7 +24,7 @@ class ClientCredentials:
         if self.credentials_path is not None:
             return oauth2.GoogleServiceAccountClient(key_file=credentials, scope=scope)
         elif CREDENTIALS is not None:
-            return oauth2.GoogleServiceAccountClient(key_file=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"), scope=scope)
+            return oauth2.GoogleServiceAccountClient(key_file=CREDENTIALS, scope=scope)
         else:
             return oauth2.GoogleOAuth2Client()
 
@@ -33,8 +32,8 @@ class ClientCredentials:
                           scopes: Optional[List[str]] = ["https://www.googleapis.com/auth/cloud-platform"]):
         if credentials_path is not None:
             return service_account.Credentials.from_service_account_file(filename=credentials_path, scopes=scopes)
-        elif os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None:
-            return service_account.Credentials.from_service_account_file(filename=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"), scopes=scopes)
+        elif CREDENTIALS is not None:
+            return service_account.Credentials.from_service_account_file(filename=CREDENTIALS, scopes=scopes)
         else:
             return credentials.Credentials(scopes=scopes)
 
