@@ -2,11 +2,12 @@
 import datetime
 import json
 import logging
+from optparse import Option
 import os
 import shutil
 from dataclasses import dataclass
 from typing import List, Optional
-
+from dotenv import load_dotenv
 import pandas as pd
 from google.cloud import bigquery
 from google.cloud.bigquery import (QueryJobConfig,
@@ -15,8 +16,8 @@ from google.cloud.exceptions import NotFound
 
 from .CloudStorage import CloudStorage
 from .ServiceAccount import ServiceAccount
-from .Utils import FileHelper, DEFAULT_BQ_DATASET, DATA_PATH
-
+from .Utils import FileHelper
+load_dotenv()
 DATA_TYPE_MAPPING = {'object': bigquery.enums.SqlTypeNames.STRING, 'int64': bigquery.enums.SqlTypeNames.INT64,
                      'float64': bigquery.enums.SqlTypeNames.FLOAT, 'bool': bigquery.enums.SqlTypeNames.BOOL}
 
@@ -92,7 +93,7 @@ class BigQuery():
     def create_schema_from_table(self, folder: str, dataset: Optional[str]) -> dict:
         logging.info(f"BigQuery::create_schema_from_table::{folder}")
         if dataset is None:
-            dataset = DEFAULT_BQ_DATASET
+            dataset = os.environ.get("")
         schema = {}
         schema['allow_jagged_rows'] = True
         schema['allow_quoted_newlines'] = True
@@ -102,17 +103,20 @@ class BigQuery():
         schema['skip_leading_rows'] = 1
 
         schema['table_schema'] = []
-        if self.table_exists(dataset+'.'+folder):
-            dataset_ref = self.__client.dataset(dataset)
+        if self.table_exists(f"{dataset}.{folder}"):
+            dataset_ref = self.__client.dataset(dataset)  # type: ignore
             table_ref = dataset_ref.table(folder)
             table = self.__client.get_table(table_ref)
             for schema_field in table.schema:
                 schema['table_schema'].append({"name": schema_field.name,
-                                               'tyoe': schema_field.field_type,
+                                               'type': schema_field.field_type,
                                                'mode': schema_field.mode})
             cloud_storage = CloudStorage()
-            cloud_storage.upload_from_string(data=json.dumps(
-                schema), destination_blob_name=folder+"/schema.json")
+            cloud_storage.upload_from_string(
+                bucket_name=os.environ.get(
+                    "DEFAULT_GCS_BUCKET"),  # type: ignore
+                data=json.dumps(
+                    schema), destination_blob_name=f"{folder}/schema.json")
             return schema
 
     def create_external_table(self,
@@ -135,33 +139,36 @@ class BigQuery():
             schema.append(bq_field)
 
         external_config = bigquery.ExternalConfig(
-            table_schema['source_format'])
-        if table_schema['source_format'] == 'CSV':
-            external_config.field_delimiter = table_schema['field_delimiter']
-            external_config.skip_leading_rows = table_schema['skip_leading_rows']
+            source_format=table_schema['source_format'])
         external_config.source_uris = source_uris
-        external_config.options.allow_jagged_rows = table_schema['allow_jagged_rows']
-        external_config.options.allow_quoted_newlines = table_schema['allow_quoted_newlines']
-        external_config.options.ignore_unknown_values = table_schema['ignore_unknown_values']
 
-        # Creating the external data source
-        bq_dataset = self.__client.dataset(dataset_name)
-        bq_table = bigquery.Table(
-            bq_dataset.table(table_name), schema=schema)
-        if time_partioning:
-            bq_table.time_partitioning = bigquery.TimePartitioning(
-                field=partition_field)
-        bq_table.external_data_configuration = external_config
-        self.__client.create_table(bq_table)
-        return True
+        if table_schema['source_format'] == 'CSV':
+            options = bigquery.CSVOptions
+            options.field_delimiter = table_schema['field_delimiter']
+            options.skip_leading_rows = table_schema['skip_leading_rows']
+
+            options.allow_jagged_rows = table_schema['allow_jagged_rows']
+            options.allow_quoted_newlines = table_schema['allow_quoted_newlines']
+
+            # Creating the external data source
+            bq_dataset = self.__client.dataset(dataset_name)
+            bq_table = bigquery.Table(
+                bq_dataset.table(table_name), schema=schema)
+            if time_partioning:
+                bq_table.time_partitioning = bigquery.TimePartitioning(
+                    field=partition_field)
+            bq_table.external_data_configuration = external_config
+            self.__client.create_table(bq_table)
+            return True
 
     def create_table_from_schema(self, folder: str,
-                                 dataset: Optional[str] = DEFAULT_BQ_DATASET,
-                                 data_path: Optional[str] = DATA_PATH) -> bool:
+                                 dataset: Optional[str] = os.environ.get(
+                                     "DEFAULT_BQ_DATASET"),
+                                 data_path: Optional[str] = os.environ.get("DATA_PATH")) -> bool:
         logging.info(f"BigQuery::create_table_from_schema::{folder}")
 
-        if not self.table_exists(dataset+'.'+folder):
-            with open(data_path + folder + '/schema.json', mode="r") as schema_file:
+        if not self.table_exists(f"{dataset}.{folder}"):
+            with open(f"{data_path}{folder}/schema.json", mode="r") as schema_file:
                 schema_json = json.load(schema_file)
 
             job_schema = []
@@ -173,7 +180,7 @@ class BigQuery():
                 if field['name'] == 'report_date':
                     partition_field = 'report_date'
                 job_schema.append(bq_field)
-            bq_dataset = self.__client.dataset(dataset)
+            bq_dataset = self.__client.dataset(dataset)  # type: ignore
             bq_table = bq_dataset.table(folder)
             bq_table = bigquery.Table(bq_table, schema=job_schema)
 
@@ -197,9 +204,10 @@ class BigQuery():
         logging.info("Query results loaded to the table {}".format(table_id))
 
     def delete_partition(self, table_id: str, partition_date: Optional[datetime.date] = None, partition_name: str = 'date') -> bool:
-        logging.info(
-            f"BigQuery::delete_partition::{table_id}::{partition_date.strftime('%Y-%m-%d')}")
+
         if partition_date is not None and self.table_exists(table_id):
+            logging.info(
+                f"BigQuery::delete_partition::{table_id}::{partition_date.strftime('%Y-%m-%d')}")
             query = (
                 "DELETE FROM {} WHERE {} = \'{}\'".format(table_id, partition_name, partition_date.strftime('%Y-%m-%d')))
             query_job = self.__client.query(query)  # API request
@@ -213,7 +221,7 @@ class BigQuery():
                         table: str,
                         local_folder: str,
                         remote_folder: str,
-                        partition_date: datetime.date,
+                        partition_date: Optional[datetime.date] = None,
                         partition_name: str = 'date',
                         file_mask: str = '*.gz',
                         override: bool = False) -> bool:
@@ -285,7 +293,8 @@ class BigQuery():
                                user_id: str,
                                dataset: str,
                                override: bool = False,
-                               data_path: Optional[str] = DATA_PATH,
+                               data_path: Optional[str] = os.environ.get(
+                                   "DATA_PATH"),
                                span: int = 30) -> bool:
         """
 
@@ -297,16 +306,16 @@ class BigQuery():
         :return: True if user's data has been found
         :rtype: bool
         """
-        logging.info('user:' + user_id)
-        logging.info('dataset:' + dataset)
-
+        logging.info(f'user:{user_id}')
+        logging.info(f'dataset:{dataset}')
+        user_has_data = False
         try:
-            user_files_folder = data_path + 'dsar/' + user_id + '/'
+            user_files_folder = f"{data_path}dsar/{user_id}/"
             # list tables in the dataset
             tables = self.__client.list_tables(dataset=dataset)
             # Loop dataset's tables
             for table in tables:
-                user_table_file_path = user_files_folder + table.table_id + '.csv'
+                user_table_file_path = f"{user_files_folder}{table.table_id}.csv"
                 qualified_table_id = "{}.{}.{}".format(
                     table.project, table.dataset_id, table.table_id)
                 logging.info(qualified_table_id)
@@ -346,10 +355,10 @@ class BigQuery():
         except NotFound:
             return user_has_data
 
-    def load_from_uri(self, table_id, partition_date: Optional[datetime.date] = None) -> bool:
+    def load_from_uri(self, table_id, bucket_name, data_path, partition_date: Optional[datetime.date] = None) -> bool:
         logging.info('BigQuery::load_from_uri')
         job_config, uri = BigQuery.build_job_config(
-            table_name=table_id, partition_date=partition_date)
+            table_name=table_id, partition_date=partition_date, bucket_name=bucket_name, data_path=data_path)
 
         self.__client.load_table_from_uri(
             source_uris=uri, destination=table_id, job_config=job_config).result()
@@ -412,13 +421,22 @@ class BigQuery():
             return job_config, uri
 
     @staticmethod
-    def sync_from_cloud(folder: str,
-                        partition_date: Optional[datetime.date] = None,
-                        partition_name: str = 'date',
-                        override: bool = False):
+    def sync_from_cloud(
+            bucket_name: str,
+            data_set: str,
+            table: str,
+            local_folder: str,
+            remote_folder: str,
+            partition_date: Optional[datetime.date] = None,
+            partition_name: str = 'date',
+            override: bool = False):
 
         bq = BigQuery()
-        bq.load_from_cloud(folder=folder,
+        bq.load_from_cloud(bucket_name=bucket_name,
+                           data_set=data_set,
+                           table=table,
+                           local_folder=local_folder,
+                           remote_folder=remote_folder,
                            partition_date=partition_date,
                            partition_name=partition_name,
                            override=override)
@@ -496,9 +514,3 @@ class bqDataFrame(pd.DataFrame):
 
     def fill(self, query: str):
         return self.client.execute_query(query)
-
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    bq_client = BigQuery()
-    bq_client.create_schema_from_table(folder='spire_gam_report_country')
