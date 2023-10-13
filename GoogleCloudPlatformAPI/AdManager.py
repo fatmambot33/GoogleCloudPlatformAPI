@@ -464,13 +464,14 @@ class Report():
                 f"MOBILE_INVENTORY_TYPE='{mobile_inventory_type}'")
         if order_id is not None:
             if type(order_id) == int:
-                order_id = [order_id]
-            where_conditions.append(
-                f'ORDER_ID IN ({",".join(str(value) for value in order_id)})')  # type: ignore
+                where_conditions.append(
+                    f'ORDER_ID IN ({order_id})')
+            elif type(order_id) == List[int]:
+                where_conditions.append(
+                    f'ORDER_ID IN ({",".join(str(value) for value in order_id)})')
         where_statement = " AND ".join(where_conditions)
         built_statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                            .Where(where_statement)
-                           # No limit or offset for reports # type: ignore
                            .Limit(0)
                            .Offset(None))
 
