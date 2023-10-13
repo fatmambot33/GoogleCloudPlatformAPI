@@ -108,12 +108,3 @@ class Analytics():
             df[metric] = pd.to_numeric(df[metric], errors='coerce')
 
         return df
-
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-
-    ga_client = Analytics()
-    ga_client.list_views()
-    report = ga_client.__get_report(253818746)
-    df = Analytics.report_to_df(report)

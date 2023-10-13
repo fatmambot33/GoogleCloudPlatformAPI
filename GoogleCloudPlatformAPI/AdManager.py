@@ -11,9 +11,12 @@ import pandas as pd
 import pytz
 from googleads import ad_manager, errors
 
-
+from . import APP_NAME, NETWORK_CODE, GAM_VERSION, PYTZ_TIMEZONE
 from .ServiceAccount import ServiceAccount
-from .Utils import ListHelper, FileHelper, GAM_VERSION, PYTZ_TIMEZONE, NETWORK_CODE, APP_NAME
+from .Utils import ListHelper
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # region objects
 gam_adUnit = Dict[int, bool]
@@ -109,65 +112,67 @@ class GamClient(ad_manager.AdManagerClient):
 
 
 class Audience(GamClient):
-    service_name = 'AudienceSegmentService'
+    __service_name = 'AudienceSegmentService'
+
+    def __init__(self,
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE,
+                 gam_version: str = GAM_VERSION):
+        gam_client = GamClient(app_name=app_name,
+                               network_code=network_code)
+        self.__gam_service = gam_client.get_service(service_name=self.__service_name,
+                                                    gam_version=gam_version)
 
     def create(self, name, description, custom_targeting, pageviews: int = 1, recencydays: int = 1, membershipexpirationdays: int = 90, network_code=NETWORK_CODE):
         # Initialize appropriate services.
-        audience_service = GamClient(app_name=APP_NAME,
-                                     network_code=network_code,
-                                     service_name=self.service_name,
-                                     version=GAM_VERSION)
-        network_service = GamClient(app_name=APP_NAME,
-                                    network_code=network_code,
-                                    service_name='NetworkService',
-                                    version=GAM_VERSION)
+        network_service = Network(
+            app_name=APP_NAME, network_code=network_code)
 
-        # Get the root ad unit ID used to target the entire network.
-        root_ad_unit_id = (
-            network_service.getCurrentNetwork()['effectiveRootAdUnitId'])
+        if network_service is not None:
 
-        # Create inventory targeting (pointed at root ad unit i.e. the whole network)
-        inventory_targeting = {
-            'targetedAdUnits': [
-                {'adUnitId': root_ad_unit_id}
-            ]
-        }
+            # Get the root ad unit ID used to target the entire network.
+            root_ad_unit_id = network_service.effectiveRootAdUnitId()
 
-        # Create the custom criteria set.
-        top_custom_criteria_set = custom_targeting
-
-        # Create the audience segment rule.
-        rule = {
-            'inventoryRule': inventory_targeting,
-            'customCriteriaRule': custom_targeting
-        }
-
-        # Create an audience segment.
-        audience_segment = [
-            {
-                'xsi_type': 'RuleBasedFirstPartyAudienceSegment',
-                'name': name,
-                'description': description,
-                'pageViews': pageviews,
-                'recencyDays': recencydays,
-                'membershipExpirationDays': membershipexpirationdays,
-                'rule': rule
+            # Create inventory targeting (pointed at root ad unit i.e. the whole network)
+            inventory_targeting = {
+                'targetedAdUnits': [
+                    {'adUnitId': root_ad_unit_id}
+                ]
             }
-        ]
 
-        audience_segments = (
-            audience_service.createAudienceSegments(audience_segment))
+            # Create the custom criteria set.
+            top_custom_criteria_set = custom_targeting
 
-        for created_audience_segment in audience_segments:
-            logging.info('An audience segment with ID "%s", name "%s", and type "%s" '
-                         'was created.' % (created_audience_segment['id'],
-                                           created_audience_segment['name'],
-                                           created_audience_segment['type']))
+            # Create the audience segment rule.
+            rule = {
+                'inventoryRule': inventory_targeting,
+                'customCriteriaRule': custom_targeting
+            }
+
+            # Create an audience segment.
+            audience_segment = [
+                {
+                    'xsi_type': 'RuleBasedFirstPartyAudienceSegment',
+                    'name': name,
+                    'description': description,
+                    'pageViews': pageviews,
+                    'recencyDays': recencydays,
+                    'membershipExpirationDays': membershipexpirationdays,
+                    'rule': rule
+                }
+            ]
+            audience_segments = self.__gam_service.createAudienceSegments()
+
+            for created_audience_segment in audience_segments:
+                logging.info('An audience segment with ID "%s", name "%s", and type "%s" '
+                             'was created.' % (created_audience_segment['id'],
+                                               created_audience_segment['name'],
+                                               created_audience_segment['type']))
 
     def list(self):
         # Initialize appropriate service.
         audience_segment_service = self.GetService(
-            self.service_name, version=GAM_VERSION)
+            self.__service_name, version=GAM_VERSION)
         # Create a statement to select audience segments.
         statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                      .Where('Type = :type')
@@ -190,7 +195,7 @@ class Audience(GamClient):
 
     def list_all(self):
         # Initialize appropriate service.
-        audience_segment_service = self.GetService(service_name=self.service_name,
+        audience_segment_service = self.GetService(service_name=self.__service_name,
                                                    version=GAM_VERSION)
 
         # Create a statement to select audience segments.
@@ -219,7 +224,7 @@ class Audience(GamClient):
 
     def update(self, audience_segment_id, name, description, custom_targeting_key_id, custom_targeting_value_id, pageviews=1, recencydays=1, membershipexpirationdays=90):
         # Initialize appropriate service.
-        audience_segment_service = self.GetService(service_name=self.service_name,
+        audience_segment_service = self.GetService(service_name=self.__service_name,
                                                    version=GAM_VERSION)
 
         # Create statement object to get the specified first party audience segment.
@@ -257,9 +262,9 @@ class Network():
     __service_name: str = 'NetworkService'
 
     def __init__(self,
-                 app_name: Optional[str] = APP_NAME,
-                 network_code:  Optional[str] = NETWORK_CODE,
-                 gam_version: Optional[str] = GAM_VERSION):
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE,
+                 gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
         self.__gam_service = gam_client.get_service(service_name=self.__service_name,
@@ -274,9 +279,9 @@ class CustomTargeting():
     __service_name = 'CustomTargetingService'
 
     def __init__(self,
-                 app_name: Optional[str] = APP_NAME,
-                 network_code:  Optional[str] = NETWORK_CODE,
-                 gam_version: Optional[str] = GAM_VERSION):
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE,
+                 gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
         self.__gam_service = gam_client.get_service(service_name=self.__service_name,
@@ -352,9 +357,9 @@ class TargetingPreset():
     __service_name = 'TargetingPresetService'
 
     def __init__(self,
-                 app_name: Optional[str] = APP_NAME,
-                 network_code:  Optional[str] = NETWORK_CODE,
-                 gam_version: Optional[str] = GAM_VERSION):
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE,
+                 gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
         self.__gam_service = gam_client.get_service(service_name=self.__service_name,
@@ -387,9 +392,9 @@ class Report():
     service_name = 'ReportService'
 
     def __init__(self,
-                 app_name: Optional[str] = APP_NAME,
-                 network_code:  Optional[str] = NETWORK_CODE,
-                 gam_version: Optional[str] = GAM_VERSION):
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE,
+                 gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
         self.__gam_service = gam_client.get_service(service_name=self.service_name,
@@ -434,7 +439,7 @@ class Report():
         return report_data
 
     @staticmethod
-    def gen_report_statement(ad_units: Optional[List[int]] = None,
+    def gen_report_statement(ad_units: Optional[Union[int, List[int]]] = None,
                              targeting_value_ids: Optional[gam_targetingValues] = None,
                              order_id: Optional[Union[int, List[int]]] = None,
                              exclusion_targeting_value_ids: Optional[gam_targetingValues] = None,
@@ -442,8 +447,12 @@ class Report():
         logging.info('Report::gen_report_statement')
         where_conditions = []
         if ad_units is not None:
-            where_conditions.append(
-                f'PARENT_AD_UNIT_ID IN ({", ".join(str(value) for value in ad_units)})')
+            if type(ad_units) == List[int]:
+                where_conditions.append(
+                    f'PARENT_AD_UNIT_ID IN ({", ".join(str(value) for value in ad_units)})')
+            elif type(ad_units) == int:
+                where_conditions.append(f'PARENT_AD_UNIT_ID IN ({ad_units}')
+
         if targeting_value_ids is not None:
             where_conditions.append(
                 f'CUSTOM_TARGETING_VALUE_ID  IN ({", ".join(str(value) for value in targeting_value_ids)})')
@@ -575,9 +584,9 @@ class Forecast():
     service_name = 'ForecastService'
 
     def __init__(self,
-                 app_name: Optional[str] = APP_NAME,
-                 network_code:  Optional[str] = NETWORK_CODE,
-                 gam_version: Optional[str] = GAM_VERSION):
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE,
+                 gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
         self.__gam_service = gam_client.get_service(service_name=self.service_name,
@@ -765,9 +774,9 @@ class Traffic():
     service_name = 'ForecastService'
 
     def __init__(self,
-                 app_name: Optional[str] = APP_NAME,
-                 network_code:  Optional[str] = NETWORK_CODE,
-                 gam_version: Optional[str] = GAM_VERSION):
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE,
+                 gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
         self.__gam_service = gam_client.get_service(service_name=self.service_name,
@@ -846,8 +855,8 @@ class Traffic():
         return time_series_to_list(traffic_data['historicalTimeSeries']) + time_series_to_list(traffic_data['forecastedTimeSeries'])
 
     def get_traffic_by_targeting_preset(self,
-                                        inventory_targeting=None,
-                                        targeting_preset=None,
+                                        inventory_targeting,
+                                        targeting_preset,
                                         report_date: datetime.datetime = datetime.datetime.now(
                                             tz=pytz.timezone(PYTZ_TIMEZONE)),
                                         days: int = 1) -> List[trafficItem]:
