@@ -9,13 +9,13 @@ from typing import List, Optional
 
 import pandas as pd
 from google.cloud import bigquery
-from google.cloud.bigquery import (ArrayQueryParameter, Client, QueryJobConfig,
+from google.cloud.bigquery import (QueryJobConfig,
                                    ScalarQueryParameter)
 from google.cloud.exceptions import NotFound
 
 from .CloudStorage import CloudStorage
 from .ServiceAccount import ServiceAccount
-from .Utils import ListHelper, FileHelper, DEFAULT_BQ_DATASET, DATA_PATH
+from .Utils import FileHelper, DEFAULT_BQ_DATASET, DATA_PATH
 
 DATA_TYPE_MAPPING = {'object': bigquery.enums.SqlTypeNames.STRING, 'int64': bigquery.enums.SqlTypeNames.INT64,
                      'float64': bigquery.enums.SqlTypeNames.FLOAT, 'bool': bigquery.enums.SqlTypeNames.BOOL}
