@@ -1,2 +1,2 @@
-# GoogleCloudPlatformAPI
-Simple wrapper for GCP
+# GoogleCloudPlatform
+GoogleCloudPlatform
