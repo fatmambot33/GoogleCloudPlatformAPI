@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='GoogleCloudPlatformAPI',
-    version='v2.0.4',
+    version='v2.0.5',
     packages=find_packages(),
     install_requires=[
 
