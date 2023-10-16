@@ -7,7 +7,7 @@ import os
 import shutil
 from dataclasses import dataclass
 from typing import List, Optional
-from dotenv import load_dotenv
+
 import pandas as pd
 from google.cloud import bigquery
 from google.cloud.bigquery import (QueryJobConfig,
@@ -17,7 +17,7 @@ from google.cloud.exceptions import NotFound
 from .CloudStorage import CloudStorage
 from .ServiceAccount import ServiceAccount
 from .Utils import FileHelper
-load_dotenv()
+
 DATA_TYPE_MAPPING = {'object': bigquery.enums.SqlTypeNames.STRING, 'int64': bigquery.enums.SqlTypeNames.INT64,
                      'float64': bigquery.enums.SqlTypeNames.FLOAT, 'bool': bigquery.enums.SqlTypeNames.BOOL}
 
@@ -71,7 +71,7 @@ class BigQuery():
         query_parameters = []
         for sp_param in sp_params:
             query_parameters.append(
-                ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value))
+                ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value))  # type: ignore
 
         job_config = QueryJobConfig(query_parameters=query_parameters)
         query_results = self.execute_query(query, job_config)
@@ -90,10 +90,10 @@ class BigQuery():
         except NotFound:
             return False
 
-    def create_schema_from_table(self, folder: str, dataset: Optional[str]) -> dict:
+    def create_schema_from_table(self, folder: str, dataset: Optional[str] = None) -> Optional[dict]:
         logging.info(f"BigQuery::create_schema_from_table::{folder}")
         if dataset is None:
-            dataset = os.environ.get("")
+            dataset = os.environ.get("DEFAULT_BQ_DATASET")
         schema = {}
         schema['allow_jagged_rows'] = True
         schema['allow_quoted_newlines'] = True
@@ -368,7 +368,7 @@ class BigQuery():
     def build_job_config(table_name: str,
                          bucket_name: str,
                          data_path: str,
-                         partition_date: Optional[datetime.date] = None):
+                         partition_date: datetime.date):
         logging.info('BigQuery::build_job_config')
 
         folder_name = data_path

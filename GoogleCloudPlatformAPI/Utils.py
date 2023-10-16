@@ -5,9 +5,6 @@ import os
 import pathlib
 from glob import glob
 from typing import List, Optional, Union
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class FileHelper:

@@ -2,9 +2,6 @@ from typing import List, Optional
 from google.oauth2 import service_account, credentials
 from googleads import oauth2
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class ClientCredentials:
