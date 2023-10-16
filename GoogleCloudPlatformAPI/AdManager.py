@@ -14,9 +14,7 @@ from googleads import ad_manager, errors
 from . import APP_NAME, NETWORK_CODE, GAM_VERSION, PYTZ_TIMEZONE
 from .ServiceAccount import ServiceAccount
 from .Utils import ListHelper
-from dotenv import load_dotenv
 
-load_dotenv()
 
 # region objects
 gam_adUnit = Dict[int, bool]
@@ -441,13 +439,11 @@ class Report():
     @staticmethod
     def gen_report_statement(ad_units: Optional[Union[int, List[int]]] = None,
                              targeting_value_ids: Optional[gam_targetingValues] = None,
-                             order_id: Optional[Union[int, List[int]]] = None,
-                             exclusion_targeting_value_ids: Optional[gam_targetingValues] = None,
-                             mobile_inventory_type: Optional[str] = None):
+                             order_id: Optional[Union[int, List[int]]] = None):
         logging.info('Report::gen_report_statement')
         where_conditions = []
         if ad_units is not None:
-            if type(ad_units) == List[int]:
+            if type(ad_units) == list:
                 where_conditions.append(
                     f'PARENT_AD_UNIT_ID IN ({", ".join(str(value) for value in ad_units)})')
             elif type(ad_units) == int:
@@ -456,12 +452,6 @@ class Report():
         if targeting_value_ids is not None:
             where_conditions.append(
                 f'CUSTOM_TARGETING_VALUE_ID  IN ({", ".join(str(value) for value in targeting_value_ids)})')
-        if exclusion_targeting_value_ids is not None:
-            where_conditions.append(
-                f'NOT CUSTOM_TARGETING_VALUE_ID  IN ({", ".join(str(value) for value in exclusion_targeting_value_ids)})')
-        if mobile_inventory_type is not None:
-            where_conditions.append(
-                f"MOBILE_INVENTORY_TYPE='{mobile_inventory_type}'")
         if order_id is not None:
             if type(order_id) == int:
                 where_conditions.append(
@@ -546,13 +536,11 @@ class Report():
                              days: int = 7,
                              dimensions: Optional[List[str]] = None,
                              metrics: Optional[List[str]] = None,
-                             ad_unit_view: Optional[str] = 'TOP_LEVEL',
-                             exclusion_targeting_value_ids: Optional[gam_targetingValues] = None,
-                             mobile_inventory_type: Optional[str] = None) -> pd.DataFrame:
+                             ad_unit_view: Optional[str] = 'TOP_LEVEL') -> pd.DataFrame:
         if type(ad_units) == int:
             ad_units = [ad_units]
         statement = self.gen_report_statement(
-            ad_units=ad_units, targeting_value_ids=targeting_value_ids, exclusion_targeting_value_ids=exclusion_targeting_value_ids, mobile_inventory_type=mobile_inventory_type)
+            ad_units=ad_units, targeting_value_ids=targeting_value_ids)
         df = self.get_report_dataframe_by_statement(statement=statement,
                                                     report_date=report_date,
                                                     days=days,
