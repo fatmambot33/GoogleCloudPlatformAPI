@@ -62,8 +62,6 @@ class CloudStorage:
             destination_blob_name: str,
             data: str,
             override: bool = False):
-        if bucket_name is None:
-            bucket_name = os.environ.get("DEFAULT_GCS_BUCKET")  # type: ignore
         logging.info(f"CloudStorage::upload_from_string")
         if not self.file_exists(destination_blob_name, bucket_name) or override:
             logging.info("File {} upload start".format(destination_blob_name))
