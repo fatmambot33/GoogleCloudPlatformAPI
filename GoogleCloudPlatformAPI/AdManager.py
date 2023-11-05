@@ -11,10 +11,23 @@ import pandas as pd
 import pytz
 from googleads import ad_manager, errors
 
-from . import APP_NAME, NETWORK_CODE, GAM_VERSION, PYTZ_TIMEZONE
+from . import PYTZ_TIMEZONE
 from .ServiceAccount import ServiceAccount
 from .Utils import ListHelper
+AD_UNIT_VIEW = 'TOP_LEVEL'
+METRICS = ['TOTAL_CODE_SERVED_COUNT',
+           'AD_SERVER_IMPRESSIONS',
+           'AD_SERVER_CLICKS',
+           'ADSENSE_LINE_ITEM_LEVEL_IMPRESSIONS',
+           'ADSENSE_LINE_ITEM_LEVEL_CLICKS',
+           'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
+           'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE']
 
+DIMENSIONS = ['DATE', 'AD_UNIT_NAME', 'CUSTOM_TARGETING_VALUE_ID']
+
+GAM_VERSION = "v202305"
+NETWORK_CODE = '5574'
+APP_NAME = 'AdManager'
 
 # region objects
 gam_adUnit = Dict[int, bool]
@@ -125,52 +138,42 @@ class Audience(GamClient):
         # Initialize appropriate services.
         network_service = Network(
             app_name=APP_NAME, network_code=network_code)
+        # Get the root ad unit ID used to target the entire network.
+        root_ad_unit_id = network_service.effectiveRootAdUnitId()
 
-        if network_service is not None:
-
-            # Get the root ad unit ID used to target the entire network.
-            root_ad_unit_id = network_service.effectiveRootAdUnitId()
-
-            # Create inventory targeting (pointed at root ad unit i.e. the whole network)
-            inventory_targeting = {
-                'targetedAdUnits': [
-                    {'adUnitId': root_ad_unit_id}
-                ]
-            }
-
-            # Create the custom criteria set.
-            top_custom_criteria_set = custom_targeting
-
-            # Create the audience segment rule.
-            rule = {
-                'inventoryRule': inventory_targeting,
-                'customCriteriaRule': custom_targeting
-            }
-
-            # Create an audience segment.
-            audience_segment = [
-                {
-                    'xsi_type': 'RuleBasedFirstPartyAudienceSegment',
-                    'name': name,
-                    'description': description,
-                    'pageViews': pageviews,
-                    'recencyDays': recencydays,
-                    'membershipExpirationDays': membershipexpirationdays,
-                    'rule': rule
-                }
+        # Create inventory targeting (pointed at root ad unit i.e. the whole network)
+        inventory_targeting = {
+            'targetedAdUnits': [
+                {'adUnitId': root_ad_unit_id}
             ]
-            audience_segments = self.__gam_service.createAudienceSegments()
+        }
+        # Create the audience segment rule.
+        rule = {
+            'inventoryRule': inventory_targeting,
+            'customCriteriaRule': custom_targeting
+        }
+        # Create an audience segment.
+        audience_segment = [
+            {
+                'xsi_type': 'RuleBasedFirstPartyAudienceSegment',
+                'name': name,
+                'description': description,
+                'pageViews': pageviews,
+                'recencyDays': recencydays,
+                'membershipExpirationDays': membershipexpirationdays,
+                'rule': rule
+            }
+        ]
+        audience_segments = self.__gam_service.createAudienceSegments(
+            audience_segment)
 
-            for created_audience_segment in audience_segments:
-                logging.info('An audience segment with ID "%s", name "%s", and type "%s" '
-                             'was created.' % (created_audience_segment['id'],
-                                               created_audience_segment['name'],
-                                               created_audience_segment['type']))
+        for created_audience_segment in audience_segments:
+            logging.info('An audience segment with ID "%s", name "%s", and type "%s" '
+                         'was created.' % (created_audience_segment['id'],
+                                           created_audience_segment['name'],
+                                           created_audience_segment['type']))
 
     def list(self):
-        # Initialize appropriate service.
-        audience_segment_service = self.GetService(
-            self.__service_name, version=GAM_VERSION)
         # Create a statement to select audience segments.
         statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                      .Where('Type = :type')
@@ -181,7 +184,7 @@ class Audience(GamClient):
         while True:
             logging.info(
                 'getAudienceSegmentsByStatement:statement.offset:'+str(statement.offset))
-            response = audience_segment_service.getAudienceSegmentsByStatement(
+            response = self.__gam_service.getAudienceSegmentsByStatement(
                 statement.ToStatement())
             if 'results' in response and len(response['results']):
                 results = results+response['results']
@@ -192,10 +195,6 @@ class Audience(GamClient):
         return results
 
     def list_all(self):
-        # Initialize appropriate service.
-        audience_segment_service = self.GetService(service_name=self.__service_name,
-                                                   version=GAM_VERSION)
-
         # Create a statement to select audience segments.
         statement = ad_manager.StatementBuilder(version=GAM_VERSION)
         results = []
@@ -203,15 +202,14 @@ class Audience(GamClient):
         # Retrieve a small amount of audience segments at a time, paging
         # through until all audience segments have been retrieved.
         while True:
-            response = audience_segment_service.getAudienceSegmentsByStatement(
+            response = self.__gam_service.getAudienceSegmentsByStatement(
                 statement.ToStatement())
             if 'results' in response and len(response['results']):
 
                 for audience_segment in response['results']:
-                    # Print out some information for each audience segment.
-                    print('Audience segment with ID "%d", name "%s", and size "%d" was '
-                          'found.\n' % (audience_segment['id'], audience_segment['name'],
-                                        audience_segment['size']))
+                    logging.info('Audience segment with ID "%d", name "%s", and size "%d" was '
+                                 'found.\n' % (audience_segment['id'], audience_segment['name'],
+                                               audience_segment['size']))
 
                 results = results+response['results']
                 statement.offset += statement.limit
@@ -220,11 +218,13 @@ class Audience(GamClient):
 
         return results
 
-    def update(self, audience_segment_id, name, description, custom_targeting_key_id, custom_targeting_value_id, pageviews=1, recencydays=1, membershipexpirationdays=90):
-        # Initialize appropriate service.
-        audience_segment_service = self.GetService(service_name=self.__service_name,
-                                                   version=GAM_VERSION)
-
+    def update(self, audience_segment_id, name,
+               description,
+               custom_targeting_key_id,
+               custom_targeting_value_id,
+               pageviews=1,
+               recencydays=1,
+               membershipexpirationdays=90):
         # Create statement object to get the specified first party audience segment.
         statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                      .Where('Type = :type AND Id = :audience_segment_id')
@@ -234,26 +234,26 @@ class Audience(GamClient):
                      .Limit(1))
 
         # Get audience segments by statement.
-        response = audience_segment_service.getAudienceSegmentsByStatement(
+        response = self.__gam_service.getAudienceSegmentsByStatement(
             statement.ToStatement())
 
         if 'results' in response and len(response['results']):
             updated_audience_segments = []
             for audience_segment in response['results']:
-                print('Audience segment with id "%s" and name "%s" will be updated.'
-                      % (audience_segment['id'], audience_segment['name']))
+                audience_segment['name'] = name
+                audience_segment['description'] = description
 
                 audience_segment['membershipExpirationDays'] = membershipexpirationdays
                 updated_audience_segments.append(audience_segment)
 
-            audience_segments = audience_segment_service.updateAudienceSegments(
+            audience_segments = self.__gam_service.updateAudienceSegments(
                 updated_audience_segments)
 
             for audience_segment in audience_segments:
-                print('Audience segment with id "%s" and name "%s" was updated' %
-                      (audience_segment['id'], audience_segment['name']))
+                logging.info('Audience segment with id "%s" and name "%s" was updated' %
+                             (audience_segment['id'], audience_segment['name']))
         else:
-            print('No audience segment found to update.')
+            logging.info('No audience segment found to update.')
 
 
 class Network():
@@ -411,7 +411,7 @@ class Report():
             # Run the report and wait for it to finish.
             report_job_id = report_downloader.WaitForReport(report_job)
         except errors.AdManagerReportError as e:
-            print('Failed to generate report. Error was: %s' % e)
+            logging.error('Failed to generate report. Error was: %s' % e)
         logging.info('report generated')
         export_format = 'CSV_DUMP'
 
@@ -452,6 +452,7 @@ class Report():
         if targeting_value_ids is not None:
             where_conditions.append(
                 f'CUSTOM_TARGETING_VALUE_ID  IN ({", ".join(str(value) for value in targeting_value_ids)})')
+
         if order_id is not None:
             if type(order_id) == int:
                 where_conditions.append(
@@ -471,22 +472,10 @@ class Report():
     def gen_report_query(report_statement,
                          report_end: datetime.date = datetime.date.today(),
                          report_days: int = 7,
-                         dimensions: Optional[List[str]] = None,
-                         metrics: Optional[List[str]] = None,
-                         ad_unit_view: Optional[str] = 'TOP_LEVEL'):
+                         dimensions: List[str] = DIMENSIONS,
+                         metrics: List[str] = METRICS,
+                         ad_unit_view: str = AD_UNIT_VIEW):
         logging.info('api_build_report_query')
-        if dimensions is None:
-            dimensions = ['DATE', 'AD_UNIT_NAME', 'CUSTOM_TARGETING_VALUE_ID']
-        if metrics is None:
-            metrics = ['TOTAL_CODE_SERVED_COUNT',
-                       'AD_SERVER_IMPRESSIONS',
-                       'AD_SERVER_CLICKS',
-                       'ADSENSE_LINE_ITEM_LEVEL_IMPRESSIONS',
-                       'ADSENSE_LINE_ITEM_LEVEL_CLICKS',
-                       'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
-                       'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE']
-        if ad_unit_view is None:
-            ad_unit_view = 'TOP_LEVEL'
 
         start_date = report_end - datetime.timedelta(days=report_days)
 
@@ -534,9 +523,9 @@ class Report():
                              targeting_value_ids: Optional[gam_targetingValues] = None,
                              report_date: datetime.date = datetime.date.today(),
                              days: int = 7,
-                             dimensions: Optional[List[str]] = None,
-                             metrics: Optional[List[str]] = None,
-                             ad_unit_view: Optional[str] = 'TOP_LEVEL') -> pd.DataFrame:
+                             dimensions: List[str] = DIMENSIONS,
+                             metrics: List[str] = METRICS,
+                             ad_unit_view: str = AD_UNIT_VIEW) -> pd.DataFrame:
         if type(ad_units) == int:
             ad_units = [ad_units]
         statement = self.gen_report_statement(
@@ -553,9 +542,9 @@ class Report():
                                           statement,
                                           report_date: datetime.date = datetime.date.today(),
                                           days: int = 7,
-                                          dimensions: Optional[List[str]] = None,
-                                          metrics: Optional[List[str]] = None,
-                                          ad_unit_view: Optional[str] = 'TOP_LEVEL') -> pd.DataFrame:
+                                          dimensions: List[str] = DIMENSIONS,
+                                          metrics: List[str] = METRICS,
+                                          ad_unit_view: str = AD_UNIT_VIEW) -> pd.DataFrame:
         report_job = self.gen_report_query(statement,
                                            report_date,
                                            days,
@@ -625,8 +614,10 @@ class Forecast():
         return prospective_line_item
 
     @staticmethod
-    def __gen_forecast_options(targets_list, report_date: datetime.datetime = datetime.datetime.now(
-            tz=pytz.timezone(PYTZ_TIMEZONE)), days: int = 30):
+    def __gen_forecast_options(targets_list,
+                               report_date: datetime.datetime = datetime.datetime.now(
+                                   tz=pytz.timezone(PYTZ_TIMEZONE)),
+                               days: int = 30):
         logging.info('Forecast::__gen_forecast_options')
         targets = []
         for target in targets_list:
