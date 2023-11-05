@@ -78,12 +78,10 @@ class BigQuery():
         result_list = []
         for result in query_results:
             t = dict(**result)
-            result_list.append(t)
-        df = pd.DataFrame(result_list)
-        return df
+            result_list.append(t) 
+        return pd.DataFrame(result_list)
 
     def table_exists(self, table_id: str) -> bool:
-
         try:
             self.__client.get_table(table_id)
             return True
@@ -162,11 +160,13 @@ class BigQuery():
             return True
 
     def create_table_from_schema(self, folder: str,
-                                 dataset: Optional[str] = os.environ.get(
-                                     "DEFAULT_BQ_DATASET"),
-                                 data_path: Optional[str] = os.environ.get("DATA_PATH")) -> bool:
+                                 dataset: Optional[str] = None,
+                                 data_path: Optional[str] = None) -> bool:
         logging.info(f"BigQuery::create_table_from_schema::{folder}")
-
+        if dataset is None:
+            dataset = os.environ.get("DEFAULT_BQ_DATASET")
+        if data_path is None:
+            data_path = os.environ.get("DATA_PATH")
         if not self.table_exists(f"{dataset}.{folder}"):
             with open(f"{data_path}{folder}/schema.json", mode="r") as schema_file:
                 schema_json = json.load(schema_file)
@@ -203,9 +203,11 @@ class BigQuery():
 
         logging.info("Query results loaded to the table {}".format(table_id))
 
-    def delete_partition(self, table_id: str, partition_date: Optional[datetime.date] = None, partition_name: str = 'date') -> bool:
+    def delete_partition(self, table_id: str, 
+                         partition_date: datetime.date, 
+                         partition_name: str = 'date') -> bool:
 
-        if partition_date is not None and self.table_exists(table_id):
+        if self.table_exists(table_id):
             logging.info(
                 f"BigQuery::delete_partition::{table_id}::{partition_date.strftime('%Y-%m-%d')}")
             query = (
@@ -221,7 +223,7 @@ class BigQuery():
                         table: str,
                         local_folder: str,
                         remote_folder: str,
-                        partition_date: Optional[datetime.date] = None,
+                        partition_date: datetime.date,
                         partition_name: str = 'date',
                         file_mask: str = '*.gz',
                         override: bool = False) -> bool:
@@ -355,7 +357,7 @@ class BigQuery():
         except NotFound:
             return user_has_data
 
-    def load_from_uri(self, table_id, bucket_name, data_path, partition_date: Optional[datetime.date] = None) -> bool:
+    def load_from_uri(self, table_id, bucket_name, data_path, partition_date: datetime.date) -> bool:
         logging.info('BigQuery::load_from_uri')
         job_config, uri = BigQuery.build_job_config(
             table_name=table_id, partition_date=partition_date, bucket_name=bucket_name, data_path=data_path)
@@ -427,7 +429,7 @@ class BigQuery():
             table: str,
             local_folder: str,
             remote_folder: str,
-            partition_date: Optional[datetime.date] = None,
+            partition_date: datetime.date,
             partition_name: str = 'date',
             override: bool = False):
 
@@ -503,14 +505,3 @@ class BigQuery():
         table = self.__client.get_table(table_id)  # Make an API request.
         logging.info("Loaded {} rows and {} columns to {}".format(
             table.num_rows, len(table.schema), table_id))
-
-
-class bqDataFrame(pd.DataFrame):
-    client: BigQuery
-
-    def __init__(self, client: BigQuery) -> None:
-        super().__init__()
-        self.client = client
-
-    def fill(self, query: str):
-        return self.client.execute_query(query)
