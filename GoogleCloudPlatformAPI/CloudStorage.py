@@ -87,9 +87,37 @@ class CloudStorage:
         else:
             logging.info("File {} existed".format(destination_file_path))
 
+    def upload_file(
+            self,
+            local_file_path: str,
+            destination_file_path: str,
+            override: bool = False):
+
+        logging.info(f"CloudStorage::upload_file_from_filename")
+        file_path = os.path.normpath(destination_file_path)
+        path_parts = file_path.split(os.sep)
+        bucket_name = path_parts[0]
+
+        blob_path = os.sep.join(path_parts[1:]) if len(path_parts) > 1 else ''
+
+        if not self.file_exists(filepath=blob_path,
+                                bucket_name=bucket_name) or override:
+            bucket_name = self.__client.bucket(bucket_name)
+            blob = bucket_name.blob(blob_path)
+            blob.upload_from_filename(local_file_path)
+        else:
+            logging.info("File {} existed".format(destination_file_path))
+
     def upload_folder(self, local_folder: str, remote_folder: str, bucket_name: str, file_mask="*.gz", override=False):
         allfiles = glob.glob(local_folder + file_mask)
         for file in allfiles:
+            logging.info(f"CloudStorage::upload_file_from_filename")
+            destination_file_path=remote_folder+os.path.basename(file)
+            local_file_path=file
+            bucket = self.__client.bucket(bucket_name)
+            if not self.file_exists(filepath=destination_file_path, bucket_name=bucket_name) or override:
+                blob = bucket.blob(destination_file_path)
+                blob.upload_from_filename(local_file_path)
             self.upload_file_from_filename(
                 local_file_path=file, destination_file_path=remote_folder+os.path.basename(file), bucket_name=bucket_name, override=override)
 
