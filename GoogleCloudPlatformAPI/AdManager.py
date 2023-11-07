@@ -11,9 +11,11 @@ import pandas as pd
 import pytz
 from googleads import ad_manager, errors
 
-from . import PYTZ_TIMEZONE
+
 from .ServiceAccount import ServiceAccount
 from .Utils import ListHelper
+
+PYTZ_TIMEZONE='UTC'
 AD_UNIT_VIEW = 'TOP_LEVEL'
 METRICS = ['TOTAL_CODE_SERVED_COUNT',
            'AD_SERVER_IMPRESSIONS',
