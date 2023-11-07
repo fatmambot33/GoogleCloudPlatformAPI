@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 from google.oauth2 import service_account, credentials
 from googleads import oauth2
@@ -13,23 +14,29 @@ class ClientCredentials:
     def gcp_credentials(self):
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if self.credentials_path is not None:
+            logging.info(f"gcp_credentials::service_account")
             return service_account.Credentials.from_service_account_file(filename=self.credentials_path, scopes=scopes)
         else:
+            logging.info(f"gcp_credentials::user_account")
             return credentials.Credentials(scopes=scopes)  # type: ignore
 
     @property
     def get_service_account_client(self):
         scope = oauth2.GetAPIScope("ad_manager")
         if self.credentials_path is not None:
+            logging.info(f"get_service_account_client::service_account")
             return oauth2.GoogleServiceAccountClient(key_file=credentials, scope=scope)
         else:
+            logging.info(f"get_service_account_client::user_account")
             return oauth2.GoogleOAuth2Client()
 
     def get_cloudplatform(self, credentials_path: Optional[str] = None,
                           scopes: Optional[List[str]] = ["https://www.googleapis.com/auth/cloud-platform"]):
         if credentials_path is not None:
+            logging.info(f"get_cloudplatform::service_account")
             return service_account.Credentials.from_service_account_file(filename=credentials_path, scopes=scopes)
         else:
+            logging.info(f"get_cloudplatform::user_account")
             return credentials.Credentials(scopes=scopes)  # type: ignore
 
 
