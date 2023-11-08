@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: GoogleCloudPlatformAPI
+Version: 2.1.3
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pandas
+Requires-Dist: google-api-python-client
+Requires-Dist: google-cloud-bigquery
+Requires-Dist: google-cloud-storage
+Requires-Dist: googleads
+
+# GoogleCloudPlatform
+GoogleCloudPlatform
