@@ -5,7 +5,7 @@ from .BigQuery import BigQuery
 from .CloudStorage import CloudStorage
 import requirements
 
-requirements.main()
+requirements.install()
 
 
 __all__ = ["Audience","Network","Report","TargetingPreset","Traffic","Forecast",
