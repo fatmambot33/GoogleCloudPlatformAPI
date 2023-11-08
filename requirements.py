@@ -4,11 +4,11 @@ import subprocess
 import sys
 import os
 
-
-def main():
-    def install(package):
+def install_package(package):
         subprocess.check_call(
             [sys.executable, "-m", "pip", "install", package])
+def install():
+
 
     requirements_file = "requirements.txt"
     if os.path.exists(requirements_file):
@@ -29,8 +29,8 @@ def main():
                 or pkg_resources.parse_version(installed_packages[pkg.key])
                 not in pkg.specifier
             ):
-                install(str(pkg))
+                install_package(str(pkg))
 
 
 if __name__ == "__main__":
-    main()
+    install()
