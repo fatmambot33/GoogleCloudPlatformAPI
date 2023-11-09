@@ -2,7 +2,7 @@ import glob
 import logging
 import os
 import json
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from google.cloud import storage
 
@@ -56,6 +56,19 @@ class CloudStorage:
         with open(destination_file_name, "w") as textfile:
             textfile.write(json.dumps(json_data))
 
+    def upload(self,
+               bucket_name: str,
+               destination_blob_name: str,
+               data: Union[str, object],
+               override: bool = True):
+        logging.info(f"CloudStorage::upload")
+        if not override:
+            if self.file_exists(filepath=destination_blob_name, bucket_name=bucket_name):
+                return
+        bucket = self.__client.bucket(bucket_name)
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_string(data)
+
     def upload_from_string(
             self,
             bucket_name: str,
@@ -64,13 +77,9 @@ class CloudStorage:
             override: bool = False):
         logging.info(f"CloudStorage::upload_from_string")
         if not self.file_exists(destination_blob_name, bucket_name) or override:
-            logging.info("File {} upload start".format(destination_blob_name))
             bucket = self.__client.bucket(bucket_name)
             blob = bucket.blob(destination_blob_name)
             blob.upload_from_string(data)
-            logging.info("File {} upload end".format(destination_blob_name))
-        else:
-            logging.info("File {} existed".format(destination_blob_name))
 
     def upload_file_from_filename(
             self,
@@ -84,8 +93,6 @@ class CloudStorage:
             bucket = self.__client.bucket(bucket_name)
             blob = bucket.blob(destination_file_path)
             blob.upload_from_filename(local_file_path)
-        else:
-            logging.info("File {} existed".format(destination_file_path))
 
     def upload_file(
             self,
@@ -105,15 +112,14 @@ class CloudStorage:
             bucket_name = self.__client.bucket(bucket_name)
             blob = bucket_name.blob(blob_path)
             blob.upload_from_filename(local_file_path)
-        else:
-            logging.info("File {} existed".format(destination_file_path))
 
     def upload_folder(self, local_folder: str, remote_folder: str, bucket_name: str, file_mask="*.gz", override=False):
+        logging.info(f"CloudStorage::upload_folder")
         allfiles = glob.glob(local_folder + file_mask)
         for file in allfiles:
-            logging.info(f"CloudStorage::upload_file_from_filename")
-            destination_file_path=remote_folder+os.path.basename(file)
-            local_file_path=file
+
+            destination_file_path = remote_folder+os.path.basename(file)
+            local_file_path = file
             bucket = self.__client.bucket(bucket_name)
             if not self.file_exists(filepath=destination_file_path, bucket_name=bucket_name) or override:
                 blob = bucket.blob(destination_file_path)
@@ -132,7 +138,6 @@ class CloudStorage:
         logging.info(f"CloudStorage::delete_file")
         source_bucket = self.__client.bucket(bucket_name)
         source_bucket.delete_blob(filename)
-        logging.info(f"deleted {filename}")
 
     def delete_files(self, bucket_name: str, prefix: str):
         logging.info(f"CloudStorage::delete_files")
@@ -148,6 +153,7 @@ class CloudStorage:
                   destination_bucket_name: str,
                   override: bool = False
                   ) -> bool:
+        logging.info(f"CloudStorage::copy_file")
         if not self.file_exists(filepath=file_name,
                                 bucket_name=destination_bucket_name) or override:
             source_bucket = self.__client.bucket(bucket_name)
@@ -165,6 +171,7 @@ class CloudStorage:
                    prefix: str,
                    destination_bucket_name: str,
                    override: bool = False):
+        logging.info(f"CloudStorage::copy_files")
         files = self.list_files(bucket_name=bucket_name,
                                 prefix=prefix)
         for file in files:
