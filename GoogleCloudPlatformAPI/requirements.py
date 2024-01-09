@@ -4,13 +4,12 @@ import subprocess
 import sys
 import os
 
-
 def install_package(package):
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", package])
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", package])
+def install():
 
 
-def install_requirements():
     requirements_file = "requirements.txt"
     if os.path.exists(requirements_file):
         with open(requirements_file, "r") as f:
@@ -34,4 +33,4 @@ def install_requirements():
 
 
 if __name__ == "__main__":
-    install_requirements()
+    install()
