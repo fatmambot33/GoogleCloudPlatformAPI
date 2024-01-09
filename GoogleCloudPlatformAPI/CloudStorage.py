@@ -15,7 +15,7 @@ class CloudStorage:
     def __init__(self,
                  credentials: Optional[str] = None,
                  project_id: Optional[str] = None):
-        logging.info(f"CloudStorage::__init__")
+        logging.debug(f"CloudStorage::__init__")
         if credentials is not None:
             self.__client = storage.Client(
                 credentials=credentials, project=project_id)
@@ -37,7 +37,7 @@ class CloudStorage:
                    bucket_name: str,
                    prefix: str) -> List[str]:
 
-        logging.info(f"CloudStorage::list_files::{bucket_name}/{prefix}")
+        logging.debug(f"CloudStorage::list_files::{bucket_name}/{prefix}")
         _return = []
         blobs = self.__client.list_blobs(bucket_name, prefix=prefix)
         for blob in blobs:
@@ -47,7 +47,7 @@ class CloudStorage:
     def download_as_string(self, bucket_name: str,
                            source_blob_name: str,
                            destination_file_name: str):
-        logging.info(
+        logging.debug(
             f"CloudStorage::download_as_string::{destination_file_name}")
         bucket = self.__client.bucket(bucket_name)
         blob = bucket.blob(source_blob_name)
@@ -61,7 +61,7 @@ class CloudStorage:
                destination_blob_name: str,
                data: Union[str, object],
                override: bool = True):
-        logging.info(f"CloudStorage::upload")
+        logging.debug(f"CloudStorage::upload")
         if not override:
             if self.file_exists(filepath=destination_blob_name, bucket_name=bucket_name):
                 return
@@ -75,7 +75,7 @@ class CloudStorage:
             destination_blob_name: str,
             data: str,
             override: bool = False):
-        logging.info(f"CloudStorage::upload_from_string")
+        logging.debug(f"CloudStorage::upload_from_string")
         if not self.file_exists(destination_blob_name, bucket_name) or override:
             bucket = self.__client.bucket(bucket_name)
             blob = bucket.blob(destination_blob_name)
@@ -88,7 +88,7 @@ class CloudStorage:
             bucket_name: str,
             override: bool = False):
 
-        logging.info(f"CloudStorage::upload_file_from_filename")
+        logging.debug(f"CloudStorage::upload_file_from_filename")
         if not self.file_exists(filepath=destination_file_path, bucket_name=bucket_name) or override:
             bucket = self.__client.bucket(bucket_name)
             blob = bucket.blob(destination_file_path)
@@ -100,7 +100,7 @@ class CloudStorage:
             destination_file_path: str,
             override: bool = False):
 
-        logging.info(f"CloudStorage::upload_file_from_filename")
+        logging.debug(f"CloudStorage::upload_file_from_filename")
         file_path = os.path.normpath(destination_file_path)
         path_parts = file_path.split(os.sep)
         bucket_name = path_parts[0]
@@ -114,7 +114,7 @@ class CloudStorage:
             blob.upload_from_filename(local_file_path)
 
     def upload_folder(self, local_folder: str, remote_folder: str, bucket_name: str, file_mask="*.gz", override=False):
-        logging.info(f"CloudStorage::upload_folder")
+        logging.debug(f"CloudStorage::upload_folder")
         allfiles = glob.glob(local_folder + file_mask)
         for file in allfiles:
 
@@ -128,19 +128,19 @@ class CloudStorage:
                 local_file_path=file, destination_file_path=remote_folder+os.path.basename(file), bucket_name=bucket_name, override=override)
 
     def file_exists(self, filepath: str, bucket_name: str) -> bool:
-        logging.info(f"CloudStorage::file_exists::{filepath}")
+        logging.debug(f"CloudStorage::file_exists::{filepath}")
         if self.list_files(bucket_name=bucket_name, prefix=filepath):
             return True
         return False
 
     def delete_file(
             self, filename: str, bucket_name: str):
-        logging.info(f"CloudStorage::delete_file")
+        logging.debug(f"CloudStorage::delete_file")
         source_bucket = self.__client.bucket(bucket_name)
         source_bucket.delete_blob(filename)
 
     def delete_files(self, bucket_name: str, prefix: str):
-        logging.info(f"CloudStorage::delete_files")
+        logging.debug(f"CloudStorage::delete_files")
         files = self.list_files(bucket_name=bucket_name, prefix=prefix)
         for file in files:
             self.delete_file(bucket_name=bucket_name, filename=file)
@@ -153,7 +153,7 @@ class CloudStorage:
                   destination_bucket_name: str,
                   override: bool = False
                   ) -> bool:
-        logging.info(f"CloudStorage::copy_file")
+        logging.debug(f"CloudStorage::copy_file")
         if not self.file_exists(filepath=file_name,
                                 bucket_name=destination_bucket_name) or override:
             source_bucket = self.__client.bucket(bucket_name)
@@ -171,7 +171,7 @@ class CloudStorage:
                    prefix: str,
                    destination_bucket_name: str,
                    override: bool = False):
-        logging.info(f"CloudStorage::copy_files")
+        logging.debug(f"CloudStorage::copy_files")
         files = self.list_files(bucket_name=bucket_name,
                                 prefix=prefix)
         for file in files:

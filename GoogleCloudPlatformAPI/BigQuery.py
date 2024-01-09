@@ -29,7 +29,7 @@ class BigQuery():
     def __init__(self,
                  credentials: Optional[str] = None,
                  project_id: Optional[str] = None):
-        logging.info(f"BigQuery::__init__")
+        logging.debug(f"BigQuery::__init__")
         if credentials is not None:
             self.__client = bigquery.Client(
                 credentials=credentials, project=project_id)
@@ -49,8 +49,8 @@ class BigQuery():
 
     def execute_query(self, query: str,
                       job_config: Optional[bigquery.QueryJobConfig] = None) -> List[bigquery.Row]:
-        # logging.info(query)
-        logging.info(f"BigQuery::execute_query")
+        # logging.debug(query)
+        logging.debug(f"BigQuery::execute_query")
         if job_config is not None:
             return [row for row in self.__client.query(query, job_config=job_config).result()]
         else:
@@ -63,7 +63,7 @@ class BigQuery():
         type: str
 
     def execute_stored_procedure(self, sp_name: str, sp_params: List[oSpParam]) -> pd.DataFrame:
-        logging.info(f"BigQuery::execute_sp::{sp_name}")
+        logging.debug(f"BigQuery::execute_sp::{sp_name}")
         sp_instruction_params = ",@".join(
             [sp_param.name for sp_param in sp_params])
 
@@ -89,7 +89,7 @@ class BigQuery():
             return False
 
     def create_schema_from_table(self, folder: str, dataset: Optional[str] = None) -> Optional[dict]:
-        logging.info(f"BigQuery::create_schema_from_table::{folder}")
+        logging.debug(f"BigQuery::create_schema_from_table::{folder}")
         if dataset is None:
             dataset = os.environ.get("DEFAULT_BQ_DATASET")
         schema = {}
@@ -162,7 +162,7 @@ class BigQuery():
     def create_table_from_schema(self, folder: str,
                                  dataset: Optional[str] = None,
                                  data_path: Optional[str] = None) -> bool:
-        logging.info(f"BigQuery::create_table_from_schema::{folder}")
+        logging.debug(f"BigQuery::create_table_from_schema::{folder}")
         if dataset is None:
             dataset = os.environ.get("DEFAULT_BQ_DATASET")
         if data_path is None:
@@ -195,20 +195,20 @@ class BigQuery():
                         table_id: str,
                         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_TRUNCATE  # type: ignore
                         ):
-        logging.info(f"BigQuery::load_from_query")
+        logging.debug(f"BigQuery::load_from_query")
         job_config = bigquery.QueryJobConfig(
             destination=table_id, allow_large_results=True, write_disposition=write_disposition)
         query_job = self.__client.query(query=query, job_config=job_config)
         query_job.result()  # Wait for the job to complete.
 
-        logging.info("Query results loaded to the table {}".format(table_id))
+        logging.debug("Query results loaded to the table {}".format(table_id))
 
     def delete_partition(self, table_id: str, 
                          partition_date: datetime.date, 
                          partition_name: str = 'date') -> bool:
 
         if self.table_exists(table_id):
-            logging.info(
+            logging.debug(
                 f"BigQuery::delete_partition::{table_id}::{partition_date.strftime('%Y-%m-%d')}")
             query = (
                 "DELETE FROM {} WHERE {} = \'{}\'".format(table_id, partition_name, partition_date.strftime('%Y-%m-%d')))
@@ -229,7 +229,7 @@ class BigQuery():
                         override: bool = False) -> bool:
 
         table_id = data_set + '.' + table
-        logging.info("BigQuery::load_from_cloud::{}".format(table_id))
+        logging.debug("BigQuery::load_from_cloud::{}".format(table_id))
         self.delete_partition(table_id, partition_date, partition_name)
         job_config, uri = BigQuery.build_job_config(
             table_name=table_id, bucket_name=bucket_name, partition_date=partition_date, data_path=local_folder)
@@ -252,7 +252,7 @@ class BigQuery():
                         file_mask: str = "*.csv.gz",
                         override: bool = False) -> bool:
 
-        logging.info(f'BigQuery::load_from_local::{local_folder}')
+        logging.debug(f'BigQuery::load_from_local::{local_folder}')
 
         remote_folder = table+"/"
         if partition_date is not None:
@@ -308,8 +308,8 @@ class BigQuery():
         :return: True if user's data has been found
         :rtype: bool
         """
-        logging.info(f'user:{user_id}')
-        logging.info(f'dataset:{dataset}')
+        logging.debug(f'user:{user_id}')
+        logging.debug(f'dataset:{dataset}')
         user_has_data = False
         try:
             user_files_folder = f"{data_path}dsar/{user_id}/"
@@ -320,7 +320,7 @@ class BigQuery():
                 user_table_file_path = f"{user_files_folder}{table.table_id}.csv"
                 qualified_table_id = "{}.{}.{}".format(
                     table.project, table.dataset_id, table.table_id)
-                logging.info(qualified_table_id)
+                logging.debug(qualified_table_id)
                 table = self.__client.get_table(qualified_table_id)
                 user_id_field = None
                 # Loop table's fields to check if it has a user identifier column
@@ -334,7 +334,7 @@ class BigQuery():
                     # Reducing the scope to dates with user activity
                     partitions_query = "SELECT DISTINCT _PARTITIONTIME as p_partition from {} where DATE_DIFF(CURRENT_DATE(),DATE(_PARTITIONTIME), DAY) <30 and {}=\'{}\'".format(
                         qualified_table_id, user_id_field, user_id)
-                    logging.info(partitions_query)
+                    logging.debug(partitions_query)
                     partitions_df = self.bigquery_to_dataframe(
                         partitions_query)
                     if len(partitions_df) > 0:
@@ -344,9 +344,9 @@ class BigQuery():
 
                             query = "SELECT * from {} where {}=\'{}\' AND _PARTITIONTIME=\'{}\'".format(
                                 qualified_table_id, user_id_field, user_id, row['p_partition'])
-                            logging.info(query)
+                            logging.debug(query)
                             df = self.bigquery_to_dataframe(query)
-                            logging.info(qualified_table_id +
+                            logging.debug(qualified_table_id +
                                          ':' + str(len(df)))
                             df_list.append(df)
                         # concat the partitioned dataframes and save to csv
@@ -358,7 +358,7 @@ class BigQuery():
             return user_has_data
 
     def load_from_uri(self, table_id, bucket_name, data_path, partition_date: datetime.date) -> bool:
-        logging.info('BigQuery::load_from_uri')
+        logging.debug('BigQuery::load_from_uri')
         job_config, uri = BigQuery.build_job_config(
             table_name=table_id, partition_date=partition_date, bucket_name=bucket_name, data_path=data_path)
 
@@ -371,7 +371,7 @@ class BigQuery():
                          bucket_name: str,
                          data_path: str,
                          partition_date: datetime.date):
-        logging.info('BigQuery::build_job_config')
+        logging.debug('BigQuery::build_job_config')
 
         folder_name = data_path
         schema_path = folder_name + 'schema.json'
@@ -466,7 +466,7 @@ class BigQuery():
                            override=override)
 
     def bigquery_to_dataframe(self, query_string: str) -> pd.DataFrame:
-        logging.info("bigquery_to_dataframe")
+        logging.debug("bigquery_to_dataframe")
         return self.__client.query(query_string).result().to_dataframe(create_bqstorage_client=True)
 
     def dataframe_to_bigquery(self,
@@ -503,5 +503,5 @@ class BigQuery():
         )  # Make an API request.
         job.result()  # Wait for the job to complete.
         table = self.__client.get_table(table_id)  # Make an API request.
-        logging.info("Loaded {} rows and {} columns to {}".format(
+        logging.debug("Loaded {} rows and {} columns to {}".format(
             table.num_rows, len(table.schema), table_id))
