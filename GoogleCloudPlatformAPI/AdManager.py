@@ -170,7 +170,7 @@ class Audience(GamClient):
             audience_segment)
 
         for created_audience_segment in audience_segments:
-            logging.info('An audience segment with ID "%s", name "%s", and type "%s" '
+            logging.debug('An audience segment with ID "%s", name "%s", and type "%s" '
                          'was created.' % (created_audience_segment['id'],
                                            created_audience_segment['name'],
                                            created_audience_segment['type']))
@@ -184,7 +184,7 @@ class Audience(GamClient):
         # Retrieve a small amount of audience segments at a time, paging
         # through until all audience segments have been retrieved.
         while True:
-            logging.info(
+            logging.debug(
                 'getAudienceSegmentsByStatement:statement.offset:'+str(statement.offset))
             response = self.__gam_service.getAudienceSegmentsByStatement(
                 statement.ToStatement())
@@ -209,7 +209,7 @@ class Audience(GamClient):
             if 'results' in response and len(response['results']):
 
                 for audience_segment in response['results']:
-                    logging.info('Audience segment with ID "%d", name "%s", and size "%d" was '
+                    logging.debug('Audience segment with ID "%d", name "%s", and size "%d" was '
                                  'found.\n' % (audience_segment['id'], audience_segment['name'],
                                                audience_segment['size']))
 
@@ -252,10 +252,10 @@ class Audience(GamClient):
                 updated_audience_segments)
 
             for audience_segment in audience_segments:
-                logging.info('Audience segment with id "%s" and name "%s" was updated' %
+                logging.debug('Audience segment with id "%s" and name "%s" was updated' %
                              (audience_segment['id'], audience_segment['name']))
         else:
-            logging.info('No audience segment found to update.')
+            logging.debug('No audience segment found to update.')
 
 
 class Network():
@@ -288,7 +288,7 @@ class CustomTargeting():
                                                     gam_version=gam_version)
 
     def get_key_value_pairs(self, targeting_key_id: int) -> List[keyValuePair]:
-        logging.info(
+        logging.debug(
             'AdManager::CustomTargeting::get_key_value_pairs::' + str(targeting_key_id))
         # Create a statement to select custom targeting values.
         key_value_pairs_statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
@@ -311,7 +311,7 @@ class CustomTargeting():
         return key_value_pairs_list
 
     def delete_key_value_pairs(self, targeting_key_id: int, key_value_pairs: List[keyValuePair]):
-        logging.info(
+        logging.debug(
             'AdManager::CustomTargeting::delete_key_value_pairs::' + str(targeting_key_id))
         action = {'xsi_type': 'DeleteCustomTargetingValues'}
         key_value_pairs_slices = ListHelper.chunk_list(key_value_pairs, 100)
@@ -320,35 +320,35 @@ class CustomTargeting():
                                .Where('customTargetingKeyId = :keyId '
                                       'AND id IN (%s)' % ', '.join([str(key_value_pair["id"]) for key_value_pair in key_value_pairs_slice]))
                                .WithBindVariable('keyId', targeting_key_id))
-            logging.info('DeleteCustomTargetingValues:'+', '.join(
+            logging.debug('DeleteCustomTargetingValues:'+', '.join(
                 [str(key_value_pair["name"]) for key_value_pair in key_value_pairs_slice]))
 
             result = self.__gam_service.performCustomTargetingValueAction(
                 action, value_statement.ToStatement())
             if result:
-                logging.info('numChanges:'+str(result['numChanges']))
+                logging.debug('numChanges:'+str(result['numChanges']))
 
     def update_key_value_pairs(self, key_value_pairs: List[keyValuePair]):
-        logging.info('AdManager::CustomTargeting::dupdate_key_value_pairs')
+        logging.debug('AdManager::CustomTargeting::dupdate_key_value_pairs')
 
         updated_key_value_pairs = self.__gam_service.updateCustomTargetingValues(
             key_value_pairs)
 
         # Display results.
         for updated_key_value_pair in updated_key_value_pairs:
-            logging.info('Custom targeting value with id "%s", name "%s", and display'
+            logging.debug('Custom targeting value with id "%s", name "%s", and display'
                          ' name "%s" was updated.'
                          % (updated_key_value_pair['id'], updated_key_value_pair['name'], updated_key_value_pair['displayName']))
 
     def create_key_value_pairs(self, created_values: keyValuePair):
-        logging.info('AdManager::CustomTargeting::create_key_value_pair')
+        logging.debug('AdManager::CustomTargeting::create_key_value_pair')
 
         values = self.__gam_service.createCustomTargetingValues(
             created_values)
 
         # Display results.
         for value in values:
-            logging.info('Custom targeting value with id "%s", name "%s", and display'
+            logging.debug('Custom targeting value with id "%s", name "%s", and display'
                          ' name "%s" was created.'
                          % (value['id'], value['name'], value['displayName']))
 
@@ -366,7 +366,7 @@ class TargetingPreset():
                                                     gam_version=gam_version)
 
     def get_targeting_presets_by_prefix(self, targeting_preset_prefix: str):
-        logging.info('TargetingPreset::get_targeting_presets_by_prefix:' +
+        logging.debug('TargetingPreset::get_targeting_presets_by_prefix:' +
                      targeting_preset_prefix)
         # Create a statement to select targeting presets
         targeting_statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
@@ -404,7 +404,7 @@ class Report():
 
     def __get_report_by_report_job(self, report_job):
 
-        logging.info('Report::___get_report_by_report_job')
+        logging.debug('Report::___get_report_by_report_job')
         # Initialize a DataDownloader.
         report_job_id = None
         report_downloader = self.data_downloader
@@ -414,7 +414,7 @@ class Report():
             report_job_id = report_downloader.WaitForReport(report_job)
         except errors.AdManagerReportError as e:
             logging.error('Failed to generate report. Error was: %s' % e)
-        logging.info('report generated')
+        logging.debug('report generated')
         export_format = 'CSV_DUMP'
 
         report_file_gz = tempfile.NamedTemporaryFile(
@@ -442,7 +442,7 @@ class Report():
     def gen_report_statement(ad_units: Optional[Union[int, List[int]]] = None,
                              targeting_value_ids: Optional[gam_targetingValues] = None,
                              order_id: Optional[Union[int, List[int]]] = None):
-        logging.info('Report::gen_report_statement')
+        logging.debug('Report::gen_report_statement')
         where_conditions = []
         if ad_units is not None:
             if type(ad_units) == list:
@@ -477,7 +477,7 @@ class Report():
                          dimensions: List[str] = DIMENSIONS,
                          metrics: List[str] = METRICS,
                          ad_unit_view: str = AD_UNIT_VIEW):
-        logging.info('api_build_report_query')
+        logging.debug('api_build_report_query')
 
         start_date = report_end - datetime.timedelta(days=report_days)
 
@@ -585,7 +585,7 @@ class Forecast():
                         report_date: datetime.datetime = datetime.datetime.now(
                             tz=pytz.timezone(PYTZ_TIMEZONE)) + datetime.timedelta(days=1),
                         days: int = 30):
-        logging.info('Report::__gen_line_item')
+        logging.debug('Report::__gen_line_item')
         prospective_line_item = {
             'lineItem': {
                 'targeting': {
@@ -620,7 +620,7 @@ class Forecast():
                                report_date: datetime.datetime = datetime.datetime.now(
                                    tz=pytz.timezone(PYTZ_TIMEZONE)),
                                days: int = 30):
-        logging.info('Forecast::__gen_forecast_options')
+        logging.debug('Forecast::__gen_forecast_options')
         targets = []
         for target in targets_list:
             targets.append({'name': target.get('name'),
@@ -657,7 +657,7 @@ class Forecast():
     def __gen_forecast_options_by_targeting_presets(targeting_presets,
                                                     report_date: datetime.datetime = datetime.datetime.now(
             tz=pytz.timezone(PYTZ_TIMEZONE)),  days: int = 30):
-        logging.info('Forecast::__gen_forecast_options_by_targeting_presets')
+        logging.debug('Forecast::__gen_forecast_options_by_targeting_presets')
         timeWindows = []
         for d in range(days):
             timeWindows.append(report_date+datetime.timedelta(days=d))
@@ -686,7 +686,7 @@ class Forecast():
                      report_date: datetime.datetime = datetime.datetime.now(
                          tz=pytz.timezone(PYTZ_TIMEZONE)),
                      days: int = 30) -> List[forecastItem]:
-        logging.info('Forecast::get_forecast')
+        logging.debug('Forecast::get_forecast')
         # Create prospective line item.
         prospective_line_item = self.__gen_line_item(
             targetedAdUnits, creativePlaceholders, report_date, days)
@@ -722,7 +722,7 @@ class Forecast():
                                          report_date: datetime.datetime = datetime.datetime.now(
                                              tz=pytz.timezone(PYTZ_TIMEZONE)),
                                          days: int = 30) -> List[forecastItem]:
-        logging.info('Forecast::get_forecast_by_targeting_preset')
+        logging.debug('Forecast::get_forecast_by_targeting_preset')
         # Create prospective line item.
         prospective_line_item = self.__gen_line_item(
             targetedAdUnits, creativePlaceholders, report_date, days)
@@ -782,10 +782,10 @@ class Traffic():
         :param days: int the number of days to forecast
         :return: the forecasted impressions per day
         """
-        logging.info('Traffic::get_traffic')
+        logging.debug('Traffic::get_traffic')
 
         def time_series_to_list(time_series):
-            logging.info('Traffic::time_series_to_list')
+            logging.debug('Traffic::time_series_to_list')
             date_range = time_series['timeSeriesDateRange']
             time_series_start_date = datetime.date(
                 date_range['startDate']['year'],
@@ -850,7 +850,7 @@ class Traffic():
         :param days: int the number of days to forecast
         :return: the forecasted impressions per day
         """
-        logging.info('Traffic:get_traffic_by_targeting_preset')
+        logging.debug('Traffic:get_traffic_by_targeting_preset')
         return self.get_traffic(inventory_targeting=inventory_targeting,
                                 custom_targeting=targeting_preset.targeting.customTargeting,
                                 report_date=report_date,

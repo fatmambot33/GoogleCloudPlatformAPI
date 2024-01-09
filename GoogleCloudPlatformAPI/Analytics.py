@@ -11,7 +11,7 @@ class Analytics():
     SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
 
     def __init__(self, credentials: Optional[str] = None):
-        logging.info(f"Analytics::__init__")
+        logging.debug(f"Analytics::__init__")
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         service_account_credentials = ServiceAccount.from_service_account_file(
@@ -34,13 +34,13 @@ class Analytics():
                      metrics: List[str],
                      start_date: str,
                      end_date: str):
-        logging.info(f"Analytics::__get_report")
+        logging.debug(f"Analytics::__get_report")
         if isinstance(start_date, datetime.date):
             start_date = start_date.strftime('%Y-%m-%d')
-            logging.info(f'__get_report::start_date::{start_date}')
+            logging.debug(f'__get_report::start_date::{start_date}')
         if isinstance(end_date, datetime.date):
             end_date = end_date.strftime('%Y-%m-%d')
-            logging.info(f'__get_report::end_date::{end_date}')
+            logging.debug(f'__get_report::end_date::{end_date}')
         return self.__reporting.reports().batchGet(
             body={
                 'reportRequests': [
@@ -60,7 +60,7 @@ class Analytics():
                    metrics: List[str] = ["ga:sessions"],
                    start_date: str = '30daysAgo',
                    end_date: str = 'yesterday'):
-        logging.info(f"Analytics::get_report::{view_id}")
+        logging.debug(f"Analytics::get_report::{view_id}")
         results = self.__get_report(view_id=view_id,
                                     dimensions=dimensions,
                                     metrics=metrics,
