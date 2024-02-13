@@ -11,7 +11,7 @@ if os.path.exists(requirements_file):
 
 setup(
     name='GoogleCloudPlatformAPI',
-    version='v2.2.0',
+    version='v2.2.1',
     packages=find_packages(),
     install_requires=requirements,
     long_description=open('README.md').read(),

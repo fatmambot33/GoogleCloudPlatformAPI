@@ -2,7 +2,6 @@
 import datetime
 import json
 import logging
-from optparse import Option
 import os
 import shutil
 from dataclasses import dataclass
@@ -64,7 +63,7 @@ class BigQuery():
 
     def execute_stored_procedure(self, sp_name: str, sp_params: List[oSpParam]) -> pd.DataFrame:
         logging.debug(f"BigQuery::execute_sp::{sp_name}")
-        sp_instruction_params = ",@".join(
+        sp_instruction_params = "@" + ",@".join(
             [sp_param.name for sp_param in sp_params])
 
         query = f"CALL `{sp_name}`({sp_instruction_params})"
@@ -78,7 +77,7 @@ class BigQuery():
         result_list = []
         for result in query_results:
             t = dict(**result)
-            result_list.append(t) 
+            result_list.append(t)
         return pd.DataFrame(result_list)
 
     def table_exists(self, table_id: str) -> bool:
@@ -203,8 +202,8 @@ class BigQuery():
 
         logging.debug("Query results loaded to the table {}".format(table_id))
 
-    def delete_partition(self, table_id: str, 
-                         partition_date: datetime.date, 
+    def delete_partition(self, table_id: str,
+                         partition_date: datetime.date,
                          partition_name: str = 'date') -> bool:
 
         if self.table_exists(table_id):
@@ -347,7 +346,7 @@ class BigQuery():
                             logging.debug(query)
                             df = self.bigquery_to_dataframe(query)
                             logging.debug(qualified_table_id +
-                                         ':' + str(len(df)))
+                                          ':' + str(len(df)))
                             df_list.append(df)
                         # concat the partitioned dataframes and save to csv
                         FileHelper.check_filepath(user_files_folder)
