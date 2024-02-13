@@ -4,3 +4,4 @@ google-cloud-bigquery
 google-cloud-bigquery[pandas]
 google-cloud-storage
 googleads
+db-dtypes
