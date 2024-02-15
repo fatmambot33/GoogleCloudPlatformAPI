@@ -5,7 +5,8 @@ import logging
 import os
 import shutil
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional,Union
+import decimal
 
 import pandas as pd
 from google.cloud import bigquery
@@ -58,7 +59,7 @@ class BigQuery():
     @dataclass
     class oSpParam():
         name: str
-        value: object
+        value: Union[str, int, float, decimal.Decimal, bool, datetime.datetime, datetime.date]
         type: str
 
     def execute_stored_procedure(self, sp_name: str, sp_params: List[oSpParam]) -> pd.DataFrame:
@@ -70,7 +71,7 @@ class BigQuery():
         query_parameters = []
         for sp_param in sp_params:
             query_parameters.append(
-                ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value))  # type: ignore
+                ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value))  
 
         job_config = QueryJobConfig(query_parameters=query_parameters)
         query_results = self.execute_query(query, job_config)
