@@ -29,7 +29,7 @@ DIMENSIONS = ['DATE', 'AD_UNIT_NAME', 'CUSTOM_TARGETING_VALUE_ID']
 
 GAM_VERSION = "v202305"
 NETWORK_CODE = '5574'
-APP_NAME = 'AdManager'
+APP_NAME = 'AdManagerAPIClient'
 
 # region objects
 gam_adUnit = Dict[int, bool]
@@ -397,8 +397,6 @@ class Report():
                  gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.service_name,
-                                                    gam_version=gam_version)
         self.data_downloader = gam_client.get_data_downloader(
             gam_version=gam_version)
 
@@ -473,7 +471,7 @@ class Report():
     @ staticmethod
     def gen_report_query(report_statement,
                          report_end: datetime.date = datetime.date.today(),
-                         report_days: int = 7,
+                         report_days: int = 1,
                          dimensions: List[str] = DIMENSIONS,
                          metrics: List[str] = METRICS,
                          ad_unit_view: str = AD_UNIT_VIEW):
@@ -524,7 +522,7 @@ class Report():
                              ad_units: Optional[Union[int, List[int]]] = None,
                              targeting_value_ids: Optional[gam_targetingValues] = None,
                              report_date: datetime.date = datetime.date.today(),
-                             days: int = 7,
+                             days: int = 1,
                              dimensions: List[str] = DIMENSIONS,
                              metrics: List[str] = METRICS,
                              ad_unit_view: str = AD_UNIT_VIEW) -> pd.DataFrame:
@@ -543,7 +541,7 @@ class Report():
     def get_report_dataframe_by_statement(self,
                                           statement,
                                           report_date: datetime.date = datetime.date.today(),
-                                          days: int = 7,
+                                          days: int = 1,
                                           dimensions: List[str] = DIMENSIONS,
                                           metrics: List[str] = METRICS,
                                           ad_unit_view: str = AD_UNIT_VIEW) -> pd.DataFrame:
