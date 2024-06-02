@@ -15,7 +15,7 @@ from .. import ListHelper
 from . import ServiceAccount
 
 
-PYTZ_TIMEZONE='UTC'
+PYTZ_TIMEZONE = 'UTC'
 AD_UNIT_VIEW = 'TOP_LEVEL'
 METRICS = ['TOTAL_CODE_SERVED_COUNT',
            'AD_SERVER_IMPRESSIONS',
@@ -27,7 +27,7 @@ METRICS = ['TOTAL_CODE_SERVED_COUNT',
 
 DIMENSIONS = ['DATE', 'AD_UNIT_NAME', 'CUSTOM_TARGETING_VALUE_ID']
 
-GAM_VERSION = "v202305"
+GAM_VERSION = "v202405"
 NETWORK_CODE = '5574'
 APP_NAME = 'AdManagerAPIClient'
 
@@ -111,16 +111,19 @@ class targetingPreset(TypedDict):
 
 class GamClient(ad_manager.AdManagerClient):
     def __init__(self,
-                 app_name: Optional[str] = APP_NAME,
-                 network_code:  Optional[str] = NETWORK_CODE):
+                 app_name: str = APP_NAME,
+                 network_code:  str = NETWORK_CODE):
+        logging.debug(f'GamClient::__init__::{network_code}')
         oauth2_client = ServiceAccount.get_service_account_client()
         super().__init__(oauth2_client, app_name, network_code=network_code)
 
     def get_service(self, service_name: str, gam_version: str):
+        logging.debug(f'GamClient::get_service::{service_name}::{gam_version}')
         return self.GetService(service_name=service_name,
                                version=gam_version)
 
     def get_data_downloader(self, gam_version: str):
+        logging.debug(f'GamClient::get_data_downloader:{gam_version}')
         return self.GetDataDownloader(version=gam_version)
 
 
@@ -131,12 +134,22 @@ class Audience(GamClient):
                  app_name: str = APP_NAME,
                  network_code:  str = NETWORK_CODE,
                  gam_version: str = GAM_VERSION):
+        logging.debug(
+            f'Audience::__init__:{self.__service_name}::{network_code}::{gam_version}')
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
         self.__gam_service = gam_client.get_service(service_name=self.__service_name,
                                                     gam_version=gam_version)
 
-    def create(self, name, description, custom_targeting, pageviews: int = 1, recencydays: int = 1, membershipexpirationdays: int = 90, network_code=NETWORK_CODE):
+    def create(self,
+               name,
+                 description,
+                 custom_targeting,
+                 pageviews: int = 1,
+                 recencydays: int = 1,
+                 membershipexpirationdays: int = 90,
+                 network_code=NETWORK_CODE):
+        logging.debug(f'Audience::create:{name}')
         # Initialize appropriate services.
         network_service = Network(
             app_name=APP_NAME, network_code=network_code)
@@ -176,6 +189,7 @@ class Audience(GamClient):
                                            created_audience_segment['type']))
 
     def list(self):
+        logging.debug( f'Audience::list:{self.__service_name}::{self.network_code}::list')
         # Create a statement to select audience segments.
         statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                      .Where('Type = :type')
