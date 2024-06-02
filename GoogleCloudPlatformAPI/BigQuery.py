@@ -86,6 +86,7 @@ class BigQuery():
         return pd.DataFrame(result_list)
 
     def table_exists(self, table_id: str) -> bool:
+        logging.debug(f"BigQuery::table_exists::{table_id}")
         try:
             self.__client.get_table(table_id)
             return True
@@ -125,11 +126,14 @@ class BigQuery():
                               dataset_name: str,
                               table_name: str,
                               table_schema: dict,
-                              source_uris=List[str]):
+                              source_uris=List[str],
+                              partition_field: str = 'date',
+                              time_partioning: bool = False):
+        logging.debug(f"BigQuery::create_external_table::{table_name}")
         # Configuring the external data source
+
         schema = []
-        partition_field = 'date'
-        time_partioning = False
+
         for field in table_schema['table_schema']:
             bq_field = bigquery.SchemaField(name=field['name'],
                                             field_type=field['type'],
@@ -200,8 +204,9 @@ class BigQuery():
                         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_TRUNCATE  # type: ignore
                         ):
         logging.debug(f"BigQuery::load_from_query")
-        job_config = bigquery.QueryJobConfig(
-            destination=table_id, allow_large_results=True, write_disposition=write_disposition)
+        job_config = bigquery.QueryJobConfig(destination=table_id,
+                                             allow_large_results=True,
+                                             write_disposition=write_disposition)
         query_job = self.__client.query(query=query, job_config=job_config)
         query_job.result()  # Wait for the job to complete.
 
@@ -295,76 +300,16 @@ class BigQuery():
                                     file_mask=file_mask,
                                     override=override)
 
-    def subject_access_request(self,
-                               user_id: str,
-                               dataset: str,
-                               override: bool = False,
-                               data_path: Optional[str] = os.environ.get(
-                                   "DATA_PATH"),
-                               span: int = 30) -> bool:
-        """
-
-        :return:
-        :rtype: bool
-        :param user_id: the user's unique identifier to search for
-        :param dataset: the data to search for.
-        :param override: Flag to override an existing table file.
-        :return: True if user's data has been found
-        :rtype: bool
-        """
-        logging.debug(f'user:{user_id}')
-        logging.debug(f'dataset:{dataset}')
-        user_has_data = False
-        try:
-            user_files_folder = f"{data_path}dsar/{user_id}/"
-            # list tables in the dataset
-            tables = self.__client.list_tables(dataset=dataset)
-            # Loop dataset's tables
-            for table in tables:
-                user_table_file_path = f"{user_files_folder}{table.table_id}.csv"
-                qualified_table_id = "{}.{}.{}".format(
-                    table.project, table.dataset_id, table.table_id)
-                logging.debug(qualified_table_id)
-                table = self.__client.get_table(qualified_table_id)
-                user_id_field = None
-                # Loop table's fields to check if it has a user identifier column
-                for schema_field in table.schema:
-                    if schema_field.name == 'user_id':
-                        user_id_field = schema_field.name
-                    elif schema_field.name == 'permutive_id':
-                        user_id_field = schema_field.name
-                # Query the table for the user's data if file does not already exist
-                if user_id_field is not None and (override or not os.path.exists(user_table_file_path)):
-                    # Reducing the scope to dates with user activity
-                    partitions_query = "SELECT DISTINCT _PARTITIONTIME as p_partition from {} where DATE_DIFF(CURRENT_DATE(),DATE(_PARTITIONTIME), DAY) <30 and {}=\'{}\'".format(
-                        qualified_table_id, user_id_field, user_id)
-                    logging.debug(partitions_query)
-                    partitions_df = self.bigquery_to_dataframe(
-                        partitions_query)
-                    if len(partitions_df) > 0:
-                        user_has_data = True
-                        df_list = []
-                        for _, row in partitions_df.iterrows():
-
-                            query = "SELECT * from {} where {}=\'{}\' AND _PARTITIONTIME=\'{}\'".format(
-                                qualified_table_id, user_id_field, user_id, row['p_partition'])
-                            logging.debug(query)
-                            df = self.bigquery_to_dataframe(query)
-                            logging.debug(qualified_table_id +
-                                          ':' + str(len(df)))
-                            df_list.append(df)
-                        # concat the partitioned dataframes and save to csv
-                        FileHelper.check_filepath(user_files_folder)
-                        new_df = pd.concat(df_list)
-                        new_df.to_csv(user_table_file_path, index=False)
-            return user_has_data
-        except NotFound:
-            return user_has_data
-
-    def load_from_uri(self, table_id, bucket_name, data_path, partition_date: datetime.date) -> bool:
+    def load_from_uri(self,
+                      table_id: str,
+                      bucket_name: str,
+                      data_path: str,
+                      partition_date: datetime.date) -> bool:
         logging.debug('BigQuery::load_from_uri')
-        job_config, uri = BigQuery.build_job_config(
-            table_name=table_id, partition_date=partition_date, bucket_name=bucket_name, data_path=data_path)
+        job_config, uri = BigQuery.build_job_config(table_name=table_id,
+                                                    partition_date=partition_date,
+                                                    bucket_name=bucket_name,
+                                                    data_path=data_path)
 
         self.__client.load_table_from_uri(
             source_uris=uri, destination=table_id, job_config=job_config).result()
@@ -469,7 +414,8 @@ class BigQuery():
                            file_mask=file_mask,
                            override=override)
 
-    def bigquery_to_dataframe(self, query_string: str) -> pd.DataFrame:
+    def bigquery_to_dataframe(self,
+                              query_string: str) -> pd.DataFrame:
         logging.debug("bigquery_to_dataframe")
         return self.__client.query(query_string).result().to_dataframe(create_bqstorage_client=True)
 
@@ -493,19 +439,17 @@ class BigQuery():
             # For example  pandas dtype "object", so its data type is ambiguous.
 
             if item[1].name == 'object':
-                bq_field = bigquery.SchemaField(
-                    item[0], DATA_TYPE_MAPPING[item[1].name])  # type: ignore
+                bq_field = bigquery.SchemaField(item[0],
+                                                DATA_TYPE_MAPPING[item[1].name])
                 bq_schema.append(bq_field)
 
-        job_config = bigquery.LoadJobConfig(
-            schema=bq_schema,
-            write_disposition=write_disposition,
-        )
+        job_config = bigquery.LoadJobConfig(schema=bq_schema,
+                                            write_disposition=write_disposition)
 
-        job = self.__client.load_table_from_dataframe(
-            dataframe, table_id, job_config=job_config
-        )  # Make an API request.
-        job.result()  # Wait for the job to complete.
-        table = self.__client.get_table(table_id)  # Make an API request.
+        job = self.__client.load_table_from_dataframe(dataframe,
+                                                      table_id,
+                                                      job_config=job_config)
+        job.result()
+        table = self.__client.get_table(table_id)
         logging.debug("Loaded {} rows and {} columns to {}".format(
             table.num_rows, len(table.schema), table_id))
