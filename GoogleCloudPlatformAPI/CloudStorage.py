@@ -6,7 +6,7 @@ from typing import List, Optional, Union
 
 from google.cloud import storage
 
-from .ServiceAccount import ServiceAccount
+from . import ServiceAccount
 
 
 class CloudStorage:

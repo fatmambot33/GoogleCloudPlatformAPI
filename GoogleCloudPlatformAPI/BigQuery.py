@@ -5,7 +5,7 @@ import logging
 import os
 import shutil
 from dataclasses import dataclass
-from typing import List, Optional,Union
+from typing import List, Optional, Union
 import decimal
 
 import pandas as pd
@@ -14,12 +14,15 @@ from google.cloud.bigquery import (QueryJobConfig,
                                    ScalarQueryParameter)
 from google.cloud.exceptions import NotFound
 
-from .CloudStorage import CloudStorage
-from .ServiceAccount import ServiceAccount
-from .Utils import FileHelper
 
-DATA_TYPE_MAPPING = {'object': bigquery.enums.SqlTypeNames.STRING, 'int64': bigquery.enums.SqlTypeNames.INT64,
-                     'float64': bigquery.enums.SqlTypeNames.FLOAT, 'bool': bigquery.enums.SqlTypeNames.BOOL}
+from .. import FileHelper
+from . import ServiceAccount
+from .CloudStorage import CloudStorage
+
+DATA_TYPE_MAPPING = {'object': bigquery.enums.SqlTypeNames.STRING,
+                     'int64': bigquery.enums.SqlTypeNames.INT64,
+                     'float64': bigquery.enums.SqlTypeNames.FLOAT,
+                     'bool': bigquery.enums.SqlTypeNames.BOOL}
 
 
 class BigQuery():
@@ -59,7 +62,8 @@ class BigQuery():
     @dataclass
     class oSpParam():
         name: str
-        value: Union[str, int, float, decimal.Decimal, bool, datetime.datetime, datetime.date]
+        value: Union[str, int, float, decimal.Decimal,
+                     bool, datetime.datetime, datetime.date]
         type: str
 
     def execute_stored_procedure(self, sp_name: str, sp_params: List[oSpParam]) -> pd.DataFrame:
@@ -71,7 +75,7 @@ class BigQuery():
         query_parameters = []
         for sp_param in sp_params:
             query_parameters.append(
-                ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value))  
+                ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value))
 
         job_config = QueryJobConfig(query_parameters=query_parameters)
         query_results = self.execute_query(query, job_config)
