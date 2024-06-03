@@ -15,8 +15,8 @@ from google.cloud.bigquery import (QueryJobConfig,
 from google.cloud.exceptions import NotFound
 
 
-from .. import FileHelper
 from . import ServiceAccount
+from .Utils import ListHelper,FileHelper
 from .CloudStorage import CloudStorage
 
 DATA_TYPE_MAPPING = {'object': bigquery.enums.SqlTypeNames.STRING,
@@ -440,7 +440,7 @@ class BigQuery():
 
             if item[1].name == 'object':
                 bq_field = bigquery.SchemaField(item[0],
-                                                DATA_TYPE_MAPPING[item[1].name])
+                                                DATA_TYPE_MAPPING[str(item[1].name)])
                 bq_schema.append(bq_field)
 
         job_config = bigquery.LoadJobConfig(schema=bq_schema,
