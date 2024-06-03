@@ -15,8 +15,7 @@ from google.cloud.bigquery import (QueryJobConfig,
 from google.cloud.exceptions import NotFound
 
 
-from . import ServiceAccount
-from .Utils import ListHelper,FileHelper
+from .Oauth import ServiceAccount
 from .CloudStorage import CloudStorage
 
 DATA_TYPE_MAPPING = {'object': bigquery.enums.SqlTypeNames.STRING,

@@ -11,7 +11,7 @@ import pandas as pd
 import pytz
 from googleads import ad_manager, errors
 
-from . import ServiceAccount
+from .Oauth import ServiceAccount
 from .Utils import ListHelper
 
 
