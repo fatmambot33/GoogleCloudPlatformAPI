@@ -127,7 +127,7 @@ class GamClient(ad_manager.AdManagerClient):
         return self.GetDataDownloader(version=gam_version)
 
 
-class Audience(GamClient):
+class Audience():
     __service_name = 'AudienceSegmentService'
 
     def __init__(self,
@@ -143,12 +143,12 @@ class Audience(GamClient):
 
     def create(self,
                name,
-                 description,
-                 custom_targeting,
-                 pageviews: int = 1,
-                 recencydays: int = 1,
-                 membershipexpirationdays: int = 90,
-                 network_code=NETWORK_CODE):
+               description,
+               custom_targeting,
+               pageviews: int = 1,
+               recencydays: int = 1,
+               membershipexpirationdays: int = 90,
+               network_code=NETWORK_CODE):
         logging.debug(f'Audience::create:{name}')
         # Initialize appropriate services.
         network_service = Network(
@@ -184,12 +184,13 @@ class Audience(GamClient):
 
         for created_audience_segment in audience_segments:
             logging.debug('An audience segment with ID "%s", name "%s", and type "%s" '
-                         'was created.' % (created_audience_segment['id'],
-                                           created_audience_segment['name'],
-                                           created_audience_segment['type']))
+                          'was created.' % (created_audience_segment['id'],
+                                            created_audience_segment['name'],
+                                            created_audience_segment['type']))
 
     def list(self):
-        logging.debug( f'Audience::list:{self.__service_name}::{self.network_code}::list')
+        logging.debug(
+            f'Audience::list')
         # Create a statement to select audience segments.
         statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                      .Where('Type = :type')
@@ -224,8 +225,8 @@ class Audience(GamClient):
 
                 for audience_segment in response['results']:
                     logging.debug('Audience segment with ID "%d", name "%s", and size "%d" was '
-                                 'found.\n' % (audience_segment['id'], audience_segment['name'],
-                                               audience_segment['size']))
+                                  'found.\n' % (audience_segment['id'], audience_segment['name'],
+                                                audience_segment['size']))
 
                 results = results+response['results']
                 statement.offset += statement.limit
@@ -267,7 +268,7 @@ class Audience(GamClient):
 
             for audience_segment in audience_segments:
                 logging.debug('Audience segment with id "%s" and name "%s" was updated' %
-                             (audience_segment['id'], audience_segment['name']))
+                              (audience_segment['id'], audience_segment['name']))
         else:
             logging.debug('No audience segment found to update.')
 
@@ -351,8 +352,8 @@ class CustomTargeting():
         # Display results.
         for updated_key_value_pair in updated_key_value_pairs:
             logging.debug('Custom targeting value with id "%s", name "%s", and display'
-                         ' name "%s" was updated.'
-                         % (updated_key_value_pair['id'], updated_key_value_pair['name'], updated_key_value_pair['displayName']))
+                          ' name "%s" was updated.'
+                          % (updated_key_value_pair['id'], updated_key_value_pair['name'], updated_key_value_pair['displayName']))
 
     def create_key_value_pairs(self, created_values: keyValuePair):
         logging.debug('AdManager::CustomTargeting::create_key_value_pair')
@@ -363,8 +364,8 @@ class CustomTargeting():
         # Display results.
         for value in values:
             logging.debug('Custom targeting value with id "%s", name "%s", and display'
-                         ' name "%s" was created.'
-                         % (value['id'], value['name'], value['displayName']))
+                          ' name "%s" was created.'
+                          % (value['id'], value['name'], value['displayName']))
 
 
 class TargetingPreset():
@@ -381,7 +382,7 @@ class TargetingPreset():
 
     def get_targeting_presets_by_prefix(self, targeting_preset_prefix: str):
         logging.debug('TargetingPreset::get_targeting_presets_by_prefix:' +
-                     targeting_preset_prefix)
+                      targeting_preset_prefix)
         # Create a statement to select targeting presets
         targeting_statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                                .Where("name LIKE '" + targeting_preset_prefix + "%'"))
