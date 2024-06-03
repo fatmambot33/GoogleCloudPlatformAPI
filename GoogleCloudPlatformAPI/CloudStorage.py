@@ -26,11 +26,9 @@ class CloudStorage:
             self.__client = storage.Client(project=project_id)
 
     def __enter__(self):
-        # make a database connection and return it
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # make sure the dbconnection gets closed
         self.__client.close()
 
     def list_files(self,
