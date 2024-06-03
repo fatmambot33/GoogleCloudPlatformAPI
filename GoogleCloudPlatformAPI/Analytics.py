@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from googleapiclient.discovery import build
 import datetime
-from . import ServiceAccount
+from .Oauth import ServiceAccount
 
 
 class Analytics():
