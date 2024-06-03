@@ -5,11 +5,10 @@ from google.oauth2 import service_account, credentials
 from googleads import oauth2
 import os
 
-from .AdManager import Audience,Network,Report,TargetingPreset,Traffic,Forecast
+from .AdManager import Audience, Network, Report, TargetingPreset, Traffic, Forecast
 from .Analytics import Analytics
 from .BigQuery import BigQuery
 from .CloudStorage import CloudStorage
-
 
 
 class ClientCredentials:
