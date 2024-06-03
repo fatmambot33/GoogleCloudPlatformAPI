@@ -97,8 +97,6 @@ class customCriteriaSet(TypedDict):
 
 
 class targeting(TypedDict):
-    geoTargeting: int
-    inventoryTargeting: str
     customTargeting: customCriteriaSet
 
 
@@ -302,7 +300,7 @@ class CustomTargeting():
         self.__gam_service = gam_client.get_service(service_name=self.__service_name,
                                                     gam_version=gam_version)
 
-    def get_key_value_pairs(self, targeting_key_id: int) -> List[keyValuePair]:
+    def list(self, targeting_key_id: int) -> List[keyValuePair]:
         logging.debug(
             'AdManager::CustomTargeting::get_key_value_pairs::' + str(targeting_key_id))
         # Create a statement to select custom targeting values.
@@ -325,7 +323,7 @@ class CustomTargeting():
                 break
         return key_value_pairs_list
 
-    def delete_key_value_pairs(self, targeting_key_id: int, key_value_pairs: List[keyValuePair]):
+    def delete(self, targeting_key_id: int, key_value_pairs: List[keyValuePair]):
         logging.debug(
             'AdManager::CustomTargeting::delete_key_value_pairs::' + str(targeting_key_id))
         action = {'xsi_type': 'DeleteCustomTargetingValues'}
@@ -343,7 +341,7 @@ class CustomTargeting():
             if result:
                 logging.debug('numChanges:'+str(result['numChanges']))
 
-    def update_key_value_pairs(self, key_value_pairs: List[keyValuePair]):
+    def update(self, key_value_pairs: List[keyValuePair]):
         logging.debug('AdManager::CustomTargeting::dupdate_key_value_pairs')
 
         updated_key_value_pairs = self.__gam_service.updateCustomTargetingValues(
@@ -355,7 +353,7 @@ class CustomTargeting():
                           ' name "%s" was updated.'
                           % (updated_key_value_pair['id'], updated_key_value_pair['name'], updated_key_value_pair['displayName']))
 
-    def create_key_value_pairs(self, created_values: keyValuePair):
+    def create(self, created_values: keyValuePair):
         logging.debug('AdManager::CustomTargeting::create_key_value_pair')
 
         values = self.__gam_service.createCustomTargetingValues(
@@ -380,7 +378,13 @@ class TargetingPreset():
         self.__gam_service = gam_client.get_service(service_name=self.__service_name,
                                                     gam_version=gam_version)
 
-    def get_targeting_presets_by_prefix(self, targeting_preset_prefix: str):
+    def create(self, targeting: targetingPreset):
+        self.__gam_service.createTargetingPresets(targeting)
+
+    def update(self, targeting: targetingPreset):
+        self.__gam_service.updateTargetingPresets(targeting)
+
+    def list_by_prefix(self, targeting_preset_prefix: str):
         logging.debug('TargetingPreset::get_targeting_presets_by_prefix:' +
                       targeting_preset_prefix)
         # Create a statement to select targeting presets
