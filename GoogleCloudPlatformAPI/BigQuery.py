@@ -34,7 +34,7 @@ class BigQuery():
         logging.debug(f"BigQuery::__init__")
         if credentials is not None:
             self.__client = bigquery.Client(
-                credentials=credentials, project=project_id)
+                credentials=ServiceAccount.from_service_account_file(credentials), project=project_id)
         elif os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None:
             self.__client = bigquery.Client(
                 credentials=ServiceAccount.from_service_account_file(), project=project_id)
