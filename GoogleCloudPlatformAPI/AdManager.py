@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 from typing import Dict, List, Literal, Optional, TypedDict, Union
+from enum import Enum
 
 import pandas as pd
 import pytz
@@ -32,78 +33,64 @@ NETWORK_CODE = '5574'
 APP_NAME = 'AdManagerAPIClient'
 
 # region objects
-gam_adUnit = Dict[int, bool]
-
-gam_adUnits = List[gam_adUnit]
-gam_targetingValues = List[int]
-logical_operator = Literal["AND", "OR"]
-condition_operator = Literal["AND", "OR"]
-operator = Literal["AND", "OR"]
-status_ = Literal["AND", "OR"]
-creativePlaceholders = [
-    {
-        'size': {
-            'width': '300',
-            'height': '600'
-        }
-    },
-    {
-        'size': {
-            'width': '970',
-            'height': '250'
-        }
-    },
-    {
-        'size': {
-            'width': '300',
-            'height': '250'
-        }
-    },
-    {
-        'size': {
-            'width': '320',
-            'height': '100'
-        }
-    }
-]
+Operator = Literal["AND", "OR"]
 
 
-class keyValuePair(TypedDict):
+class AdUnitView(Enum):
+    TOP_LEVEL = "TOP_LEVEL"
+    FLAT = "FLAT"
+
+
+class KeyValuePair(TypedDict):
     customTargetingKeyId: int
     id: int
     name: str
     displayName: str
     matchType: str
-    status: status_
+    status: Operator
 
 
-class customCriteria(TypedDict):
+class CustomCriteria(TypedDict):
     keyId: int
     valueIds: List[int]
-    operator: operator
+    operator: Operator
 
 
-class customCriteriaSubSet(TypedDict):
-    logicalOperator: logical_operator
-    children: List[customCriteria]
+class CustomCriteriaSubSet(TypedDict):
+    logicalOperator: Operator
+    children: List[CustomCriteria]
 
 
-# customCriteriaNode = TypedDict('customCriteriaNode ', {customCriteriaSubSet})
+class CustomCriteriaSet(TypedDict):
+    logicalOperator: Operator
+    children: List[CustomCriteriaSubSet]
 
 
-class customCriteriaSet(TypedDict):
-    logicalOperator: logical_operator
-    children: List[customCriteriaSubSet]
+class Targeting(TypedDict):
+    customTargeting: CustomCriteriaSet
 
 
-class targeting(TypedDict):
-    customTargeting: customCriteriaSet
-
-
-class targetingPreset(TypedDict):
+class TargetingPreset(TypedDict):
     id: int
     name: str
-    targeting: targeting
+    targeting: Targeting
+
+
+class Size(TypedDict):
+    width: str
+    height: str
+
+
+class CreativePlaceholder(TypedDict):
+    size: Size
+
+
+class ForecastItem(TypedDict):
+    date: datetime.date
+    matched: int
+    available: int
+    possible: int
+    name: str
 # endregion
 
 
@@ -125,8 +112,7 @@ class GamClient(ad_manager.AdManagerClient):
         return self.GetDataDownloader(version=gam_version)
 
 
-class Audience():
-    __service_name = 'AudienceSegmentService'
+class AudienceService():
 
     def __init__(self,
                  app_name: str = APP_NAME,
@@ -136,21 +122,22 @@ class Audience():
             f'Audience::__init__:{self.__service_name}::{network_code}::{gam_version}')
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name,
+        self.__gam_service = gam_client.get_service(service_name=self.__class__.__name__,
                                                     gam_version=gam_version)
 
     def create(self,
-               name,
-               description,
+               name: str,
+               description: str,
                custom_targeting,
                pageviews: int = 1,
                recencydays: int = 1,
                membershipexpirationdays: int = 90,
-               network_code=NETWORK_CODE):
+               network_code: str = NETWORK_CODE):
         logging.debug(f'Audience::create:{name}')
         # Initialize appropriate services.
-        network_service = Network(
-            app_name=APP_NAME, network_code=network_code)
+        network_service = NetworkService(
+            app_name=APP_NAME,
+            network_code=network_code)
         # Get the root ad unit ID used to target the entire network.
         root_ad_unit_id = network_service.effectiveRootAdUnitId()
 
@@ -271,8 +258,7 @@ class Audience():
             logging.debug('No audience segment found to update.')
 
 
-class Network():
-    __service_name: str = 'NetworkService'
+class NetworkService():
 
     def __init__(self,
                  app_name: str = APP_NAME,
@@ -280,7 +266,7 @@ class Network():
                  gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name,
+        self.__gam_service = gam_client.get_service(service_name=self.__class__.__name__,
                                                     gam_version=gam_version)
 
     def effectiveRootAdUnitId(self) -> int:
@@ -288,8 +274,7 @@ class Network():
         return int(current_network['effectiveRootAdUnitId'])
 
 
-class CustomTargeting():
-    __service_name = 'CustomTargetingService'
+class CustomTargetingService():
 
     def __init__(self,
                  app_name: str = APP_NAME,
@@ -297,10 +282,11 @@ class CustomTargeting():
                  gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name,
+        self.__gam_service = gam_client.get_service(service_name=self.__class__.__name__,
                                                     gam_version=gam_version)
 
-    def list(self, targeting_key_id: int) -> List[keyValuePair]:
+    def list(self,
+             targeting_key_id: int) -> List[KeyValuePair]:
         logging.debug(
             'AdManager::CustomTargeting::get_key_value_pairs::' + str(targeting_key_id))
         # Create a statement to select custom targeting values.
@@ -316,14 +302,16 @@ class CustomTargeting():
                 key_value_pairs_statement.ToStatement())
             if 'results' in response and len(response['results']):
                 for custom_targeting_value in response['results']:
-                    custom_targeting_value: keyValuePair = custom_targeting_value
+                    custom_targeting_value: KeyValuePair = custom_targeting_value
                     key_value_pairs_list.append(custom_targeting_value)
                 key_value_pairs_statement.offset += key_value_pairs_statement.limit
             else:
                 break
         return key_value_pairs_list
 
-    def delete(self, targeting_key_id: int, key_value_pairs: List[keyValuePair]):
+    def delete(self,
+               targeting_key_id: int,
+               key_value_pairs: List[KeyValuePair]):
         logging.debug(
             'AdManager::CustomTargeting::delete_key_value_pairs::' + str(targeting_key_id))
         action = {'xsi_type': 'DeleteCustomTargetingValues'}
@@ -341,7 +329,8 @@ class CustomTargeting():
             if result:
                 logging.debug('numChanges:'+str(result['numChanges']))
 
-    def update(self, key_value_pairs: List[keyValuePair]):
+    def update(self,
+               key_value_pairs: List[KeyValuePair]):
         logging.debug('AdManager::CustomTargeting::dupdate_key_value_pairs')
 
         updated_key_value_pairs = self.__gam_service.updateCustomTargetingValues(
@@ -353,7 +342,8 @@ class CustomTargeting():
                           ' name "%s" was updated.'
                           % (updated_key_value_pair['id'], updated_key_value_pair['name'], updated_key_value_pair['displayName']))
 
-    def create(self, created_values: keyValuePair):
+    def create(self,
+               created_values: KeyValuePair):
         logging.debug('AdManager::CustomTargeting::create_key_value_pair')
 
         values = self.__gam_service.createCustomTargetingValues(
@@ -366,8 +356,7 @@ class CustomTargeting():
                           % (value['id'], value['name'], value['displayName']))
 
 
-class TargetingPreset():
-    __service_name = 'TargetingPresetService'
+class TargetingPresetService():
 
     def __init__(self,
                  app_name: str = APP_NAME,
@@ -375,13 +364,15 @@ class TargetingPreset():
                  gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name,
+        self.__gam_service = gam_client.get_service(service_name=self.__class__.__name__,
                                                     gam_version=gam_version)
 
-    def create(self, targeting: targetingPreset):
+    def create(self,
+               targeting: TargetingPreset):
         self.__gam_service.createTargetingPresets(targeting)
 
-    def update(self, targeting: targetingPreset):
+    def update(self,
+               targeting: TargetingPreset):
         self.__gam_service.updateTargetingPresets(targeting)
 
     def list_by_prefix(self, targeting_preset_prefix: str):
@@ -407,8 +398,7 @@ class TargetingPreset():
         return targeting_presets
 
 
-class Report():
-    service_name = 'ReportService'
+class ReportService():
 
     def __init__(self,
                  app_name: str = APP_NAME,
@@ -419,7 +409,8 @@ class Report():
         self.data_downloader = gam_client.get_data_downloader(
             gam_version=gam_version)
 
-    def __get_report_by_report_job(self, report_job):
+    def __get_report_by_report_job(self,
+                                   report_job):
 
         logging.debug('Report::___get_report_by_report_job')
         # Initialize a DataDownloader.
@@ -457,16 +448,15 @@ class Report():
 
     @staticmethod
     def gen_report_statement(ad_units: Optional[Union[int, List[int]]] = None,
-                             targeting_value_ids: Optional[gam_targetingValues] = None,
+                             targeting_value_ids: Optional[List[int]] = None,
                              order_id: Optional[Union[int, List[int]]] = None):
         logging.debug('Report::gen_report_statement')
         where_conditions = []
         if ad_units is not None:
-            if type(ad_units) == list:
-                where_conditions.append(
-                    f'PARENT_AD_UNIT_ID IN ({", ".join(str(value) for value in ad_units)})')
-            elif type(ad_units) == int:
-                where_conditions.append(f'PARENT_AD_UNIT_ID IN ({ad_units}')
+            if type(ad_units) == int:
+                ad_units = [ad_units]
+            where_conditions.append(
+                f'PARENT_AD_UNIT_ID IN ({", ".join(str(value) for value in ad_units)})')
 
         if targeting_value_ids is not None:
             where_conditions.append(
@@ -474,11 +464,9 @@ class Report():
 
         if order_id is not None:
             if type(order_id) == int:
-                where_conditions.append(
-                    f'ORDER_ID IN ({order_id})')
-            elif type(order_id) == List[int]:
-                where_conditions.append(
-                    f'ORDER_ID IN ({",".join(str(value) for value in order_id)})')
+                order_id = [order_id]
+            where_conditions.append(
+                f'ORDER_ID IN ({",".join(str(value) for value in order_id)})')
         where_statement = " AND ".join(where_conditions)
         built_statement = (ad_manager.StatementBuilder(version=GAM_VERSION)
                            .Where(where_statement)
@@ -493,7 +481,7 @@ class Report():
                          report_days: int = 1,
                          dimensions: List[str] = DIMENSIONS,
                          metrics: List[str] = METRICS,
-                         ad_unit_view: str = AD_UNIT_VIEW):
+                         ad_unit_view: AdUnitView = AdUnitView.TOP_LEVEL):
         logging.debug('api_build_report_query')
 
         start_date = report_end - datetime.timedelta(days=report_days)
@@ -502,7 +490,7 @@ class Report():
         report_query_job = {
             'reportQuery': {
                 'dimensions': dimensions,
-                'adUnitView': ad_unit_view,
+                'adUnitView': ad_unit_view.name,
                 'statement': report_statement.ToStatement(),
                 'columns': metrics,
                 'dateRangeType': 'CUSTOM_DATE',
@@ -539,7 +527,7 @@ class Report():
 
     def get_report_dataframe(self,
                              ad_units: Optional[Union[int, List[int]]] = None,
-                             targeting_value_ids: Optional[gam_targetingValues] = None,
+                             targeting_value_ids: Optional[List[int]] = None,
                              report_date: datetime.date = datetime.date.today(),
                              days: int = 1,
                              dimensions: List[str] = DIMENSIONS,
@@ -564,6 +552,7 @@ class Report():
                                           dimensions: List[str] = DIMENSIONS,
                                           metrics: List[str] = METRICS,
                                           ad_unit_view: str = AD_UNIT_VIEW) -> pd.DataFrame:
+
         report_job = self.gen_report_query(statement,
                                            report_date,
                                            days,
@@ -574,11 +563,10 @@ class Report():
         df = pd.DataFrame.from_dict(
             report_content,  # type: ignore
             orient='columns')
-        return Report.normalise_report(df)
+        return ReportService.normalise_report(df)
 
 
-class Forecast():
-    service_name = 'ForecastService'
+class ForecastService():
 
     def __init__(self,
                  app_name: str = APP_NAME,
@@ -586,19 +574,12 @@ class Forecast():
                  gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.service_name,
+        self.__gam_service = gam_client.get_service(service_name=self.__class__.__name__,
                                                     gam_version=gam_version)
-
-    class forecastItem(TypedDict):
-        date: datetime.date
-        matched: int
-        available: int
-        possible: int
-        name: str
 
     @staticmethod
     def __gen_line_item(targetedAdUnits,
-                        creativePlaceholders,
+                        creativePlaceholders: List[CreativePlaceholder],
                         report_date: datetime.datetime = datetime.datetime.now(
                             tz=pytz.timezone(PYTZ_TIMEZONE)) + datetime.timedelta(days=1),
                         days: int = 30):
@@ -698,11 +679,11 @@ class Forecast():
 
     def get_forecast(self,
                      targetedAdUnits,
-                     creativePlaceholders,
+                     creativePlaceholders: List[CreativePlaceholder],
                      targets_list,
                      report_date: datetime.datetime = datetime.datetime.now(
                          tz=pytz.timezone(PYTZ_TIMEZONE)),
-                     days: int = 30) -> List[forecastItem]:
+                     days: int = 30) -> List[ForecastItem]:
         logging.debug('Forecast::get_forecast')
         # Create prospective line item.
         prospective_line_item = self.__gen_line_item(
@@ -722,12 +703,12 @@ class Forecast():
                     value_date = breakdown['startTime']['date']
                     dt = datetime.date(
                         value_date['year'], value_date['month'], value_date['day'])
-                    item = Forecast.forecastItem(date=dt,
-                                                 matched=breakdown_entry['forecast']['matched'],
-                                                 available=breakdown_entry['forecast']['available'],
-                                                 possible=breakdown_entry['forecast'][
-                                                     'possible'] if 'possible' in breakdown_entry['forecast'] else 0,
-                                                 name=breakdown_entry['name'] if 'name' in breakdown_entry else "")
+                    item = ForecastService.forecastItem(date=dt,
+                                                        matched=breakdown_entry['forecast']['matched'],
+                                                        available=breakdown_entry['forecast']['available'],
+                                                        possible=breakdown_entry['forecast'][
+                                                            'possible'] if 'possible' in breakdown_entry['forecast'] else 0,
+                                                        name=breakdown_entry['name'] if 'name' in breakdown_entry else "")
                     forecast_list.append(item)
 
         return forecast_list
@@ -738,7 +719,7 @@ class Forecast():
                                          targeting_presets,
                                          report_date: datetime.datetime = datetime.datetime.now(
                                              tz=pytz.timezone(PYTZ_TIMEZONE)),
-                                         days: int = 30) -> List[forecastItem]:
+                                         days: int = 30) -> List[ForecastItem]:
         logging.debug('Forecast::get_forecast_by_targeting_preset')
         # Create prospective line item.
         prospective_line_item = self.__gen_line_item(
@@ -759,18 +740,17 @@ class Forecast():
                     value_date = breakdown['startTime']['date']
                     dt = datetime.date(
                         value_date['year'], value_date['month'], value_date['day'])
-                    item = Forecast.forecastItem(date=dt,
-                                                 matched=breakdown_entry['forecast']['matched'],
-                                                 available=breakdown_entry['forecast']['available'],
-                                                 possible=breakdown_entry['forecast'][
-                                                     'possible'] if 'possible' in breakdown_entry['forecast'] else 0,
-                                                 name=breakdown_entry['name'] if 'name' in breakdown_entry else "")
+                    item = ForecastService.forecastItem(date=dt,
+                                                        matched=breakdown_entry['forecast']['matched'],
+                                                        available=breakdown_entry['forecast']['available'],
+                                                        possible=breakdown_entry['forecast'][
+                                                            'possible'] if 'possible' in breakdown_entry['forecast'] else 0,
+                                                        name=breakdown_entry['name'] if 'name' in breakdown_entry else "")
                     forecast_list.append(item)
         return forecast_list
 
 
-class Traffic():
-    service_name = 'ForecastService'
+class TrafficService():
 
     def __init__(self,
                  app_name: str = APP_NAME,
@@ -778,7 +758,7 @@ class Traffic():
                  gam_version: str = GAM_VERSION):
         gam_client = GamClient(app_name=app_name,
                                network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.service_name,
+        self.__gam_service = gam_client.get_service(service_name=self.__class__.__name__,
                                                     gam_version=gam_version)
 
     class trafficItem(TypedDict):
@@ -830,7 +810,7 @@ class Traffic():
         end_date = report_date.date() + datetime.timedelta(days=days)
 
         if inventory_targeting is None:
-            inventory_targeting = Network().effectiveRootAdUnitId()
+            inventory_targeting = NetworkService().effectiveRootAdUnitId()
 
         # Create targeting.
         targeting = {
