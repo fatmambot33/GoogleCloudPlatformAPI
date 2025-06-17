@@ -5,7 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Dict, List, Literal, Optional, TypedDict, Union
+from typing import List, Literal, Optional, TypedDict, Union
 from enum import Enum
 
 import pandas as pd
@@ -28,7 +28,7 @@ METRICS = ['TOTAL_CODE_SERVED_COUNT',
 
 DIMENSIONS = ['DATE', 'AD_UNIT_NAME', 'CUSTOM_TARGETING_VALUE_ID']
 
-GAM_VERSION = "v202405"
+GAM_VERSION = "v202505"
 NETWORK_CODE = '5574'
 APP_NAME = 'AdManagerAPIClient'
 
