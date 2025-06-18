@@ -1,0 +1,8 @@
+pandas
+google-api-python-client
+google-cloud-bigquery
+google-cloud-bigquery[pandas]
+google-cloud-storage
+googleads
+db-dtypes
+python-dotenv
