@@ -19,7 +19,5 @@ dependencies = [
 
 [tool.pydocstyle]
 convention = "numpy"
-match = '(?!AdManager).*\.py'
 
 [tool.pyright]
-exclude = ["GoogleCloudPlatformAPI/AdManager.py"]
