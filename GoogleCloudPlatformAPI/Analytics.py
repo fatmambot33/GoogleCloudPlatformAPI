@@ -1,21 +1,33 @@
 """Wrapper for Google Analytics Reporting API."""
 
-from typing import List, Optional
+import datetime
 import logging
 import os
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
 from googleapiclient.discovery import build
-import datetime
+
 from .Oauth import ServiceAccount
 
 
 class Analytics:
-    """High level helper for the Google Analytics Reporting API."""
+    """
+    High level helper for the Google Analytics Reporting API.
+
+    Attributes
+    ----------
+    SCOPES : list[str]
+        The scopes required for the Analytics API.
+    """
 
     SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
+    __reporting: Any
+    __management: Any
 
     def __init__(self, credentials: Optional[str] = None) -> None:
-        """Initialise Analytics API clients.
+        """
+        Initialise Analytics API clients.
 
         Parameters
         ----------
@@ -32,8 +44,15 @@ class Analytics:
         self.__reporting = build("analyticsreporting", "v4", credentials=service_account_credentials)
         self.__management = build("analytics", "v3", credentials=service_account_credentials)
 
-    def list_views(self) -> List[dict]:
-        """Return all accessible Analytics views."""
+    def list_views(self) -> List[Dict[str, Any]]:
+        """
+        Return all accessible Analytics views.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            A list of view objects.
+        """
         profiles = self.__management.management().profiles().list(accountId="~all", webPropertyId="~all").execute()
         return profiles.get("items", [])
 
@@ -44,8 +63,30 @@ class Analytics:
         metrics: List[str],
         start_date: str,
         end_date: str,
-    ) -> dict:
-        """Fetch a report from the API."""
+    ) -> Dict[str, Any]:
+        """
+        Fetch a report from the API.
+
+        Parameters
+        ----------
+        view_id : int
+            The ID of the view to query.
+        dimensions : list[str]
+            The dimensions to include in the report.
+        metrics : list[str]
+            The metrics to include in the report.
+        start_date : str
+            The start date of the report in ``YYYY-MM-DD`` format or a relative
+            date like ``30daysAgo``.
+        end_date : str
+            The end date of the report in ``YYYY-MM-DD`` format or a relative
+            date like ``yesterday``.
+
+        Returns
+        -------
+        dict[str, Any]
+            The raw report from the API.
+        """
         logging.debug("Analytics::__get_report")
         if isinstance(start_date, datetime.date):
             start_date = start_date.strftime("%Y-%m-%d")
@@ -75,7 +116,28 @@ class Analytics:
         start_date: str = "30daysAgo",
         end_date: str = "yesterday",
     ) -> pd.DataFrame:
-        """Return a report for a specific view as a DataFrame."""
+        """
+        Return a report for a specific view as a DataFrame.
+
+        Parameters
+        ----------
+        view_id : int
+            The ID of the view to query.
+        dimensions : list[str], optional
+            The dimensions to include in the report. Defaults to
+            ``["ga:source", "ga:medium"]``.
+        metrics : list[str], optional
+            The metrics to include in the report. Defaults to ``["ga:sessions"]``.
+        start_date : str, optional
+            The start date of the report. Defaults to ``"30daysAgo"``.
+        end_date : str, optional
+            The end date of the report. Defaults to ``"yesterday"``.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A DataFrame containing the report data.
+        """
         logging.debug(f"Analytics::get_report::{view_id}")
         results = self.__get_report(
             view_id=view_id,
@@ -93,7 +155,27 @@ class Analytics:
         start_date: str = "30daysAgo",
         end_date: str = "yesterday",
     ) -> pd.DataFrame:
-        """Fetch reports for all available views and combine them."""
+        """
+        Fetch reports for all available views and combine them.
+
+        Parameters
+        ----------
+        dimensions : list[str], optional
+            The dimensions to include in the reports. Defaults to
+            ``["ga:source", "ga:medium"]``.
+        metrics : list[str], optional
+            The metrics to include in the reports. Defaults to
+            ``["ga:sessions"]``.
+        start_date : str, optional
+            The start date of the reports. Defaults to ``"30daysAgo"``.
+        end_date : str, optional
+            The end date of the reports. Defaults to ``"yesterday"``.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A DataFrame containing the combined report data from all views.
+        """
         views = self.list_views()
         df_list: List[pd.DataFrame] = []
         for view in views:
@@ -112,8 +194,20 @@ class Analytics:
         return pd.concat(df_list)
 
     @staticmethod
-    def report_to_df(analytics_report: dict) -> pd.DataFrame:
-        """Convert an Analytics API response to a DataFrame."""
+    def report_to_df(analytics_report: Dict[str, Any]) -> pd.DataFrame:
+        """
+        Convert an Analytics API response to a DataFrame.
+
+        Parameters
+        ----------
+        analytics_report : dict[str, Any]
+            The raw response from the Analytics API's ``batchGet`` method.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A DataFrame containing the report data.
+        """
         report = analytics_report["reports"][0]
         dimensions: List[str] = [d.replace("ga:", "") for d in report["columnHeader"]["dimensions"]]
         metrics: List[str] = [
