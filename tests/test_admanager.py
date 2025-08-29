@@ -19,7 +19,12 @@ class TestAdManager(unittest.TestCase):
 
         # Simulate two pages of results
         mock_service.getAudienceSegmentsByStatement.side_effect = [
-            {"results": [{"id": 1, "name": "Segment 1"}, {"id": 2, "name": "Segment 2"}]},
+            {
+                "results": [
+                    {"id": 1, "name": "Segment 1"},
+                    {"id": 2, "name": "Segment 2"},
+                ]
+            },
             {"results": [{"id": 3, "name": "Segment 3"}]},
             {"results": []},  # Empty page to terminate the loop
         ]

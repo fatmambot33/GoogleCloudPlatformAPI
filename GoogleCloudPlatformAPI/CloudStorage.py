@@ -23,7 +23,9 @@ class CloudStorage:
 
     __client: storage.Client
 
-    def __init__(self, credentials: Optional[str] = None, project_id: Optional[str] = None) -> None:
+    def __init__(
+        self, credentials: Optional[str] = None, project_id: Optional[str] = None
+    ) -> None:
         """
         Initialise the Cloud Storage client.
 
@@ -40,7 +42,8 @@ class CloudStorage:
             self.__client = storage.Client(credentials=credentials, project=project_id)
         elif os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None:
             self.__client = storage.Client(
-                credentials=ServiceAccount.from_service_account_file(), project=project_id
+                credentials=ServiceAccount.from_service_account_file(),
+                project=project_id,
             )
         else:
             self.__client = storage.Client(project=project_id)
@@ -94,7 +97,9 @@ class CloudStorage:
             _return.append(blob.name)
         return _return
 
-    def download_as_string(self, bucket_name: str, source_blob_name: str, destination_file_name: str) -> None:
+    def download_as_string(
+        self, bucket_name: str, source_blob_name: str, destination_file_name: str
+    ) -> None:
         """
         Download a JSON blob and save it locally.
 
@@ -138,14 +143,20 @@ class CloudStorage:
         """
         logging.debug("CloudStorage::upload")
         if not override:
-            if self.file_exists(filepath=destination_blob_name, bucket_name=bucket_name):
+            if self.file_exists(
+                filepath=destination_blob_name, bucket_name=bucket_name
+            ):
                 return
         bucket = self.__client.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_string(str(data))
 
     def upload_from_string(
-        self, bucket_name: str, destination_blob_name: str, data: str, override: bool = False
+        self,
+        bucket_name: str,
+        destination_blob_name: str,
+        data: str,
+        override: bool = False,
     ) -> None:
         """
         Upload a string to Cloud Storage.
@@ -189,12 +200,19 @@ class CloudStorage:
             Whether to override the blob if it already exists. Defaults to ``False``.
         """
         logging.debug("CloudStorage::upload_file_from_filename")
-        if not self.file_exists(filepath=destination_file_path, bucket_name=bucket_name) or override:
+        if (
+            not self.file_exists(
+                filepath=destination_file_path, bucket_name=bucket_name
+            )
+            or override
+        ):
             bucket = self.__client.bucket(bucket_name)
             blob = bucket.blob(destination_file_path)
             blob.upload_from_filename(local_file_path)
 
-    def upload_file(self, local_file_path: str, destination_file_path: str, override: bool = False) -> None:
+    def upload_file(
+        self, local_file_path: str, destination_file_path: str, override: bool = False
+    ) -> None:
         """
         Upload a file to a ``bucket_name/blob_path`` destination.
 
@@ -214,7 +232,10 @@ class CloudStorage:
 
         blob_path = os.sep.join(path_parts[1:]) if len(path_parts) > 1 else ""
 
-        if not self.file_exists(filepath=blob_path, bucket_name=bucket_name) or override:
+        if (
+            not self.file_exists(filepath=blob_path, bucket_name=bucket_name)
+            or override
+        ):
             bucket_name_obj = self.__client.bucket(bucket_name)
             blob = bucket_name_obj.blob(blob_path)
             blob.upload_from_filename(local_file_path)
@@ -333,7 +354,12 @@ class CloudStorage:
             ``True`` if the file was copied, ``False`` otherwise.
         """
         logging.debug("CloudStorage::copy_file")
-        if not self.file_exists(filepath=file_name, bucket_name=destination_bucket_name) or override:
+        if (
+            not self.file_exists(
+                filepath=file_name, bucket_name=destination_bucket_name
+            )
+            or override
+        ):
             source_bucket = self.__client.bucket(bucket_name)
             source_blob = source_bucket.blob(file_name)
             destination_bucket = self.__client.bucket(destination_bucket_name)
@@ -343,7 +369,11 @@ class CloudStorage:
         return False
 
     def copy_files(
-        self, bucket_name: str, prefix: str, destination_bucket_name: str, override: bool = False
+        self,
+        bucket_name: str,
+        prefix: str,
+        destination_bucket_name: str,
+        override: bool = False,
     ) -> None:
         """
         Copy all files with ``prefix`` to another bucket.

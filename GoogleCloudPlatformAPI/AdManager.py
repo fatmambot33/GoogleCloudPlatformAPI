@@ -194,7 +194,10 @@ class AudienceService:
     __gam_service: Any
 
     def __init__(
-        self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE, gam_version: str = GAM_VERSION
+        self,
+        app_name: str = APP_NAME,
+        network_code: str = NETWORK_CODE,
+        gam_version: str = GAM_VERSION,
     ) -> None:
         """
         Initialise the AudienceService.
@@ -208,9 +211,13 @@ class AudienceService:
         gam_version : str, optional
             The version of the API to use. Defaults to ``GAM_VERSION``.
         """
-        logging.debug(f"Audience::__init__:{self.__service_name}::{network_code}::{gam_version}")
+        logging.debug(
+            f"Audience::__init__:{self.__service_name}::{network_code}::{gam_version}"
+        )
         gam_client = GamClient(app_name=app_name, network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name, gam_version=gam_version)
+        self.__gam_service = gam_client.get_service(
+            service_name=self.__service_name, gam_version=gam_version
+        )
 
     def create(
         self,
@@ -251,7 +258,10 @@ class AudienceService:
         # Create inventory targeting (pointed at root ad unit i.e. the whole network)
         inventory_targeting = {"targetedAdUnits": [{"adUnitId": root_ad_unit_id}]}
         # Create the audience segment rule.
-        rule = {"inventoryRule": inventory_targeting, "customCriteriaRule": custom_targeting}
+        rule = {
+            "inventoryRule": inventory_targeting,
+            "customCriteriaRule": custom_targeting,
+        }
         # Create an audience segment.
         audience_segment = [
             {
@@ -268,7 +278,8 @@ class AudienceService:
 
         for created_audience_segment in audience_segments:
             logging.debug(
-                'An audience segment with ID "%s", name "%s", and type "%s" ' "was created."
+                'An audience segment with ID "%s", name "%s", and type "%s" '
+                "was created."
                 % (
                     created_audience_segment["id"],
                     created_audience_segment["name"],
@@ -296,8 +307,13 @@ class AudienceService:
         # Retrieve a small amount of audience segments at a time, paging
         # through until all audience segments have been retrieved.
         while True:
-            logging.debug("getAudienceSegmentsByStatement:statement.offset:" + str(statement.offset))
-            response = self.__gam_service.getAudienceSegmentsByStatement(statement.ToStatement())
+            logging.debug(
+                "getAudienceSegmentsByStatement:statement.offset:"
+                + str(statement.offset)
+            )
+            response = self.__gam_service.getAudienceSegmentsByStatement(
+                statement.ToStatement()
+            )
             if "results" in response and len(response["results"]):
                 results = results + response["results"]
                 statement.offset += statement.limit
@@ -322,12 +338,19 @@ class AudienceService:
         # Retrieve a small amount of audience segments at a time, paging
         # through until all audience segments have been retrieved.
         while True:
-            response = self.__gam_service.getAudienceSegmentsByStatement(statement.ToStatement())
+            response = self.__gam_service.getAudienceSegmentsByStatement(
+                statement.ToStatement()
+            )
             if "results" in response and len(response["results"]):
                 for audience_segment in response["results"]:
                     logging.debug(
-                        'Audience segment with ID "%d", name "%s", and size "%d" was ' "found.\n"
-                        % (audience_segment["id"], audience_segment["name"], audience_segment["size"])
+                        'Audience segment with ID "%d", name "%s", and size "%d" was '
+                        "found.\n"
+                        % (
+                            audience_segment["id"],
+                            audience_segment["name"],
+                            audience_segment["size"],
+                        )
                     )
 
                 results = results + response["results"]
@@ -380,7 +403,9 @@ class AudienceService:
         )
 
         # Get audience segments by statement.
-        response = self.__gam_service.getAudienceSegmentsByStatement(statement.ToStatement())
+        response = self.__gam_service.getAudienceSegmentsByStatement(
+            statement.ToStatement()
+        )
 
         if "results" in response and len(response["results"]):
             updated_audience_segments = []
@@ -390,7 +415,9 @@ class AudienceService:
                 audience_segment["membershipExpirationDays"] = membershipexpirationdays
                 updated_audience_segments.append(audience_segment)
 
-            audience_segments = self.__gam_service.updateAudienceSegments(updated_audience_segments)
+            audience_segments = self.__gam_service.updateAudienceSegments(
+                updated_audience_segments
+            )
 
             for audience_segment in audience_segments:
                 logging.debug(
@@ -408,7 +435,10 @@ class NetworkService:
     __gam_service: Any
 
     def __init__(
-        self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE, gam_version: str = GAM_VERSION
+        self,
+        app_name: str = APP_NAME,
+        network_code: str = NETWORK_CODE,
+        gam_version: str = GAM_VERSION,
     ) -> None:
         """
         Initialise the NetworkService.
@@ -423,7 +453,9 @@ class NetworkService:
             The version of the API to use. Defaults to ``GAM_VERSION``.
         """
         gam_client = GamClient(app_name=app_name, network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name, gam_version=gam_version)
+        self.__gam_service = gam_client.get_service(
+            service_name=self.__service_name, gam_version=gam_version
+        )
 
     def effectiveRootAdUnitId(self) -> int:
         """
@@ -445,7 +477,10 @@ class CustomTargetingService:
     __gam_service: Any
 
     def __init__(
-        self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE, gam_version: str = GAM_VERSION
+        self,
+        app_name: str = APP_NAME,
+        network_code: str = NETWORK_CODE,
+        gam_version: str = GAM_VERSION,
     ) -> None:
         """
         Initialise the CustomTargetingService.
@@ -460,7 +495,9 @@ class CustomTargetingService:
             The version of the API to use. Defaults to ``GAM_VERSION``.
         """
         gam_client = GamClient(app_name=app_name, network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name, gam_version=gam_version)
+        self.__gam_service = gam_client.get_service(
+            service_name=self.__service_name, gam_version=gam_version
+        )
 
     def list(self, targeting_key_id: int) -> List[KeyValuePair]:
         """
@@ -476,7 +513,9 @@ class CustomTargetingService:
         list[KeyValuePair]
             A list of key-value pair objects.
         """
-        logging.debug("AdManager::CustomTargeting::get_key_value_pairs::" + str(targeting_key_id))
+        logging.debug(
+            "AdManager::CustomTargeting::get_key_value_pairs::" + str(targeting_key_id)
+        )
         # Create a statement to select custom targeting values.
         key_value_pairs_statement = (
             ad_manager.StatementBuilder(version=GAM_VERSION)
@@ -488,7 +527,9 @@ class CustomTargetingService:
         # through until all custom targeting values have been retrieved.
         key_value_pairs_list = []
         while True:
-            response = self.__gam_service.getCustomTargetingValuesByStatement(key_value_pairs_statement.ToStatement())
+            response = self.__gam_service.getCustomTargetingValuesByStatement(
+                key_value_pairs_statement.ToStatement()
+            )
             if "results" in response and len(response["results"]):
                 for custom_targeting_value in response["results"]:
                     custom_targeting_value: KeyValuePair = custom_targeting_value
@@ -498,7 +539,9 @@ class CustomTargetingService:
                 break
         return key_value_pairs_list
 
-    def delete(self, targeting_key_id: int, key_value_pairs: List[KeyValuePair]) -> None:
+    def delete(
+        self, targeting_key_id: int, key_value_pairs: List[KeyValuePair]
+    ) -> None:
         """
         Delete a list of key-value pairs.
 
@@ -509,7 +552,10 @@ class CustomTargetingService:
         key_value_pairs : list[KeyValuePair]
             The list of key-value pairs to delete.
         """
-        logging.debug("AdManager::CustomTargeting::delete_key_value_pairs::" + str(targeting_key_id))
+        logging.debug(
+            "AdManager::CustomTargeting::delete_key_value_pairs::"
+            + str(targeting_key_id)
+        )
         action = {"xsi_type": "DeleteCustomTargetingValues"}
         key_value_pairs_slices = ListHelper.chunk_list(key_value_pairs, 100)
         for key_value_pairs_slice in key_value_pairs_slices:
@@ -517,16 +563,29 @@ class CustomTargetingService:
                 ad_manager.StatementBuilder(version=GAM_VERSION)
                 .Where(
                     "customTargetingKeyId = :keyId "
-                    "AND id IN (%s)" % ", ".join([str(key_value_pair["id"]) for key_value_pair in key_value_pairs_slice])
+                    "AND id IN (%s)"
+                    % ", ".join(
+                        [
+                            str(key_value_pair["id"])
+                            for key_value_pair in key_value_pairs_slice
+                        ]
+                    )
                 )
                 .WithBindVariable("keyId", targeting_key_id)
             )
             logging.debug(
                 "DeleteCustomTargetingValues:"
-                + ", ".join([str(key_value_pair["name"]) for key_value_pair in key_value_pairs_slice])
+                + ", ".join(
+                    [
+                        str(key_value_pair["name"])
+                        for key_value_pair in key_value_pairs_slice
+                    ]
+                )
             )
 
-            result = self.__gam_service.performCustomTargetingValueAction(action, value_statement.ToStatement())
+            result = self.__gam_service.performCustomTargetingValueAction(
+                action, value_statement.ToStatement()
+            )
             if result:
                 logging.debug("numChanges:" + str(result["numChanges"]))
 
@@ -541,7 +600,9 @@ class CustomTargetingService:
         """
         logging.debug("AdManager::CustomTargeting::dupdate_key_value_pairs")
 
-        updated_key_value_pairs = self.__gam_service.updateCustomTargetingValues(key_value_pairs)
+        updated_key_value_pairs = self.__gam_service.updateCustomTargetingValues(
+            key_value_pairs
+        )
 
         # Display results.
         for updated_key_value_pair in updated_key_value_pairs:
@@ -572,7 +633,8 @@ class CustomTargetingService:
         for value in values:
             logging.debug(
                 'Custom targeting value with id "%s", name "%s", and display'
-                ' name "%s" was created.' % (value["id"], value["name"], value["displayName"])
+                ' name "%s" was created.'
+                % (value["id"], value["name"], value["displayName"])
             )
 
 
@@ -583,7 +645,10 @@ class TargetingPresetService:
     __gam_service: Any
 
     def __init__(
-        self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE, gam_version: str = GAM_VERSION
+        self,
+        app_name: str = APP_NAME,
+        network_code: str = NETWORK_CODE,
+        gam_version: str = GAM_VERSION,
     ) -> None:
         """
         Initialise the TargetingPresetService.
@@ -598,7 +663,9 @@ class TargetingPresetService:
             The version of the API to use. Defaults to ``GAM_VERSION``.
         """
         gam_client = GamClient(app_name=app_name, network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name, gam_version=gam_version)
+        self.__gam_service = gam_client.get_service(
+            service_name=self.__service_name, gam_version=gam_version
+        )
 
     def create(self, targeting: List[TargetingPreset]) -> None:
         """
@@ -622,7 +689,9 @@ class TargetingPresetService:
         """
         self.__gam_service.updateTargetingPresets(targeting)
 
-    def list_by_prefix(self, targeting_preset_prefix: str) -> Dict[str, TargetingPreset]:
+    def list_by_prefix(
+        self, targeting_preset_prefix: str
+    ) -> Dict[str, TargetingPreset]:
         """
         List targeting presets that match a given prefix.
 
@@ -636,7 +705,10 @@ class TargetingPresetService:
         dict[str, TargetingPreset]
             A dictionary of targeting presets, keyed by name.
         """
-        logging.debug("TargetingPreset::get_targeting_presets_by_prefix:" + targeting_preset_prefix)
+        logging.debug(
+            "TargetingPreset::get_targeting_presets_by_prefix:"
+            + targeting_preset_prefix
+        )
         # Create a statement to select targeting presets
         targeting_statement = ad_manager.StatementBuilder(version=GAM_VERSION).Where(
             "name LIKE '" + targeting_preset_prefix + "%'"
@@ -646,7 +718,9 @@ class TargetingPresetService:
         # through until all custom targeting values have been retrieved.
         targeting_presets: Dict[str, TargetingPreset] = {}
         while True:
-            response = self.__gam_service.getTargetingPresetsByStatement(targeting_statement.ToStatement())
+            response = self.__gam_service.getTargetingPresetsByStatement(
+                targeting_statement.ToStatement()
+            )
             if "results" in response and len(response["results"]):
                 for targeting_preset in response["results"]:
                     targeting_presets[targeting_preset["name"]] = targeting_preset
@@ -662,7 +736,10 @@ class ReportService:
     data_downloader: ad_manager.DataDownloader
 
     def __init__(
-        self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE, gam_version: str = GAM_VERSION
+        self,
+        app_name: str = APP_NAME,
+        network_code: str = NETWORK_CODE,
+        gam_version: str = GAM_VERSION,
     ) -> None:
         """
         Initialise the ReportService.
@@ -679,7 +756,9 @@ class ReportService:
         gam_client = GamClient(app_name=app_name, network_code=network_code)
         self.data_downloader = gam_client.get_data_downloader(gam_version=gam_version)
 
-    def __get_report_by_report_job(self, report_job: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def __get_report_by_report_job(
+        self, report_job: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         Run a report job and return the results.
 
@@ -710,7 +789,9 @@ class ReportService:
         report_file = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
 
         # Download report data.
-        report_downloader.DownloadReportToFile(report_job_id, export_format, report_file_gz)
+        report_downloader.DownloadReportToFile(
+            report_job_id, export_format, report_file_gz
+        )
 
         report_file_gz.close()
 
@@ -720,7 +801,10 @@ class ReportService:
         os.remove(report_file_gz.name)
 
         with open(report_file.name) as f:
-            report_data = [{k: v for k, v in row.items()} for row in csv.DictReader(f, skipinitialspace=True)]
+            report_data = [
+                {k: v for k, v in row.items()}
+                for row in csv.DictReader(f, skipinitialspace=True)
+            ]
         os.remove(report_file.name)
         return report_data
 
@@ -752,7 +836,9 @@ class ReportService:
         if ad_units is not None:
             if isinstance(ad_units, int):
                 ad_units = [ad_units]
-            where_conditions.append(f'PARENT_AD_UNIT_ID IN ({", ".join(str(value) for value in ad_units)})')
+            where_conditions.append(
+                f'PARENT_AD_UNIT_ID IN ({", ".join(str(value) for value in ad_units)})'
+            )
 
         if targeting_value_ids is not None:
             where_conditions.append(
@@ -762,10 +848,15 @@ class ReportService:
         if order_id is not None:
             if isinstance(order_id, int):
                 order_id = [order_id]
-            where_conditions.append(f'ORDER_ID IN ({",".join(str(value) for value in order_id)})')
+            where_conditions.append(
+                f'ORDER_ID IN ({",".join(str(value) for value in order_id)})'
+            )
         where_statement = " AND ".join(where_conditions)
         built_statement = (
-            ad_manager.StatementBuilder(version=GAM_VERSION).Where(where_statement).Limit(0).Offset(None)
+            ad_manager.StatementBuilder(version=GAM_VERSION)
+            .Where(where_statement)
+            .Limit(0)
+            .Offset(None)
         )
 
         return built_statement
@@ -900,7 +991,9 @@ class ReportService:
         """
         if isinstance(ad_units, int):
             ad_units = [ad_units]
-        statement = self.gen_report_statement(ad_units=ad_units, targeting_value_ids=targeting_value_ids)
+        statement = self.gen_report_statement(
+            ad_units=ad_units, targeting_value_ids=targeting_value_ids
+        )
         df = self.get_report_dataframe_by_statement(
             statement=statement,
             report_date=report_date,
@@ -943,7 +1036,9 @@ class ReportService:
         pandas.DataFrame
             The report data.
         """
-        report_job = self.gen_report_query(statement, report_date, days, dimensions, metrics, AdUnitView[ad_unit_view])
+        report_job = self.gen_report_query(
+            statement, report_date, days, dimensions, metrics, AdUnitView[ad_unit_view]
+        )
         report_content = self.__get_report_by_report_job(report_job)
         df = pd.DataFrame.from_dict(
             report_content,  # type: ignore
@@ -959,7 +1054,10 @@ class ForecastService:
     __gam_service: Any
 
     def __init__(
-        self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE, gam_version: str = GAM_VERSION
+        self,
+        app_name: str = APP_NAME,
+        network_code: str = NETWORK_CODE,
+        gam_version: str = GAM_VERSION,
     ) -> None:
         """
         Initialise the ForecastService.
@@ -974,13 +1072,17 @@ class ForecastService:
             The version of the API to use. Defaults to ``GAM_VERSION``.
         """
         gam_client = GamClient(app_name=app_name, network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name, gam_version=gam_version)
+        self.__gam_service = gam_client.get_service(
+            service_name=self.__service_name, gam_version=gam_version
+        )
 
     @staticmethod
     def __gen_line_item(
         targetedAdUnits: List[Dict[str, Any]],
         creativePlaceholders: List[CreativePlaceholder],
-        report_date: datetime.datetime = datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE))
+        report_date: datetime.datetime = datetime.datetime.now(
+            tz=pytz.timezone(PYTZ_TIMEZONE)
+        )
         + datetime.timedelta(days=1),
         days: int = 30,
     ) -> Dict[str, Any]:
@@ -988,14 +1090,20 @@ class ForecastService:
         logging.debug("Report::__gen_line_item")
         prospective_line_item = {
             "lineItem": {
-                "targeting": {"inventoryTargeting": {"targetedAdUnits": targetedAdUnits}},
+                "targeting": {
+                    "inventoryTargeting": {"targetedAdUnits": targetedAdUnits}
+                },
                 "creativePlaceholders": creativePlaceholders,
                 "lineItemType": "STANDARD",
                 "startDateTimeType": "IMMEDIATELY",
                 "endDateTime": report_date + datetime.timedelta(days),
                 "costType": "CPM",
                 "costPerUnit": {"currencyCode": "USD", "microAmount": "2000000"},
-                "primaryGoal": {"units": "50", "unitType": "IMPRESSIONS", "goalType": "LIFETIME"},
+                "primaryGoal": {
+                    "units": "50",
+                    "unitType": "IMPRESSIONS",
+                    "goalType": "LIFETIME",
+                },
                 "creativeRotationType": "EVEN",
                 "discountType": "PERCENTAGE",
             },
@@ -1006,7 +1114,9 @@ class ForecastService:
     @staticmethod
     def __gen_forecast_options(
         targets_list: List[Dict[str, Any]],
-        report_date: datetime.datetime = datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)),
+        report_date: datetime.datetime = datetime.datetime.now(
+            tz=pytz.timezone(PYTZ_TIMEZONE)
+        ),
         days: int = 30,
     ) -> Dict[str, Any]:
         """Generate forecast options."""
@@ -1045,7 +1155,9 @@ class ForecastService:
     @staticmethod
     def __gen_forecast_options_by_targeting_presets(
         targeting_presets: List[TargetingPreset],
-        report_date: datetime.datetime = datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)),
+        report_date: datetime.datetime = datetime.datetime.now(
+            tz=pytz.timezone(PYTZ_TIMEZONE)
+        ),
         days: int = 30,
     ) -> Dict[str, Any]:
         """Generate forecast options by targeting presets."""
@@ -1057,7 +1169,14 @@ class ForecastService:
         targets = []
         for targeting_preset in targeting_presets:
             targets.append(
-                {"name": targeting_preset["name"], "targeting": {"customTargeting": targeting_preset["targeting"]["customTargeting"]}}
+                {
+                    "name": targeting_preset["name"],
+                    "targeting": {
+                        "customTargeting": targeting_preset["targeting"][
+                            "customTargeting"
+                        ]
+                    },
+                }
             )
         forecast_options = {
             "includeContendingLineItems": True,
@@ -1073,7 +1192,9 @@ class ForecastService:
         targetedAdUnits: List[Dict[str, Any]],
         creativePlaceholders: List[CreativePlaceholder],
         targets_list: List[Dict[str, Any]],
-        report_date: datetime.datetime = datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)),
+        report_date: datetime.datetime = datetime.datetime.now(
+            tz=pytz.timezone(PYTZ_TIMEZONE)
+        ),
         days: int = 30,
     ) -> List[ForecastItem]:
         """
@@ -1099,27 +1220,37 @@ class ForecastService:
         """
         logging.debug("Forecast::get_forecast")
         # Create prospective line item.
-        prospective_line_item = self.__gen_line_item(targetedAdUnits, creativePlaceholders, report_date, days)
+        prospective_line_item = self.__gen_line_item(
+            targetedAdUnits, creativePlaceholders, report_date, days
+        )
 
         forecast_options = self.__gen_forecast_options(targets_list, report_date, days)
 
         # Get forecast.
-        forecast = self.__gam_service.getAvailabilityForecast(prospective_line_item, forecast_options)
+        forecast = self.__gam_service.getAvailabilityForecast(
+            prospective_line_item, forecast_options
+        )
 
         forecast_list: List[ForecastItem] = []
         if "breakdowns" in forecast and len(forecast["breakdowns"]):
             for breakdown in forecast["breakdowns"]:
                 for breakdown_entry in breakdown["breakdownEntries"]:
                     value_date = breakdown["startTime"]["date"]
-                    dt = datetime.date(value_date["year"], value_date["month"], value_date["day"])
+                    dt = datetime.date(
+                        value_date["year"], value_date["month"], value_date["day"]
+                    )
                     item: ForecastItem = {
                         "date": dt,
                         "matched": breakdown_entry["forecast"]["matched"],
                         "available": breakdown_entry["forecast"]["available"],
-                        "possible": breakdown_entry["forecast"]["possible"]
-                        if "possible" in breakdown_entry["forecast"]
-                        else 0,
-                        "name": breakdown_entry["name"] if "name" in breakdown_entry else "",
+                        "possible": (
+                            breakdown_entry["forecast"]["possible"]
+                            if "possible" in breakdown_entry["forecast"]
+                            else 0
+                        ),
+                        "name": (
+                            breakdown_entry["name"] if "name" in breakdown_entry else ""
+                        ),
                     }
                     forecast_list.append(item)
 
@@ -1130,7 +1261,9 @@ class ForecastService:
         targetedAdUnits: List[Dict[str, Any]],
         creativePlaceholders: List[CreativePlaceholder],
         targeting_presets: List[TargetingPreset],
-        report_date: datetime.datetime = datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)),
+        report_date: datetime.datetime = datetime.datetime.now(
+            tz=pytz.timezone(PYTZ_TIMEZONE)
+        ),
         days: int = 30,
     ) -> List[ForecastItem]:
         """
@@ -1156,27 +1289,39 @@ class ForecastService:
         """
         logging.debug("Forecast::get_forecast_by_targeting_preset")
         # Create prospective line item.
-        prospective_line_item = self.__gen_line_item(targetedAdUnits, creativePlaceholders, report_date, days)
+        prospective_line_item = self.__gen_line_item(
+            targetedAdUnits, creativePlaceholders, report_date, days
+        )
 
-        forecast_options = self.__gen_forecast_options_by_targeting_presets(targeting_presets, report_date, days)
+        forecast_options = self.__gen_forecast_options_by_targeting_presets(
+            targeting_presets, report_date, days
+        )
 
         # Get forecast.
-        forecast = self.__gam_service.getAvailabilityForecast(prospective_line_item, forecast_options)
+        forecast = self.__gam_service.getAvailabilityForecast(
+            prospective_line_item, forecast_options
+        )
 
         forecast_list: List[ForecastItem] = []
         if "breakdowns" in forecast and len(forecast["breakdowns"]):
             for breakdown in forecast["breakdowns"]:
                 for breakdown_entry in breakdown["breakdownEntries"]:
                     value_date = breakdown["startTime"]["date"]
-                    dt = datetime.date(value_date["year"], value_date["month"], value_date["day"])
+                    dt = datetime.date(
+                        value_date["year"], value_date["month"], value_date["day"]
+                    )
                     item: ForecastItem = {
                         "date": dt,
                         "matched": breakdown_entry["forecast"]["matched"],
                         "available": breakdown_entry["forecast"]["available"],
-                        "possible": breakdown_entry["forecast"]["possible"]
-                        if "possible" in breakdown_entry["forecast"]
-                        else 0,
-                        "name": breakdown_entry["name"] if "name" in breakdown_entry else "",
+                        "possible": (
+                            breakdown_entry["forecast"]["possible"]
+                            if "possible" in breakdown_entry["forecast"]
+                            else 0
+                        ),
+                        "name": (
+                            breakdown_entry["name"] if "name" in breakdown_entry else ""
+                        ),
                     }
                     forecast_list.append(item)
         return forecast_list
@@ -1189,7 +1334,10 @@ class TrafficService:
     __gam_service: Any
 
     def __init__(
-        self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE, gam_version: str = GAM_VERSION
+        self,
+        app_name: str = APP_NAME,
+        network_code: str = NETWORK_CODE,
+        gam_version: str = GAM_VERSION,
     ) -> None:
         """
         Initialise the TrafficService.
@@ -1204,7 +1352,9 @@ class TrafficService:
             The version of the API to use. Defaults to ``GAM_VERSION``.
         """
         gam_client = GamClient(app_name=app_name, network_code=network_code)
-        self.__gam_service = gam_client.get_service(service_name=self.__service_name, gam_version=gam_version)
+        self.__gam_service = gam_client.get_service(
+            service_name=self.__service_name, gam_version=gam_version
+        )
 
     class trafficItem(TypedDict):
         """A TypedDict for a traffic item."""
@@ -1216,7 +1366,9 @@ class TrafficService:
         self,
         inventory_targeting: Optional[Dict[str, Any]] = None,
         custom_targeting: Optional[CustomCriteriaSet] = None,
-        report_date: datetime.datetime = datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)),
+        report_date: datetime.datetime = datetime.datetime.now(
+            tz=pytz.timezone(PYTZ_TIMEZONE)
+        ),
         days: int = 30,
     ) -> List[trafficItem]:
         """
@@ -1240,14 +1392,20 @@ class TrafficService:
         """
         logging.debug("Traffic::get_traffic")
 
-        def time_series_to_list(time_series: Dict[str, Any]) -> List[TrafficService.trafficItem]:
+        def time_series_to_list(
+            time_series: Dict[str, Any],
+        ) -> List[TrafficService.trafficItem]:
             logging.debug("Traffic::time_series_to_list")
             date_range = time_series["timeSeriesDateRange"]
             time_series_start_date = datetime.date(
-                date_range["startDate"]["year"], date_range["startDate"]["month"], date_range["startDate"]["day"]
+                date_range["startDate"]["year"],
+                date_range["startDate"]["month"],
+                date_range["startDate"]["day"],
             )
             time_series_end_date = datetime.date(
-                date_range["endDate"]["year"], date_range["endDate"]["month"], date_range["endDate"]["day"]
+                date_range["endDate"]["year"],
+                date_range["endDate"]["month"],
+                date_range["endDate"]["day"],
             )
             time_series_forecast_data: List[TrafficService.trafficItem] = []
             offset = 0
@@ -1265,29 +1423,41 @@ class TrafficService:
         end_date = report_date.date() + datetime.timedelta(days=days)
 
         if inventory_targeting is None:
-            inventory_targeting = {"targetedAdUnits": [{"adUnitId": NetworkService().effectiveRootAdUnitId()}]}
+            inventory_targeting = {
+                "targetedAdUnits": [
+                    {"adUnitId": NetworkService().effectiveRootAdUnitId()}
+                ]
+            }
 
         # Create targeting.
-        targeting = {"inventoryTargeting": inventory_targeting, "customTargeting": custom_targeting}
+        targeting = {
+            "inventoryTargeting": inventory_targeting,
+            "customTargeting": custom_targeting,
+        }
         from time import sleep
 
         # Request the traffic forecast data.
         start = datetime.datetime.now()
         traffic_data = self.__gam_service.getTrafficData(
-            {"targeting": targeting, "requestedDateRange": {"startDate": start_date, "endDate": end_date}}
+            {
+                "targeting": targeting,
+                "requestedDateRange": {"startDate": start_date, "endDate": end_date},
+            }
         )
         wait_time = 2 - (datetime.datetime.now() - start).total_seconds()
         if wait_time > 0:
             sleep(wait_time)
-        return time_series_to_list(traffic_data["historicalTimeSeries"]) + time_series_to_list(
-            traffic_data["forecastedTimeSeries"]
-        )
+        return time_series_to_list(
+            traffic_data["historicalTimeSeries"]
+        ) + time_series_to_list(traffic_data["forecastedTimeSeries"])
 
     def get_traffic_by_targeting_preset(
         self,
         inventory_targeting: Dict[str, Any],
         targeting_preset: TargetingPreset,
-        report_date: datetime.datetime = datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)),
+        report_date: datetime.datetime = datetime.datetime.now(
+            tz=pytz.timezone(PYTZ_TIMEZONE)
+        ),
         days: int = 1,
     ) -> List[trafficItem]:
         """
