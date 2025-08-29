@@ -36,6 +36,8 @@ class BigQuery:
     """
 
     __client: bigquery.Client
+    # Explicit alias for name-mangled attribute to satisfy static checkers
+    _BigQuery__client: bigquery.Client
     SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
     def __init__(

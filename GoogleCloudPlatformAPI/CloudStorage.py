@@ -22,6 +22,8 @@ class CloudStorage:
     """
 
     __client: storage.Client
+    # Explicit alias for name-mangled attribute to satisfy static checkers
+    _CloudStorage__client: storage.Client
 
     def __init__(
         self, credentials: Optional[str] = None, project_id: Optional[str] = None
