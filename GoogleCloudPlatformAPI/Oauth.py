@@ -24,7 +24,9 @@ class ClientCredentials:
         self.credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
     @property
-    def gcp_credentials(self) -> Union[credentials.Credentials, service_account.Credentials]:
+    def gcp_credentials(
+        self,
+    ) -> Union[credentials.Credentials, service_account.Credentials]:
         """
         Return Google Cloud credentials.
 
@@ -36,12 +38,16 @@ class ClientCredentials:
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if self.credentials_path is not None:
             logging.debug("gcp_credentials::service_account")
-            return service_account.Credentials.from_service_account_file(filename=self.credentials_path, scopes=scopes)
+            return service_account.Credentials.from_service_account_file(
+                filename=self.credentials_path, scopes=scopes
+            )
         logging.debug("gcp_credentials::user_account")
         return credentials.Credentials(scopes=scopes)  # type: ignore
 
     @property
-    def get_service_account_client(self) -> Union[oauth2.GoogleServiceAccountClient, GoogleOAuth2Client]:
+    def get_service_account_client(
+        self,
+    ) -> Union[oauth2.GoogleServiceAccountClient, GoogleOAuth2Client]:
         """
         Return a Google Ads service account client.
 
@@ -53,14 +59,18 @@ class ClientCredentials:
         scope = oauth2.GetAPIScope("ad_manager")
         if self.credentials_path is not None:
             logging.debug("get_service_account_client::service_account")
-            return oauth2.GoogleServiceAccountClient(key_file=self.credentials_path, scope=scope)
+            return oauth2.GoogleServiceAccountClient(
+                key_file=self.credentials_path, scope=scope
+            )
         logging.debug("get_service_account_client::user_account")
         return oauth2.GoogleOAuth2Client()
 
     def get_cloudplatform(
         self,
         credentials_path: Optional[str] = None,
-        scopes: Optional[List[str]] = ["https://www.googleapis.com/auth/cloud-platform"],
+        scopes: Optional[List[str]] = [
+            "https://www.googleapis.com/auth/cloud-platform"
+        ],
     ) -> Union[credentials.Credentials, service_account.Credentials]:
         """
         Return Google Cloud credentials for the given scopes.
@@ -80,7 +90,9 @@ class ClientCredentials:
         """
         if credentials_path is not None:
             logging.debug("get_cloudplatform::service_account")
-            return service_account.Credentials.from_service_account_file(filename=credentials_path, scopes=scopes)
+            return service_account.Credentials.from_service_account_file(
+                filename=credentials_path, scopes=scopes
+            )
         logging.debug("get_cloudplatform::user_account")
         return credentials.Credentials(scopes=scopes)  # type: ignore
 
@@ -91,7 +103,9 @@ class ServiceAccount:
     @staticmethod
     def from_service_account_file(
         credentials: Optional[str] = None,
-        scopes: Optional[List[str]] = ["https://www.googleapis.com/auth/cloud-platform"],
+        scopes: Optional[List[str]] = [
+            "https://www.googleapis.com/auth/cloud-platform"
+        ],
     ) -> service_account.Credentials:
         """
         Create credentials from a service account file.
@@ -111,7 +125,9 @@ class ServiceAccount:
         """
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        return service_account.Credentials.from_service_account_file(filename=credentials, scopes=scopes)
+        return service_account.Credentials.from_service_account_file(
+            filename=credentials, scopes=scopes
+        )
 
     @staticmethod
     def get_service_account_client(
@@ -135,4 +151,6 @@ class ServiceAccount:
         """
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        return oauth2.GoogleServiceAccountClient(key_file=credentials, scope=oauth2.GetAPIScope(scope))
+        return oauth2.GoogleServiceAccountClient(
+            key_file=credentials, scope=oauth2.GetAPIScope(scope)
+        )

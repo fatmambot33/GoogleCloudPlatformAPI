@@ -18,7 +18,9 @@ class TestBigQuery(unittest.TestCase):
         mock_creds = MagicMock()
         mock_service_account.from_service_account_file.return_value = mock_creds
         bq = BigQuery(credentials="path/to/creds.json", project_id="test-project")
-        mock_bigquery.Client.assert_called_once_with(credentials=mock_creds, project="test-project")
+        mock_bigquery.Client.assert_called_once_with(
+            credentials=mock_creds, project="test-project"
+        )
 
     @patch("GoogleCloudPlatformAPI.BigQuery.bigquery")
     def test_init_without_credentials(self, mock_bigquery):

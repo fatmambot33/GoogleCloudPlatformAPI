@@ -41,8 +41,12 @@ class Analytics:
         service_account_credentials = ServiceAccount.from_service_account_file(
             credentials=credentials, scopes=self.SCOPES
         )
-        self.__reporting = build("analyticsreporting", "v4", credentials=service_account_credentials)
-        self.__management = build("analytics", "v3", credentials=service_account_credentials)
+        self.__reporting = build(
+            "analyticsreporting", "v4", credentials=service_account_credentials
+        )
+        self.__management = build(
+            "analytics", "v3", credentials=service_account_credentials
+        )
 
     def list_views(self) -> List[Dict[str, Any]]:
         """
@@ -53,7 +57,12 @@ class Analytics:
         list[dict[str, Any]]
             A list of view objects.
         """
-        profiles = self.__management.management().profiles().list(accountId="~all", webPropertyId="~all").execute()
+        profiles = (
+            self.__management.management()
+            .profiles()
+            .list(accountId="~all", webPropertyId="~all")
+            .execute()
+        )
         return profiles.get("items", [])
 
     def __get_report(
@@ -94,19 +103,25 @@ class Analytics:
         if isinstance(end_date, datetime.date):
             end_date = end_date.strftime("%Y-%m-%d")
             logging.debug(f"__get_report::end_date::{end_date}")
-        return self.__reporting.reports().batchGet(
-            body={
-                "reportRequests": [
-                    {
-                        "viewId": str(view_id),
-                        "dateRanges": [{"startDate": start_date, "endDate": end_date}],
-                        "metrics": [{"expression": m} for m in metrics],
-                        "dimensions": [{"name": d} for d in dimensions],
-                        "pageSize": 100000,
-                    }
-                ]
-            }
-        ).execute()
+        return (
+            self.__reporting.reports()
+            .batchGet(
+                body={
+                    "reportRequests": [
+                        {
+                            "viewId": str(view_id),
+                            "dateRanges": [
+                                {"startDate": start_date, "endDate": end_date}
+                            ],
+                            "metrics": [{"expression": m} for m in metrics],
+                            "dimensions": [{"name": d} for d in dimensions],
+                            "pageSize": 100000,
+                        }
+                    ]
+                }
+            )
+            .execute()
+        )
 
     def get_report(
         self,
@@ -209,9 +224,12 @@ class Analytics:
             A DataFrame containing the report data.
         """
         report = analytics_report["reports"][0]
-        dimensions: List[str] = [d.replace("ga:", "") for d in report["columnHeader"]["dimensions"]]
+        dimensions: List[str] = [
+            d.replace("ga:", "") for d in report["columnHeader"]["dimensions"]
+        ]
         metrics: List[str] = [
-            m["name"].replace("ga:", "") for m in report["columnHeader"]["metricHeader"]["metricHeaderEntries"]
+            m["name"].replace("ga:", "")
+            for m in report["columnHeader"]["metricHeader"]["metricHeaderEntries"]
         ]
         headers: List[str] = list(dimensions) + list(metrics)
 

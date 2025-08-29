@@ -64,7 +64,10 @@ class FileHelper:
         filepath : str
             The file path whose parent directory will be checked.
         """
-        if not os.path.exists(os.path.dirname(filepath)) and len(os.path.dirname(filepath)) > 0:
+        if (
+            not os.path.exists(os.path.dirname(filepath))
+            and len(os.path.dirname(filepath)) > 0
+        ):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
     @staticmethod
@@ -108,7 +111,13 @@ class FileHelper:
         """
         file_path, file_name, file_extension = FileHelper.split_filepath(fullfilepath)
 
-        if len(glob(file_path + file_name + "-*" + file_extension) + glob(file_path + file_name + file_extension)) == 0:
+        if (
+            len(
+                glob(file_path + file_name + "-*" + file_extension)
+                + glob(file_path + file_name + file_extension)
+            )
+            == 0
+        ):
             return False
         return True
 
