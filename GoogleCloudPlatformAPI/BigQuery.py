@@ -53,17 +53,22 @@ class BigQuery:
             Path to a service account JSON file. Defaults to ``None`` which
             relies on environment configuration.
         project_id : str, optional
-            Google Cloud project identifier. Defaults to ``None``.
+            Google Cloud project identifier. Defaults to ``None``. If ``None``,
+            the project encoded in the credentials or environment is used.
         """
         logging.debug("BigQuery::__init__")
         if credentials is not None:
             creds = ServiceAccount.from_service_account_file(credentials)
-            project_id = creds.project_id
+            if project_id is None:
+                project_id = creds.project_id
         elif os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None:
             creds = ServiceAccount.from_service_account_file()
-            project_id = creds.project_id
+            if project_id is None:
+                project_id = creds.project_id
         else:
-            creds, project_id = auth.default(scopes=self.SCOPES)
+            creds, default_project_id = auth.default(scopes=self.SCOPES)
+            if project_id is None:
+                project_id = default_project_id
         self.__client = bigquery.Client(credentials=creds, project=project_id)
 
     def __enter__(self) -> "BigQuery":
