@@ -807,7 +807,9 @@ class BigQuery:
         self,
         dataframe: pd.DataFrame,
         table_id: str,
-        write_disposition: Literal["WRITE_TRUNCATE", "WRITE_APPEND", "WRITE_EMPTY"] = "WRITE_TRUNCATE",
+        write_disposition: Literal[
+            "WRITE_TRUNCATE", "WRITE_APPEND", "WRITE_EMPTY"
+        ] = "WRITE_TRUNCATE",
     ) -> None:
         """
         Load a DataFrame into a BigQuery table.

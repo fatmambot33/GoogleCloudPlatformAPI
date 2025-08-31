@@ -6,6 +6,7 @@ import datetime
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import importlib
+
 ad_mod = importlib.import_module("GoogleCloudPlatformAPI.AdManager")
 
 
@@ -71,7 +72,12 @@ def test_audience_service_list_all(mock_gam_client):
     mock_gam_client.return_value = mock_gam_instance
 
     mock_service.getAudienceSegmentsByStatement.side_effect = [
-        {"results": [{"id": 1, "name": "Segment 1", "size": 100}, {"id": 2, "name": "Segment 2", "size": 200}]},
+        {
+            "results": [
+                {"id": 1, "name": "Segment 1", "size": 100},
+                {"id": 2, "name": "Segment 2", "size": 200},
+            ]
+        },
         {"results": [{"id": 3, "name": "Segment 3", "size": 300}]},
         {"results": []},
     ]
@@ -122,7 +128,9 @@ def test_report_service_get_report_dataframe(mock_gam_client):
     mock_gam_client.return_value = mock_gam_instance
 
     report_service = ad_mod.ReportService()
-    with patch.object(ad_mod.ReportService, "get_report_dataframe_by_statement") as mock_get_by_stmt:
+    with patch.object(
+        ad_mod.ReportService, "get_report_dataframe_by_statement"
+    ) as mock_get_by_stmt:
         mock_get_by_stmt.return_value = pd.DataFrame(
             {"Dimension.DATE": ["2023-01-01"], "Column.IMPRESSIONS": ["100"]}
         )

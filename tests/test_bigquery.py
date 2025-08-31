@@ -11,6 +11,7 @@ from google.cloud.exceptions import NotFound
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import importlib
+
 bqmod = importlib.import_module("GoogleCloudPlatformAPI.BigQuery")
 
 
@@ -21,8 +22,9 @@ def mock_client():
 
 
 def test_init_with_credentials(mock_client):
-    with patch.object(bqmod, "ServiceAccount", autospec=True) as mock_sa, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client) as mock_bq_client:
+    with patch.object(bqmod, "ServiceAccount", autospec=True) as mock_sa, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ) as mock_bq_client:
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_creds.project_id = "test-project"
@@ -30,24 +32,30 @@ def test_init_with_credentials(mock_client):
 
         bqmod.BigQuery(credentials="path/to/creds.json")
 
-        mock_bq_client.assert_called_once_with(credentials=mock_creds, project="test-project")
+        mock_bq_client.assert_called_once_with(
+            credentials=mock_creds, project="test-project"
+        )
 
 
 def test_init_without_credentials(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client) as mock_bq_client:
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ) as mock_bq_client:
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
 
         bqmod.BigQuery()
 
-        mock_bq_client.assert_called_once_with(credentials=mock_creds, project="test-project")
+        mock_bq_client.assert_called_once_with(
+            credentials=mock_creds, project="test-project"
+        )
 
 
 def test_table_exists_true(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -58,8 +66,9 @@ def test_table_exists_true(mock_client):
 
 
 def test_table_exists_false(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -71,8 +80,9 @@ def test_table_exists_false(mock_client):
 
 
 def test_execute_query(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -87,8 +97,9 @@ def test_execute_query(mock_client):
 
 
 def test_delete_partition(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -105,8 +116,9 @@ def test_delete_partition(mock_client):
 
 
 def test_delete_partition_table_not_exists(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -119,8 +131,9 @@ def test_delete_partition_table_not_exists(mock_client):
 
 
 def test_execute_stored_procedure(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -139,10 +152,15 @@ def test_execute_stored_procedure(mock_client):
 
 
 def test_create_schema_from_table(mock_client, monkeypatch, tmp_path):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client), \
-        patch.dict(os.environ, {"DEFAULT_BQ_DATASET": "my_dataset", "DEFAULT_GCS_BUCKET": "bucket"}, clear=False), \
-        patch.object(bqmod, "CloudStorage") as mock_cs:
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ), patch.dict(
+        os.environ,
+        {"DEFAULT_BQ_DATASET": "my_dataset", "DEFAULT_GCS_BUCKET": "bucket"},
+        clear=False,
+    ), patch.object(
+        bqmod, "CloudStorage"
+    ) as mock_cs:
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -168,8 +186,9 @@ def test_create_schema_from_table(mock_client, monkeypatch, tmp_path):
 
 
 def test_load_from_query(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")
@@ -182,8 +201,9 @@ def test_load_from_query(mock_client):
 
 
 def test_dataframe_to_bigquery(mock_client):
-    with patch("google.auth.default") as mock_auth_default, \
-        patch("google.cloud.bigquery.Client", return_value=mock_client):
+    with patch("google.auth.default") as mock_auth_default, patch(
+        "google.cloud.bigquery.Client", return_value=mock_client
+    ):
         mock_creds = MagicMock(spec=Credentials)
         mock_creds.universe_domain = "googleapis.com"
         mock_auth_default.return_value = (mock_creds, "test-project")

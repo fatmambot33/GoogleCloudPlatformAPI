@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import importlib
+
 oauth_mod = importlib.import_module("GoogleCloudPlatformAPI.Oauth")
 
 
