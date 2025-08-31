@@ -10,7 +10,22 @@ from typing import Any, List, Optional, Tuple, Union
 
 
 class FileHelper:
-    """Utility functions for working with files."""
+    """
+    Utility functions for working with files.
+
+    Methods
+    -------
+    save_to_json(obj, filepath)
+        Serialise an object to a JSON file.
+    read_json(filepath)
+        Read a JSON file and return its contents.
+    check_filepath(filepath)
+        Ensure that the parent directory for ``filepath`` exists.
+    split_filepath(fullfilepath)
+        Split a full file path into path, name and extension.
+    file_exists(fullfilepath)
+        Return ``True`` if the file exists on disk.
+    """
 
     @staticmethod
     def save_to_json(obj: Any, filepath: str) -> None:
@@ -111,19 +126,24 @@ class FileHelper:
         """
         file_path, file_name, file_extension = FileHelper.split_filepath(fullfilepath)
 
-        if (
-            len(
-                glob(file_path + file_name + "-*" + file_extension)
-                + glob(file_path + file_name + file_extension)
-            )
-            == 0
-        ):
-            return False
-        return True
+        files = glob(file_path + file_name + "-*" + file_extension)
+        files.extend(glob(file_path + file_name + file_extension))
+        return len(files) > 0
 
 
 class ListHelper:
-    """Functions that operate on lists."""
+    """
+    Functions that operate on lists.
+
+    Methods
+    -------
+    chunk_list(lst, n)
+        Yield ``n``-sized chunks from ``lst``.
+    convert_list(val)
+        Convert a string representation of a list to an actual list.
+    merge_list(lst1, lst2=None)
+        Merge two lists removing duplicates.
+    """
 
     @staticmethod
     def chunk_list(lst: List[Any], n: int) -> List[List[Any]]:
@@ -187,4 +207,6 @@ class ListHelper:
             lst2 = [lst2]
         if lst2 is None:
             lst2 = []
-        return list(dict.fromkeys(lst1 + lst2))
+        merged = list(lst1)
+        merged.extend(lst2)
+        return list(dict.fromkeys(merged))

@@ -34,9 +34,44 @@ class BigQuery:
     ----------
     SCOPES : list[str]
         The scopes required for the BigQuery API.
+
+    Methods
+    -------
+    execute_query(query, job_config=None)
+        Execute a SQL query and return the resulting rows.
+    execute_stored_procedure(sp_name, sp_params)
+        Execute a stored procedure and return its result set.
+    table_exists(table_id)
+        Check whether a BigQuery table exists.
+    create_schema_from_table(folder, dataset=None)
+        Create a schema definition file based on an existing table.
+    create_external_table(dataset_name, table_name, table_schema, source_uris, partition_field="date", time_partioning=False)
+        Create an external table based on objects stored in Cloud Storage.
+    create_table_from_schema(folder, dataset=None, data_path=None)
+        Create a BigQuery table using a stored schema file.
+    load_from_query(query, table_id, write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
+        Execute a query and write results to a table.
+    delete_partition(table_id, partition_date, partition_name="date")
+        Delete a partition from a table if it exists.
+    load_from_cloud(bucket_name, data_set, table, local_folder, remote_folder, partition_date, partition_name="date", file_mask="*.gz", override=False)
+        Load data from Cloud Storage into a BigQuery table.
+    load_from_local(bucket_name, data_set, table, local_folder, prefix, partition_date, partition_name="date", file_mask="*.csv.gz", override=False)
+        Upload local files to Cloud Storage and load them into BigQuery.
+    load_from_uri(table_id, bucket_name, data_path, partition_date)
+        Load data from a specific Cloud Storage URI.
+    build_job_config(table_name, bucket_name, data_path, partition_date)
+        Build a BigQuery load job configuration.
+    sync_from_cloud(bucket_name, data_set, table, local_folder, remote_folder, partition_date, partition_name="date", override=False)
+        Synchronise data from Cloud Storage into BigQuery.
+    sync_from_local(bucket_name, data_set, table, local_folder, prefix, partition_date, partition_name="date", file_mask="*.csv.gz", override=False)
+        Upload local files then load them into BigQuery.
+    bigquery_to_dataframe(query_string)
+        Run a query and return the results as a DataFrame.
+    dataframe_to_bigquery(dataframe, table_id, write_disposition="WRITE_TRUNCATE")
+        Load a DataFrame into a BigQuery table.
     """
 
-    __client: bigquery.Client
+    _client: bigquery.Client
     SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
     def __init__(
@@ -62,7 +97,7 @@ class BigQuery:
             project_id = creds.project_id
         else:
             creds, project_id = auth.default(scopes=self.SCOPES)
-        self.__client = bigquery.Client(credentials=creds, project=project_id)
+        self._client = bigquery.Client(credentials=creds, project=project_id)
 
     def __enter__(self) -> "BigQuery":
         """
@@ -88,7 +123,7 @@ class BigQuery:
         exc_tb : Any
             The traceback.
         """
-        self.__client.close()
+        self._client.close()
 
     def execute_query(
         self, query: str, job_config: Optional[bigquery.QueryJobConfig] = None
@@ -111,11 +146,11 @@ class BigQuery:
         logging.debug("BigQuery::execute_query")
         # Only include job_config when provided to match call expectations in tests.
         if job_config is not None:
-            return list(self.__client.query(query, job_config=job_config).result())
-        return list(self.__client.query(query).result())
+            return list(self._client.query(query, job_config=job_config).result())
+        return list(self._client.query(query).result())
 
     @dataclass
-    class oSpParam:
+    class StoredProcedureParameter:
         """
         Parameter description for stored procedure execution.
 
@@ -136,7 +171,7 @@ class BigQuery:
         type: str
 
     def execute_stored_procedure(
-        self, sp_name: str, sp_params: List[oSpParam]
+        self, sp_name: str, sp_params: List[StoredProcedureParameter]
     ) -> pd.DataFrame:
         """
         Execute a stored procedure and return its result set.
@@ -145,7 +180,7 @@ class BigQuery:
         ----------
         sp_name : str
             Fully qualified stored procedure name.
-        sp_params : list[BigQuery.oSpParam]
+        sp_params : list[BigQuery.StoredProcedureParameter]
             Parameters passed to the stored procedure.
 
         Returns
@@ -182,7 +217,7 @@ class BigQuery:
         """
         logging.debug(f"BigQuery::table_exists::{table_id}")
         try:
-            self.__client.get_table(table_id)
+            self._client.get_table(table_id)
             return True
         except NotFound:
             return False
@@ -219,9 +254,9 @@ class BigQuery:
 
         schema["table_schema"] = []
         if self.table_exists(f"{dataset}.{folder}"):
-            dataset_ref = self.__client.dataset(dataset)  # type: ignore
+            dataset_ref = self._client.dataset(dataset)  # type: ignore
             table_ref = dataset_ref.table(folder)
-            table = self.__client.get_table(table_ref)
+            table = self._client.get_table(table_ref)
             for schema_field in table.schema:
                 schema["table_schema"].append(
                     {
@@ -302,14 +337,14 @@ class BigQuery:
             csv_options.allow_quoted_newlines = table_schema["allow_quoted_newlines"]
             external_config.csv_options = csv_options
 
-            bq_dataset = self.__client.dataset(dataset_name)
+            bq_dataset = self._client.dataset(dataset_name)
             bq_table = bigquery.Table(bq_dataset.table(table_name), schema=schema)
             if time_partioning:
                 bq_table.time_partitioning = bigquery.TimePartitioning(
                     field=partition_field
                 )
             bq_table.external_data_configuration = external_config
-            self.__client.create_table(bq_table)
+            self._client.create_table(bq_table)
             return True
         return False
 
@@ -356,7 +391,7 @@ class BigQuery:
                 if field["name"] == "report_date":
                     partition_field = "report_date"
                 job_schema.append(bq_field)
-            bq_dataset = self.__client.dataset(dataset)  # type: ignore
+            bq_dataset = self._client.dataset(dataset)  # type: ignore
             bq_table = bq_dataset.table(folder)
             bq_table = bigquery.Table(bq_table, schema=job_schema)
 
@@ -364,7 +399,7 @@ class BigQuery:
                 field=partition_field
             )
 
-            self.__client.create_table(bq_table)
+            self._client.create_table(bq_table)
             return True
         return False
 
@@ -393,7 +428,7 @@ class BigQuery:
             allow_large_results=True,
             write_disposition=write_disposition,
         )
-        query_job = self.__client.query(query=query, job_config=job_config)
+        query_job = self._client.query(query=query, job_config=job_config)
         query_job.result()  # Wait for the job to complete.
 
         logging.debug(f"Query results loaded to the table {table_id}")
@@ -423,7 +458,7 @@ class BigQuery:
                 f"BigQuery::delete_partition::{table_id}::{partition_date.strftime('%Y-%m-%d')}"
             )
             query = f"DELETE FROM {table_id} WHERE {partition_name} = '{partition_date.strftime('%Y-%m-%d')}'"
-            query_job = self.__client.query(query)  # API request
+            query_job = self._client.query(query)  # API request
             query_job.result()  # Waits for query to finish
             return True
         return False
@@ -481,7 +516,7 @@ class BigQuery:
             data_path=remote_folder,
         )
 
-        load_job = self.__client.load_table_from_uri(
+        load_job = self._client.load_table_from_uri(
             uri, table_id, job_config=job_config
         )
 
@@ -608,7 +643,7 @@ class BigQuery:
             data_path=data_path,
         )
 
-        self.__client.load_table_from_uri(
+        self._client.load_table_from_uri(
             source_uris=uri, destination=table_id, job_config=job_config
         ).result()
         return True
@@ -798,7 +833,7 @@ class BigQuery:
         """
         logging.debug("bigquery_to_dataframe")
         return (
-            self.__client.query(query_string)
+            self._client.query(query_string)
             .result()
             .to_dataframe(create_bqstorage_client=True)
         )
@@ -838,11 +873,11 @@ class BigQuery:
             schema=bq_schema, write_disposition=write_disposition
         )
 
-        job = self.__client.load_table_from_dataframe(
+        job = self._client.load_table_from_dataframe(
             dataframe, table_id, job_config=job_config
         )
         job.result()
-        table = self.__client.get_table(table_id)
+        table = self._client.get_table(table_id)
         logging.debug(
             f"Loaded {table.num_rows} rows and {len(table.schema)} columns to {table_id}"
         )

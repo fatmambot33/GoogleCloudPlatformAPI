@@ -19,11 +19,36 @@ class CloudStorage:
     ----------
     __client : google.cloud.storage.Client
         The Cloud Storage client.
+
+    Methods
+    -------
+    list_files(bucket_name, prefix)
+        List blob names under ``prefix`` in ``bucket_name``.
+    download_as_string(bucket_name, source_blob_name, destination_file_name)
+        Download a JSON blob and save it locally.
+    upload(bucket_name, destination_blob_name, data, override=True)
+        Upload data to Cloud Storage.
+    upload_from_string(bucket_name, destination_blob_name, data, override=False)
+        Upload a string to Cloud Storage.
+    upload_file_from_filename(local_file_path, destination_file_path, bucket_name, override=False)
+        Upload a local file to Cloud Storage from a filename.
+    upload_file(local_file_path, destination_file_path, override=False)
+        Upload a file to a ``bucket_name/blob_path`` destination.
+    upload_folder(local_folder, remote_folder, bucket_name, file_mask="*.gz", override=False)
+        Upload all files in a local folder to Cloud Storage.
+    file_exists(filepath, bucket_name)
+        Return ``True`` if ``filepath`` exists in ``bucket_name``.
+    delete_file(filename, bucket_name)
+        Delete a single blob from Cloud Storage.
+    delete_files(bucket_name, prefix)
+        Delete all blobs with a given prefix.
+    copy_file(bucket_name, file_name, destination_bucket_name, override=False)
+        Copy a file between buckets.
+    copy_files(bucket_name, prefix, destination_bucket_name, override=False)
+        Copy all files with ``prefix`` to another bucket.
     """
 
-    __client: storage.Client
-    # Explicit alias for name-mangled attribute to satisfy static checkers
-    _CloudStorage__client: storage.Client
+    _client: storage.Client
 
     def __init__(
         self, credentials: Optional[str] = None, project_id: Optional[str] = None
@@ -41,14 +66,14 @@ class CloudStorage:
         """
         logging.debug("CloudStorage::__init__")
         if credentials is not None:
-            self.__client = storage.Client(credentials=credentials, project=project_id)
+            self._client = storage.Client(credentials=credentials, project=project_id)
         elif os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None:
-            self.__client = storage.Client(
+            self._client = storage.Client(
                 credentials=ServiceAccount.from_service_account_file(),
                 project=project_id,
             )
         else:
-            self.__client = storage.Client(project=project_id)
+            self._client = storage.Client(project=project_id)
 
     def __enter__(self) -> "CloudStorage":
         """
@@ -74,7 +99,7 @@ class CloudStorage:
         exc_tb : Any
             The traceback.
         """
-        self.__client.close()
+        self._client.close()
 
     def list_files(self, bucket_name: str, prefix: str) -> List[str]:
         """
@@ -94,7 +119,7 @@ class CloudStorage:
         """
         logging.debug(f"CloudStorage::list_files::{bucket_name}/{prefix}")
         _return: List[str] = []
-        blobs = self.__client.list_blobs(bucket_name, prefix=prefix)
+        blobs = self._client.list_blobs(bucket_name, prefix=prefix)
         for blob in blobs:
             _return.append(blob.name)
         return _return
@@ -115,7 +140,7 @@ class CloudStorage:
             The local path to save the file to.
         """
         logging.debug(f"CloudStorage::download_as_string::{destination_file_name}")
-        bucket = self.__client.bucket(bucket_name)
+        bucket = self._client.bucket(bucket_name)
         blob = bucket.blob(source_blob_name)
         json_data_string = blob.download_as_string()
         json_data = json.loads(json_data_string)
@@ -149,7 +174,7 @@ class CloudStorage:
                 filepath=destination_blob_name, bucket_name=bucket_name
             ):
                 return
-        bucket = self.__client.bucket(bucket_name)
+        bucket = self._client.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_string(str(data))
 
@@ -176,7 +201,7 @@ class CloudStorage:
         """
         logging.debug("CloudStorage::upload_from_string")
         if not self.file_exists(destination_blob_name, bucket_name) or override:
-            bucket = self.__client.bucket(bucket_name)
+            bucket = self._client.bucket(bucket_name)
             blob = bucket.blob(destination_blob_name)
             blob.upload_from_string(data)
 
@@ -208,7 +233,7 @@ class CloudStorage:
             )
             or override
         ):
-            bucket = self.__client.bucket(bucket_name)
+            bucket = self._client.bucket(bucket_name)
             blob = bucket.blob(destination_file_path)
             blob.upload_from_filename(local_file_path)
 
@@ -238,7 +263,7 @@ class CloudStorage:
             not self.file_exists(filepath=blob_path, bucket_name=bucket_name)
             or override
         ):
-            bucket_name_obj = self.__client.bucket(bucket_name)
+            bucket_name_obj = self._client.bucket(bucket_name)
             blob = bucket_name_obj.blob(blob_path)
             blob.upload_from_filename(local_file_path)
 
@@ -294,7 +319,7 @@ class CloudStorage:
             ``True`` if the file exists, ``False`` otherwise.
         """
         logging.debug(f"CloudStorage::file_exists::{filepath}")
-        bucket = self.__client.bucket(bucket_name)
+        bucket = self._client.bucket(bucket_name)
         blob = bucket.blob(filepath)
         return blob.exists()
 
@@ -310,7 +335,7 @@ class CloudStorage:
             The name of the bucket.
         """
         logging.debug("CloudStorage::delete_file")
-        source_bucket = self.__client.bucket(bucket_name)
+        source_bucket = self._client.bucket(bucket_name)
         source_bucket.delete_blob(filename)
 
     def delete_files(self, bucket_name: str, prefix: str) -> None:
@@ -325,7 +350,7 @@ class CloudStorage:
             The prefix of the blobs to delete.
         """
         logging.debug("CloudStorage::delete_files")
-        blobs = self.__client.list_blobs(bucket_name, prefix=prefix)
+        blobs = self._client.list_blobs(bucket_name, prefix=prefix)
         for blob in blobs:
             blob.delete()
 
@@ -362,9 +387,9 @@ class CloudStorage:
             )
             or override
         ):
-            source_bucket = self.__client.bucket(bucket_name)
+            source_bucket = self._client.bucket(bucket_name)
             source_blob = source_bucket.blob(file_name)
-            destination_bucket = self.__client.bucket(destination_bucket_name)
+            destination_bucket = self._client.bucket(destination_bucket_name)
 
             source_bucket.copy_blob(source_blob, destination_bucket, file_name)
             return True

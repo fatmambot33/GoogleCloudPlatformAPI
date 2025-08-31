@@ -19,13 +19,24 @@ class Analytics:
     ----------
     SCOPES : list[str]
         The scopes required for the Analytics API.
+
+    Methods
+    -------
+    list_views()
+        Return all accessible Analytics views.
+    get_report(view_id, dimensions=["ga:source", "ga:medium"], metrics=["ga:sessions"], start_date="30daysAgo", end_date="yesterday")
+        Return a report for a specific view as a DataFrame.
+    get_all_reports(dimensions=["ga:source", "ga:medium"], metrics=["ga:sessions"], start_date="30daysAgo", end_date="yesterday")
+        Fetch reports for all available views and combine them.
+    report_to_df(analytics_report)
+        Convert an Analytics API response to a DataFrame.
     """
 
     SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
     # Expose dependency for tests to patch via package-level path
     ServiceAccount = ServiceAccount
-    __reporting: Any
-    __management: Any
+    _reporting: Any
+    _management: Any
 
     def __init__(self, credentials: Optional[str] = None) -> None:
         """
@@ -43,10 +54,10 @@ class Analytics:
         service_account_credentials = self.ServiceAccount.from_service_account_file(
             credentials=credentials, scopes=self.SCOPES
         )
-        self.__reporting = build(
+        self._reporting = build(
             "analyticsreporting", "v4", credentials=service_account_credentials
         )
-        self.__management = build(
+        self._management = build(
             "analytics", "v3", credentials=service_account_credentials
         )
 
@@ -60,14 +71,14 @@ class Analytics:
             A list of view objects.
         """
         profiles = (
-            self.__management.management()
+            self._management.management()
             .profiles()
             .list(accountId="~all", webPropertyId="~all")
             .execute()
         )
         return profiles.get("items", [])
 
-    def __get_report(
+    def _get_report(
         self,
         view_id: int,
         dimensions: List[str],
@@ -98,15 +109,15 @@ class Analytics:
         dict[str, Any]
             The raw report from the API.
         """
-        logging.debug("Analytics::__get_report")
+        logging.debug("Analytics::_get_report")
         if isinstance(start_date, datetime.date):
             start_date = start_date.strftime("%Y-%m-%d")
-            logging.debug(f"__get_report::start_date::{start_date}")
+            logging.debug(f"Analytics::_get_report::start_date::{start_date}")
         if isinstance(end_date, datetime.date):
             end_date = end_date.strftime("%Y-%m-%d")
-            logging.debug(f"__get_report::end_date::{end_date}")
+            logging.debug(f"Analytics::_get_report::end_date::{end_date}")
         return (
-            self.__reporting.reports()
+            self._reporting.reports()
             .batchGet(
                 body={
                     "reportRequests": [
@@ -156,7 +167,7 @@ class Analytics:
             A DataFrame containing the report data.
         """
         logging.debug(f"Analytics::get_report::{view_id}")
-        results = self.__get_report(
+        results = self._get_report(
             view_id=view_id,
             dimensions=dimensions,
             metrics=metrics,

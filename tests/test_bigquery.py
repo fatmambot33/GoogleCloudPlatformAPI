@@ -143,8 +143,12 @@ def test_execute_stored_procedure(mock_client):
 
         bq = bqmod.BigQuery()
         sp_params = [
-            bqmod.BigQuery.oSpParam(name="param1", value="value1", type="STRING"),
-            bqmod.BigQuery.oSpParam(name="param2", value=123, type="INT64"),
+            bqmod.BigQuery.StoredProcedureParameter(
+                name="param1", value="value1", type="STRING"
+            ),
+            bqmod.BigQuery.StoredProcedureParameter(
+                name="param2", value=123, type="INT64"
+            ),
         ]
         results = bq.execute_stored_procedure("my_sp", sp_params)
         assert results.to_dict() == {"a": {0: 1}, "b": {0: 2}}
