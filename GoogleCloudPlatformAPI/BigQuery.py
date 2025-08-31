@@ -13,6 +13,7 @@ import pandas as pd
 from google.cloud import bigquery
 from google.cloud.bigquery import QueryJobConfig, ScalarQueryParameter
 from google.cloud.exceptions import NotFound
+from google import auth
 
 from .CloudStorage import CloudStorage
 from .Oauth import ServiceAccount
@@ -56,17 +57,16 @@ class BigQuery:
         """
         logging.debug("BigQuery::__init__")
         if credentials is not None:
-            self.__client = bigquery.Client(
-                credentials=ServiceAccount.from_service_account_file(credentials),
-                project=project_id,
-            )
+            creds = ServiceAccount.from_service_account_file(credentials)
+            project_id = creds.project_id
         elif os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None:
-            self.__client = bigquery.Client(
-                credentials=ServiceAccount.from_service_account_file(),
-                project=project_id,
-            )
+            creds = ServiceAccount.from_service_account_file()
+            project_id = creds.project_id
         else:
-            self.__client = bigquery.Client(project=project_id)
+            creds, project_id = auth.default(
+                scopes=self.SCOPES
+            )
+        self.__client = bigquery.Client(credentials=creds, project=project_id)
 
     def __enter__(self) -> "BigQuery":
         """
