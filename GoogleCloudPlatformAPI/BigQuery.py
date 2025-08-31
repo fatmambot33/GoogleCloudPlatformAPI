@@ -7,7 +7,7 @@ import logging
 import os
 import shutil
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Literal
 
 import pandas as pd
 from google.cloud import bigquery
@@ -37,8 +37,6 @@ class BigQuery:
     """
 
     __client: bigquery.Client
-    # Explicit alias for name-mangled attribute to satisfy static checkers
-    _BigQuery__client: bigquery.Client
     SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
     def __init__(
@@ -111,12 +109,10 @@ class BigQuery:
             Query results as a list of rows.
         """
         logging.debug("BigQuery::execute_query")
+        # Only include job_config when provided to match call expectations in tests.
         if job_config is not None:
-            return [
-                row
-                for row in self.__client.query(query, job_config=job_config).result()
-            ]
-        return [row for row in self.__client.query(query).result()]
+            return list(self.__client.query(query, job_config=job_config).result())
+        return list(self.__client.query(query).result())
 
     @dataclass
     class oSpParam:
@@ -158,23 +154,17 @@ class BigQuery:
             Data frame containing the stored procedure output.
         """
         logging.debug(f"BigQuery::execute_sp::{sp_name}")
-        sp_instruction_params = "@" + ",@".join(
-            [sp_param.name for sp_param in sp_params]
-        )
-
+        sp_instruction_params = "@" + ",@".join(sp_param.name for sp_param in sp_params)
         query = f"CALL `{sp_name}`({sp_instruction_params})"
-        query_parameters = []
-        for sp_param in sp_params:
-            query_parameters.append(
-                ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value)
-            )
+
+        query_parameters = [
+            ScalarQueryParameter(sp_param.name, sp_param.type, sp_param.value)
+            for sp_param in sp_params
+        ]
 
         job_config = QueryJobConfig(query_parameters=query_parameters)
         query_results = self.execute_query(query, job_config)
-        result_list = []
-        for result in query_results:
-            result_list.append(dict(**result))
-        return pd.DataFrame(result_list)
+        return pd.DataFrame([dict(**result) for result in query_results])
 
     def table_exists(self, table_id: str) -> bool:
         """
@@ -295,17 +285,22 @@ class BigQuery:
                 time_partioning = True
             schema.append(bq_field)
 
-        external_config = bigquery.ExternalConfig(
-            source_format=table_schema["source_format"]
+        # Map provided source format to the ExternalSourceFormat enum.
+        source_format = (
+            bigquery.ExternalSourceFormat.CSV
+            if str(table_schema.get("source_format", "")).upper() == "CSV"
+            else bigquery.ExternalSourceFormat.NEWLINE_DELIMITED_JSON
         )
+        external_config = bigquery.ExternalConfig(source_format=source_format)
         external_config.source_uris = source_uris
 
-        if table_schema["source_format"] == "CSV":
-            options = bigquery.CSVOptions
-            options.field_delimiter = table_schema["field_delimiter"]
-            options.skip_leading_rows = table_schema["skip_leading_rows"]
-            options.allow_jagged_rows = table_schema["allow_jagged_rows"]
-            options.allow_quoted_newlines = table_schema["allow_quoted_newlines"]
+        if source_format == bigquery.ExternalSourceFormat.CSV:
+            csv_options = bigquery.CSVOptions()
+            csv_options.field_delimiter = table_schema["field_delimiter"]
+            csv_options.skip_leading_rows = table_schema["skip_leading_rows"]
+            csv_options.allow_jagged_rows = table_schema["allow_jagged_rows"]
+            csv_options.allow_quoted_newlines = table_schema["allow_quoted_newlines"]
+            external_config.csv_options = csv_options
 
             bq_dataset = self.__client.dataset(dataset_name)
             bq_table = bigquery.Table(bq_dataset.table(table_name), schema=schema)
@@ -478,11 +473,12 @@ class BigQuery:
         logging.debug(f"BigQuery::load_from_cloud::{table_id}")
         if override:
             self.delete_partition(table_id, partition_date, partition_name)
+        # Build configuration using the remote folder (GCS path) for URIs and schema.
         job_config, uri = BigQuery.build_job_config(
             table_name=table_id,
             bucket_name=bucket_name,
             partition_date=partition_date,
-            data_path=local_folder,
+            data_path=remote_folder,
         )
 
         load_job = self.__client.load_table_from_uri(
@@ -662,12 +658,12 @@ class BigQuery:
         with open(partition_schema_path, mode="r") as schema_file:
             schema_json = json.load(schema_file)
 
-            job_schema = []
-            for field in schema_json["table_schema"]:
-                bq_field = bigquery.SchemaField(
+            job_schema = [
+                bigquery.SchemaField(
                     name=field["name"], field_type=field["type"], mode=field["mode"]
                 )
-                job_schema.append(bq_field)
+                for field in schema_json["table_schema"]
+            ]
             job_config = bigquery.LoadJobConfig(
                 schema=job_schema,
                 # max_bad_records=10000,
@@ -676,26 +672,19 @@ class BigQuery:
                 ignore_unknown_values=schema_json["ignore_unknown_values"],
             )
             if partition_date is not None:
-                uri = (
-                    "gs://"
-                    + bucket_name
-                    + "/"
-                    + os.path.basename(os.path.dirname(folder_name))
-                    + "/"
-                    + partition_date.strftime("%Y-%m-%d")
-                )
+                uri = f"gs://{bucket_name}/{os.path.basename(os.path.dirname(folder_name))}/{partition_date.strftime('%Y-%m-%d')}"
                 job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
             else:
-                uri = "gs://" + bucket_name + "/" + folder_name
+                uri = f"gs://{bucket_name}/{folder_name}"
                 job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
             if schema_json["source_format"] == "CSV":
                 job_config.field_delimiter = schema_json["field_delimiter"]
                 job_config.skip_leading_rows = schema_json["skip_leading_rows"]
                 job_config.source_format = bigquery.SourceFormat.CSV
-                uri = uri + "/*.csv.gz"
+                uri = f"{uri}/*.csv.gz"
             else:
                 job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-                uri = uri + "/*.json.gz"
+                uri = f"{uri}/*.json.gz"
 
             return job_config, uri
 
@@ -818,7 +807,7 @@ class BigQuery:
         self,
         dataframe: pd.DataFrame,
         table_id: str,
-        write_disposition: str = bigquery.WriteDisposition.WRITE_TRUNCATE,
+        write_disposition: Literal["WRITE_TRUNCATE", "WRITE_APPEND", "WRITE_EMPTY"] = "WRITE_TRUNCATE",
     ) -> None:
         """
         Load a DataFrame into a BigQuery table.
@@ -834,18 +823,14 @@ class BigQuery:
             exists. Defaults to ``WRITE_TRUNCATE``.
         """
         # Construct a BigQuery client object.
-        bq_schema = []
-        df_schema = dict(dataframe.dtypes)
-
-        for item in df_schema.items():
-            # Specify the type of columns whose type cannot be auto-detected.
-            # For example  pandas dtype "object", so its data type is ambiguous.
-
-            if item[1].name == "object":
-                bq_field = bigquery.SchemaField(
-                    item[0], DATA_TYPE_MAPPING[str(item[1].name)]
+        bq_schema: List[bigquery.SchemaField] = []
+        # Specify the type of columns whose type cannot be auto-detected
+        # (e.g. pandas dtype "object" where the data type is ambiguous).
+        for col_name, dtype in dataframe.dtypes.items():
+            if dtype.name == "object":
+                bq_schema.append(
+                    bigquery.SchemaField(str(col_name), DATA_TYPE_MAPPING[dtype.name])
                 )
-                bq_schema.append(bq_field)
 
         job_config = bigquery.LoadJobConfig(
             schema=bq_schema, write_disposition=write_disposition

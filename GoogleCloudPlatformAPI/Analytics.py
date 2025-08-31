@@ -22,6 +22,8 @@ class Analytics:
     """
 
     SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
+    # Expose dependency for tests to patch via package-level path
+    ServiceAccount = ServiceAccount
     __reporting: Any
     __management: Any
 
@@ -38,7 +40,7 @@ class Analytics:
         logging.debug("Analytics::__init__")
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        service_account_credentials = ServiceAccount.from_service_account_file(
+        service_account_credentials = self.ServiceAccount.from_service_account_file(
             credentials=credentials, scopes=self.SCOPES
         )
         self.__reporting = build(
