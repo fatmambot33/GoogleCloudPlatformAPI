@@ -130,7 +130,6 @@ class TestBigQuery(unittest.TestCase):
             self.assertFalse(result)
             mock_client.query.assert_not_called()
 
-
     @patch("google.auth.default")
     @patch("google.cloud.bigquery.Client")
     def test_execute_stored_procedure(self, mock_bigquery_client, mock_auth_default):
@@ -152,7 +151,6 @@ class TestBigQuery(unittest.TestCase):
         results = bq.execute_stored_procedure("my_sp", sp_params)
         self.assertEqual(results.to_dict(), {"a": {0: 1}, "b": {0: 2}})
         mock_client.query.assert_called_once()
-
 
     @patch("GoogleCloudPlatformAPI.BigQuery.CloudStorage")
     @patch("google.auth.default")
@@ -189,7 +187,6 @@ class TestBigQuery(unittest.TestCase):
             self.assertIsNotNone(schema)
             mock_cloud_storage.return_value.upload_from_string.assert_called_once()
 
-
     @patch("google.auth.default")
     @patch("google.cloud.bigquery.Client")
     def test_load_from_query(self, mock_bigquery_client, mock_auth_default):
@@ -205,7 +202,6 @@ class TestBigQuery(unittest.TestCase):
         table_id = f"{mock_client.project}.my_dataset.my_table"
         bq.load_from_query("SELECT * FROM my_table", table_id)
         mock_client.query.assert_called_once()
-
 
     @patch("google.auth.default")
     @patch("google.cloud.bigquery.Client")

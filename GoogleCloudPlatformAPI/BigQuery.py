@@ -63,9 +63,7 @@ class BigQuery:
             creds = ServiceAccount.from_service_account_file()
             project_id = creds.project_id
         else:
-            creds, project_id = auth.default(
-                scopes=self.SCOPES
-            )
+            creds, project_id = auth.default(scopes=self.SCOPES)
         self.__client = bigquery.Client(credentials=creds, project=project_id)
 
     def __enter__(self) -> "BigQuery":

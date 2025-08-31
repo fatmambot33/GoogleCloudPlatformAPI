@@ -65,7 +65,6 @@ class TestCloudStorage(unittest.TestCase):
         mock_client.bucket.assert_called_once_with("my-bucket")
         mock_bucket.blob.assert_called_once_with("my-file")
 
-
     @patch("builtins.open", new_callable=unittest.mock.mock_open)
     @patch("json.dumps")
     @patch("json.loads")
@@ -100,7 +99,6 @@ class TestCloudStorage(unittest.TestCase):
         mock_open.assert_called_once_with("my-local-file", "w")
         mock_json_dumps.assert_called_once()
 
-
     @patch("google.auth.default")
     @patch("google.cloud.storage.Client")
     def test_upload(self, mock_storage_client, mock_auth_default):
@@ -125,7 +123,6 @@ class TestCloudStorage(unittest.TestCase):
             cs.upload("my-bucket", "my-file", "my-data", override=False)
             # assert not called again
             mock_blob.upload_from_string.assert_called_once()
-
 
     @patch("google.auth.default")
     @patch("google.cloud.storage.Client")
@@ -161,7 +158,6 @@ class TestCloudStorage(unittest.TestCase):
         mock_client.list_blobs.assert_called_once_with("my-bucket", prefix="my-prefix")
         mock_blob1.delete.assert_called_once()
         mock_blob2.delete.assert_called_once()
-
 
     @patch("google.auth.default")
     @patch("google.cloud.storage.Client")

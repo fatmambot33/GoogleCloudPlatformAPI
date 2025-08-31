@@ -30,7 +30,6 @@ class TestAnalytics(unittest.TestCase):
             accountId="~all", webPropertyId="~all"
         )
 
-
     @patch("GoogleCloudPlatformAPI.Analytics.ServiceAccount")
     @patch("googleapiclient.discovery.build")
     def test_get_report(self, mock_build, mock_service_account):

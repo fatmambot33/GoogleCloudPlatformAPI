@@ -44,7 +44,6 @@ class TestAdManager(unittest.TestCase):
         self.assertEqual(results[2]["name"], "Segment 3")
         self.assertEqual(mock_service.getAudienceSegmentsByStatement.call_count, 3)
 
-
     @patch("GoogleCloudPlatformAPI.AdManager.NetworkService")
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_audience_service_create(self, mock_gam_client, mock_network_service):
@@ -58,7 +57,6 @@ class TestAdManager(unittest.TestCase):
         audience_service = AudienceService()
         audience_service.create("name", "description", {})
         mock_service.createAudienceSegments.assert_called_once()
-
 
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_audience_service_update(self, mock_gam_client):
@@ -75,7 +73,6 @@ class TestAdManager(unittest.TestCase):
         audience_service = AudienceService()
         audience_service.update(1, "new name", "new description", 1, 1)
         mock_service.updateAudienceSegments.assert_called_once()
-
 
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_audience_service_list_all(self, mock_gam_client):
@@ -102,7 +99,6 @@ class TestAdManager(unittest.TestCase):
         self.assertEqual(len(results), 3)
         self.assertEqual(mock_service.getAudienceSegmentsByStatement.call_count, 3)
 
-
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_custom_targeting_service_list(self, mock_gam_client):
         """Test the list method of the CustomTargetingService."""
@@ -122,7 +118,6 @@ class TestAdManager(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(mock_service.getCustomTargetingValuesByStatement.call_count, 2)
 
-
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_custom_targeting_service_delete(self, mock_gam_client):
         """Test the delete method of the CustomTargetingService."""
@@ -134,7 +129,6 @@ class TestAdManager(unittest.TestCase):
         custom_targeting_service = CustomTargetingService()
         custom_targeting_service.delete(1, [{"id": 1, "name": "test"}])
         mock_service.performCustomTargetingValueAction.assert_called_once()
-
 
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_report_service_get_report_dataframe(self, mock_gam_client):
@@ -153,7 +147,6 @@ class TestAdManager(unittest.TestCase):
             ]
             df = report_service.get_report_dataframe()
             self.assertEqual(df.shape, (1, 2))
-
 
     @patch("tempfile.NamedTemporaryFile")
     @patch("gzip.open")
@@ -181,7 +174,6 @@ class TestAdManager(unittest.TestCase):
         mock_data_downloader.WaitForReport.assert_called_once()
         mock_data_downloader.DownloadReportToFile.assert_called_once()
 
-
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_forecast_service_get_forecast(self, mock_gam_client):
         """Test the get_forecast method of the ForecastService."""
@@ -208,7 +200,6 @@ class TestAdManager(unittest.TestCase):
         results = forecast_service.get_forecast([], [], [])
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["matched"], 100)
-
 
     @patch("GoogleCloudPlatformAPI.AdManager.GamClient")
     def test_forecast_service_get_forecast_by_targeting_preset(self, mock_gam_client):
