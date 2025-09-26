@@ -5,6 +5,17 @@ This module provides a set of classes to simplify interactions with various
 services within the Google Ad Manager API. It handles client authentication,
 service discovery, and provides methods for common operations like reporting,
 forecasting, and managing audiences.
+
+Public Classes
+--------------
+- GamClient: A client for the Google Ad Manager API.
+- AudienceService: A wrapper for the Audience service.
+- NetworkService: A wrapper for the Network service.
+- CustomTargetingService: A wrapper for the CustomTargeting service.
+- TargetingPresetService: A wrapper for the TargetingPreset service.
+- ReportService: A wrapper for the Report service.
+- ForecastService: A wrapper for the Forecast service.
+- TrafficService: A wrapper for the Traffic service.
 """
 
 import csv
@@ -142,12 +153,12 @@ class GamClient(ad_manager.AdManagerClient):
     This class extends the base ``ad_manager.AdManagerClient`` to simplify
     initialization with service account credentials.
 
-    Methods
-    -------
-    get_service(service_name, gam_version)
-        Get a service client for the Ad Manager API.
-    get_data_downloader(gam_version)
-        Get a data downloader for the Ad Manager API.
+    Attributes
+    ----------
+    app_name : str
+        The name of the application.
+    network_code : str
+        The Ad Manager network code.
     """
 
     def __init__(self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE):
@@ -180,6 +191,19 @@ class GamClient(ad_manager.AdManagerClient):
         -------
         Any
             An instance of the requested service client.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.AdManager import GamClient
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        gam_client = GamClient()
+        network_service = gam_client.get_service(
+            service_name="NetworkService",
+            gam_version="v202505"
+        )
+        ```
         """
         logging.debug(f"GamClient::get_service::{service_name}::{gam_version}")
         return self.GetService(service_name=service_name, version=gam_version)
@@ -197,6 +221,16 @@ class GamClient(ad_manager.AdManagerClient):
         -------
         googleads.ad_manager.DataDownloader
             A data downloader instance.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.AdManager import GamClient
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        gam_client = GamClient()
+        data_downloader = gam_client.get_data_downloader(gam_version="v202505")
+        ```
         """
         logging.debug(f"GamClient::get_data_downloader:{gam_version}")
         return self.GetDataDownloader(version=gam_version)
@@ -205,17 +239,6 @@ class GamClient(ad_manager.AdManagerClient):
 class AudienceService:
     """
     A wrapper for the Audience service of the Ad Manager API.
-
-    Methods
-    -------
-    create(name, description, custom_targeting, pageviews=1, recencydays=1, membershipexpirationdays=90, network_code=NETWORK_CODE)
-        Create a new audience segment.
-    list()
-        List all first-party audience segments.
-    list_all()
-        List all audience segments of any type.
-    update(audience_segment_id, name, description, custom_targeting_key_id, custom_targeting_value_id, pageviews=1, recencydays=1, membershipexpirationdays=90)
-        Update an existing audience segment.
     """
 
     _service_name = "AudienceService"
@@ -276,6 +299,11 @@ class AudienceService:
             The membership expiration in days. Defaults to 90.
         network_code : str, optional
             The Ad Manager network code. Defaults to ``NETWORK_CODE``.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug(f"Audience::create:{name}")
         # Initialize appropriate services.
@@ -319,6 +347,11 @@ class AudienceService:
         -------
         list[dict[str, Any]]
             A list of audience segment objects.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug("Audience::list")
         # Create a statement to select audience segments.
@@ -353,6 +386,11 @@ class AudienceService:
         -------
         list[dict[str, Any]]
             A list of audience segment objects.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         # Create a statement to select audience segments.
         statement = ad_manager.StatementBuilder(version=GAM_VERSION)
@@ -411,6 +449,11 @@ class AudienceService:
             The number of recency days. Defaults to 1.
         membershipexpirationdays : int, optional
             The membership expiration in days. Defaults to 90.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         # Create statement object to get the specified first party audience segment.
         statement = (
@@ -450,11 +493,6 @@ class AudienceService:
 class NetworkService:
     """
     A wrapper for the Network service of the Ad Manager API.
-
-    Methods
-    -------
-    effectiveRootAdUnitId()
-        Get the effective root ad unit ID for the network.
     """
 
     _service_name = "NetworkService"
@@ -491,6 +529,11 @@ class NetworkService:
         -------
         int
             The root ad unit ID.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         current_network = self._gam_service.getCurrentNetwork()
         return int(current_network["effectiveRootAdUnitId"])
@@ -499,17 +542,6 @@ class NetworkService:
 class CustomTargetingService:
     """
     A wrapper for the CustomTargeting service of the Ad Manager API.
-
-    Methods
-    -------
-    list(targeting_key_id)
-        List all active key-value pairs for a given targeting key.
-    delete(targeting_key_id, key_value_pairs)
-        Delete a list of key-value pairs.
-    update(key_value_pairs)
-        Update a list of key-value pairs.
-    create(created_values)
-        Create a list of key-value pairs.
     """
 
     _service_name = "CustomTargetingService"
@@ -551,6 +583,11 @@ class CustomTargetingService:
         -------
         list[KeyValuePair]
             A list of key-value pair objects.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug(
             f"AdManager::CustomTargeting::get_key_value_pairs::{targeting_key_id}"
@@ -590,6 +627,11 @@ class CustomTargetingService:
             The ID of the custom targeting key.
         key_value_pairs : list[KeyValuePair]
             The list of key-value pairs to delete.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug(
             f"AdManager::CustomTargeting::delete_key_value_pairs::{targeting_key_id}"
@@ -630,6 +672,11 @@ class CustomTargetingService:
         ----------
         key_value_pairs : list[KeyValuePair]
             The list of key-value pairs to update.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug("AdManager::CustomTargeting::dupdate_key_value_pairs")
 
@@ -653,6 +700,11 @@ class CustomTargetingService:
         ----------
         created_values : list[KeyValuePair]
             The list of key-value pairs to create.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug("AdManager::CustomTargeting::create_key_value_pair")
 
@@ -670,15 +722,6 @@ class CustomTargetingService:
 class TargetingPresetService:
     """
     A wrapper for the TargetingPreset service of the Ad Manager API.
-
-    Methods
-    -------
-    create(targeting)
-        Create a list of targeting presets.
-    update(targeting)
-        Update a list of targeting presets.
-    list_by_prefix(targeting_preset_prefix)
-        List targeting presets that match a given prefix.
     """
 
     _service_name = "TargetingPresetService"
@@ -715,6 +758,11 @@ class TargetingPresetService:
         ----------
         targeting : list[TargetingPreset]
             The list of targeting presets to create.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         self._gam_service.createTargetingPresets(targeting)
 
@@ -726,6 +774,11 @@ class TargetingPresetService:
         ----------
         targeting : list[TargetingPreset]
             The list of targeting presets to update.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         self._gam_service.updateTargetingPresets(targeting)
 
@@ -744,6 +797,11 @@ class TargetingPresetService:
         -------
         dict[str, TargetingPreset]
             A dictionary of targeting presets, keyed by name.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug(
             f"TargetingPreset::get_targeting_presets_by_prefix:{targeting_preset_prefix}"
@@ -774,19 +832,6 @@ class TargetingPresetService:
 class ReportService:
     """
     A wrapper for the Report service of the Ad Manager API.
-
-    Methods
-    -------
-    gen_report_statement(ad_units=None, targeting_value_ids=None, order_id=None)
-        Generate a statement for a report query.
-    gen_report_query(report_statement, report_end=datetime.date.today(), report_days=1, dimensions=DIMENSIONS, metrics=METRICS, ad_unit_view=AdUnitView.TOP_LEVEL)
-        Generate a report query job.
-    normalise_report(data_frame)
-        Normalise the column names of a report DataFrame.
-    get_report_dataframe(ad_units=None, targeting_value_ids=None, report_date=datetime.date.today(), days=1, dimensions=DIMENSIONS, metrics=METRICS, ad_unit_view=AD_UNIT_VIEW)
-        Get a report as a DataFrame.
-    get_report_dataframe_by_statement(statement, report_date=datetime.date.today(), days=1, dimensions=DIMENSIONS, metrics=METRICS, ad_unit_view=AD_UNIT_VIEW)
-        Get a report as a DataFrame, using a statement.
     """
 
     data_downloader: ad_manager.DataDownloader
@@ -827,6 +872,11 @@ class ReportService:
         -------
         list[dict[str, Any]]
             The report data as a list of dictionaries.
+
+        Raises
+        ------
+        googleads.errors.AdManagerReportError
+            If the report fails to generate.
         """
         logging.debug("Report::_get_report_by_report_job")
         # Initialize a DataDownloader.
@@ -838,6 +888,7 @@ class ReportService:
             report_job_id = report_downloader.WaitForReport(report_job)
         except errors.AdManagerReportError as e:
             logging.error(f"Failed to generate report. Error was: {e}")
+            raise e
         logging.debug("report generated")
         export_format = "CSV_DUMP"
 
@@ -1045,6 +1096,11 @@ class ReportService:
         -------
         pandas.DataFrame
             The report data.
+
+        Raises
+        ------
+        googleads.errors.AdManagerReportError
+            If the report fails to generate.
         """
         if isinstance(ad_units, int):
             ad_units = [ad_units]
@@ -1092,6 +1148,11 @@ class ReportService:
         -------
         pandas.DataFrame
             The report data.
+
+        Raises
+        ------
+        googleads.errors.AdManagerReportError
+            If the report fails to generate.
         """
         report_job = self.gen_report_query(
             statement, report_date, days, dimensions, metrics, AdUnitView[ad_unit_view]
@@ -1107,13 +1168,6 @@ class ReportService:
 class ForecastService:
     """
     A wrapper for the Forecast service of the Ad Manager API.
-
-    Methods
-    -------
-    get_forecast(targetedAdUnits, creativePlaceholders, targets_list, report_date=datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)), days=30)
-        Get a forecast for a given set of targeting criteria.
-    get_forecast_by_targeting_preset(targetedAdUnits, creativePlaceholders, targeting_presets, report_date=datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)), days=30)
-        Get a forecast by targeting presets.
     """
 
     _service_name = "ForecastService"
@@ -1283,6 +1337,11 @@ class ForecastService:
         -------
         list[ForecastItem]
             A list of forecast items.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug("Forecast::get_forecast")
         # Create prospective line item.
@@ -1352,6 +1411,11 @@ class ForecastService:
         -------
         list[ForecastItem]
             A list of forecast items.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug("Forecast::get_forecast_by_targeting_preset")
         # Create prospective line item.
@@ -1396,13 +1460,6 @@ class ForecastService:
 class TrafficService:
     """
     A wrapper for the Traffic service of the Ad Manager API.
-
-    Methods
-    -------
-    get_traffic(inventory_targeting=None, custom_targeting=None, report_date=datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)), days=30)
-        Get traffic data for a given set of targeting criteria.
-    get_traffic_by_targeting_preset(inventory_targeting, targeting_preset, report_date=datetime.datetime.now(tz=pytz.timezone(PYTZ_TIMEZONE)), days=1)
-        Get traffic data by targeting preset.
     """
 
     _service_name = "TrafficService"
@@ -1458,6 +1515,11 @@ class TrafficService:
         -------
         list[trafficItem]
             A list of traffic items.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug("Traffic::get_traffic")
 
@@ -1547,6 +1609,11 @@ class TrafficService:
         -------
         list[trafficItem]
             A list of traffic items.
+
+        Raises
+        ------
+        googleads.errors.GoogleAdsError
+            If the API returns an error.
         """
         logging.debug("Traffic:get_traffic_by_targeting_preset")
         return self.get_traffic(
