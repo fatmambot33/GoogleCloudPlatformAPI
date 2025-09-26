@@ -22,9 +22,7 @@ from .Oauth import ServiceAccount
 
 
 class CloudStorage:
-    """
-    Simple wrapper around the ``google.cloud.storage`` client.
-    """
+    """Simple wrapper around the ``google.cloud.storage`` client."""
 
     _client: storage.Client
 

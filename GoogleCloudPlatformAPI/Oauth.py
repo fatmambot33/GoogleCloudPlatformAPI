@@ -128,9 +128,7 @@ class ClientCredentials:
 
 
 class ServiceAccount:
-    """
-    Helpers for service account authentication.
-    """
+    """Helpers for service account authentication."""
 
     @staticmethod
     def from_service_account_file(

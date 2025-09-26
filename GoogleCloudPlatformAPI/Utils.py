@@ -18,9 +18,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 
 class FileHelper:
-    """
-    Utility functions for working with files.
-    """
+    """Utility functions for working with files."""
 
     @staticmethod
     def save_to_json(obj: Any, filepath: str) -> None:
@@ -196,9 +194,7 @@ class FileHelper:
 
 
 class ListHelper:
-    """
-    Functions that operate on lists.
-    """
+    """Functions that operate on lists."""
 
     @staticmethod
     def chunk_list(lst: List[Any], n: int) -> List[List[Any]]:

@@ -237,9 +237,7 @@ class GamClient(ad_manager.AdManagerClient):
 
 
 class AudienceService:
-    """
-    A wrapper for the Audience service of the Ad Manager API.
-    """
+    """A wrapper for the Audience service of the Ad Manager API."""
 
     _service_name = "AudienceService"
     _gam_service: Any
@@ -491,9 +489,7 @@ class AudienceService:
 
 
 class NetworkService:
-    """
-    A wrapper for the Network service of the Ad Manager API.
-    """
+    """A wrapper for the Network service of the Ad Manager API."""
 
     _service_name = "NetworkService"
     _gam_service: Any
@@ -540,9 +536,7 @@ class NetworkService:
 
 
 class CustomTargetingService:
-    """
-    A wrapper for the CustomTargeting service of the Ad Manager API.
-    """
+    """A wrapper for the CustomTargeting service of the Ad Manager API."""
 
     _service_name = "CustomTargetingService"
     _gam_service: Any
@@ -720,9 +714,7 @@ class CustomTargetingService:
 
 
 class TargetingPresetService:
-    """
-    A wrapper for the TargetingPreset service of the Ad Manager API.
-    """
+    """A wrapper for the TargetingPreset service of the Ad Manager API."""
 
     _service_name = "TargetingPresetService"
     _gam_service: Any
@@ -830,9 +822,7 @@ class TargetingPresetService:
 
 
 class ReportService:
-    """
-    A wrapper for the Report service of the Ad Manager API.
-    """
+    """A wrapper for the Report service of the Ad Manager API."""
 
     data_downloader: ad_manager.DataDownloader
 
@@ -1166,9 +1156,7 @@ class ReportService:
 
 
 class ForecastService:
-    """
-    A wrapper for the Forecast service of the Ad Manager API.
-    """
+    """A wrapper for the Forecast service of the Ad Manager API."""
 
     _service_name = "ForecastService"
     _gam_service: Any
@@ -1458,9 +1446,7 @@ class ForecastService:
 
 
 class TrafficService:
-    """
-    A wrapper for the Traffic service of the Ad Manager API.
-    """
+    """A wrapper for the Traffic service of the Ad Manager API."""
 
     _service_name = "TrafficService"
     _gam_service: Any
