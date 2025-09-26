@@ -1,4 +1,13 @@
-"""Helpers for interacting with Google Cloud Storage."""
+"""Helpers for interacting with Google Cloud Storage.
+
+This module provides a simple wrapper around the ``google.cloud.storage``
+client, simplifying common operations like uploading, downloading, and managing
+files and blobs.
+
+Public Classes
+--------------
+- CloudStorage: A simple wrapper around the Cloud Storage client.
+"""
 
 import glob
 import json
@@ -7,46 +16,13 @@ import os
 from typing import Any, List, Optional, Union
 
 from google.cloud import storage
+from google.cloud.exceptions import NotFound
 
 from .Oauth import ServiceAccount
 
 
 class CloudStorage:
-    """
-    Simple wrapper around the ``google.cloud.storage`` client.
-
-    Attributes
-    ----------
-    __client : google.cloud.storage.Client
-        The Cloud Storage client.
-
-    Methods
-    -------
-    list_files(bucket_name, prefix)
-        List blob names under ``prefix`` in ``bucket_name``.
-    download_as_string(bucket_name, source_blob_name, destination_file_name)
-        Download a JSON blob and save it locally.
-    upload(bucket_name, destination_blob_name, data, override=True)
-        Upload data to Cloud Storage.
-    upload_from_string(bucket_name, destination_blob_name, data, override=False)
-        Upload a string to Cloud Storage.
-    upload_file_from_filename(local_file_path, destination_file_path, bucket_name, override=False)
-        Upload a local file to Cloud Storage from a filename.
-    upload_file(local_file_path, destination_file_path, override=False)
-        Upload a file to a ``bucket_name/blob_path`` destination.
-    upload_folder(local_folder, remote_folder, bucket_name, file_mask="*.gz", override=False)
-        Upload all files in a local folder to Cloud Storage.
-    file_exists(filepath, bucket_name)
-        Return ``True`` if ``filepath`` exists in ``bucket_name``.
-    delete_file(filename, bucket_name)
-        Delete a single blob from Cloud Storage.
-    delete_files(bucket_name, prefix)
-        Delete all blobs with a given prefix.
-    copy_file(bucket_name, file_name, destination_bucket_name, override=False)
-        Copy a file between buckets.
-    copy_files(bucket_name, prefix, destination_bucket_name, override=False)
-        Copy all files with ``prefix`` to another bucket.
-    """
+    """Simple wrapper around the ``google.cloud.storage`` client."""
 
     _client: storage.Client
 
@@ -63,6 +39,11 @@ class CloudStorage:
             relies on environment configuration.
         project_id : str, optional
             Google Cloud project identifier. Defaults to ``None``.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If no credentials are provided and the environment variable is not set.
         """
         logging.debug("CloudStorage::__init__")
         if credentials is not None:
@@ -116,6 +97,24 @@ class CloudStorage:
         -------
         list[str]
             A list of blob names.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket does not exist.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.CloudStorage import CloudStorage
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        storage = CloudStorage()
+        # Replace with your bucket and prefix
+        files = storage.list_files("my-bucket", "my-folder/")
+        for f in files:
+            print(f)
+        ```
         """
         logging.debug(f"CloudStorage::list_files::{bucket_name}/{prefix}")
         _return: List[str] = []
@@ -138,6 +137,11 @@ class CloudStorage:
             The name of the blob to download.
         destination_file_name : str
             The local path to save the file to.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket or blob does not exist.
         """
         logging.debug(f"CloudStorage::download_as_string::{destination_file_name}")
         bucket = self._client.bucket(bucket_name)
@@ -167,6 +171,11 @@ class CloudStorage:
             The data to upload.
         override : bool, optional
             Whether to override the blob if it already exists. Defaults to ``True``.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket does not exist.
         """
         logging.debug("CloudStorage::upload")
         if not override:
@@ -198,6 +207,11 @@ class CloudStorage:
             The string data to upload.
         override : bool, optional
             Whether to override the blob if it already exists. Defaults to ``False``.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket does not exist.
         """
         logging.debug("CloudStorage::upload_from_string")
         if not self.file_exists(destination_blob_name, bucket_name) or override:
@@ -225,6 +239,30 @@ class CloudStorage:
             The name of the bucket.
         override : bool, optional
             Whether to override the blob if it already exists. Defaults to ``False``.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket does not exist.
+        FileNotFoundError
+            If the local file does not exist.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.CloudStorage import CloudStorage
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        storage = CloudStorage()
+        # Create a dummy file
+        with open("local.txt", "w") as f:
+            f.write("hello world")
+        storage.upload_file_from_filename(
+            "local.txt",
+            "remote/path/local.txt",
+            "my-bucket"
+        )
+        ```
         """
         logging.debug("CloudStorage::upload_file_from_filename")
         if (
@@ -251,6 +289,13 @@ class CloudStorage:
             The destination path in the format ``bucket_name/blob_path``.
         override : bool, optional
             Whether to override the blob if it already exists. Defaults to ``False``.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket does not exist.
+        FileNotFoundError
+            If the local file does not exist.
         """
         logging.debug("CloudStorage::upload_file_from_filename")
         file_path = os.path.normpath(destination_file_path)
@@ -290,6 +335,13 @@ class CloudStorage:
             The file mask to match files in the local folder. Defaults to ``"*.gz"``.
         override : bool, optional
             Whether to override the blobs if they already exist. Defaults to ``False``.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket does not exist.
+        FileNotFoundError
+            If a local file does not exist.
         """
         logging.debug("CloudStorage::upload_folder")
         allfiles = glob.glob(local_folder + file_mask)
@@ -333,6 +385,11 @@ class CloudStorage:
             The name of the blob to delete.
         bucket_name : str
             The name of the bucket.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket or blob does not exist.
         """
         logging.debug("CloudStorage::delete_file")
         source_bucket = self._client.bucket(bucket_name)
@@ -348,6 +405,11 @@ class CloudStorage:
             The name of the bucket.
         prefix : str
             The prefix of the blobs to delete.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the bucket does not exist.
         """
         logging.debug("CloudStorage::delete_files")
         blobs = self._client.list_blobs(bucket_name, prefix=prefix)
@@ -379,6 +441,11 @@ class CloudStorage:
         -------
         bool
             ``True`` if the file was copied, ``False`` otherwise.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the source or destination bucket, or the source blob does not exist.
         """
         logging.debug("CloudStorage::copy_file")
         if (
@@ -415,6 +482,11 @@ class CloudStorage:
             The name of the destination bucket.
         override : bool, optional
             Whether to override the files if they already exist. Defaults to ``False``.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the source or destination bucket does not exist.
         """
         logging.debug("CloudStorage::copy_files")
         files = self.list_files(bucket_name=bucket_name, prefix=prefix)

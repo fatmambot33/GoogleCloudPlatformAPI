@@ -1,4 +1,13 @@
-"""OAuth helpers for Google APIs."""
+"""OAuth helpers for Google APIs.
+
+This module provides helper classes for handling authentication with Google APIs,
+supporting both user and service account credentials.
+
+Public Classes
+--------------
+- ClientCredentials: Handles user or service account credentials based on environment.
+- ServiceAccount: Provides helpers specifically for service account authentication.
+"""
 
 import logging
 import os
@@ -13,19 +22,14 @@ class ClientCredentials:
     """
     Handle user or service account credentials.
 
+    This class determines whether to use service account credentials or user
+    credentials based on the presence of the
+    ``GOOGLE_APPLICATION_CREDENTIALS`` environment variable.
+
     Attributes
     ----------
     credentials_path : str or None
         The path to the Google application credentials file.
-
-    Methods
-    -------
-    gcp_credentials()
-        Return Google Cloud credentials.
-    get_service_account_client()
-        Return a Google Ads service account client.
-    get_cloudplatform(credentials_path=None, scopes=["https://www.googleapis.com/auth/cloud-platform"])
-        Return Google Cloud credentials for the given scopes.
     """
 
     def __init__(self) -> None:
@@ -43,6 +47,11 @@ class ClientCredentials:
         -------
         google.oauth2.credentials.Credentials or google.oauth2.service_account.Credentials
             The generated credentials object.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If no credentials are found in the environment.
         """
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if self.credentials_path is not None:
@@ -64,6 +73,11 @@ class ClientCredentials:
         -------
         googleads.oauth2.GoogleServiceAccountClient or googleads.oauth2.GoogleOAuth2Client
             The Google Ads client.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If no credentials are found in the environment.
         """
         scope = oauth2.GetAPIScope("ad_manager")
         if self.credentials_path is not None:
@@ -98,6 +112,11 @@ class ClientCredentials:
         -------
         google.oauth2.credentials.Credentials or google.oauth2.service_account.Credentials
             The generated credentials object.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If no credentials are found in the environment.
         """
         if credentials_path is not None:
             logging.debug("ClientCredentials::get_cloudplatform::service_account")
@@ -109,16 +128,7 @@ class ClientCredentials:
 
 
 class ServiceAccount:
-    """
-    Helpers for service account authentication.
-
-    Methods
-    -------
-    from_service_account_file(credentials=None, scopes=["https://www.googleapis.com/auth/cloud-platform"])
-        Create credentials from a service account file.
-    get_service_account_client(credentials=None, scope="ad_manager")
-        Return a Google Ads service account client.
-    """
+    """Helpers for service account authentication."""
 
     @staticmethod
     def from_service_account_file(
@@ -142,6 +152,20 @@ class ServiceAccount:
         -------
         google.oauth2.service_account.Credentials
             The generated credentials object.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If credentials are not provided and the environment variable is not set.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Oauth import ServiceAccount
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        creds = ServiceAccount.from_service_account_file()
+        ```
         """
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
@@ -168,6 +192,20 @@ class ServiceAccount:
         -------
         googleads.oauth2.GoogleServiceAccountClient
             The Google Ads service account client.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If credentials are not provided and the environment variable is not set.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Oauth import ServiceAccount
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        ads_client = ServiceAccount.get_service_account_client()
+        ```
         """
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")

@@ -1,4 +1,12 @@
-"""Generic utility helpers used across the package."""
+"""Generic utility helpers used across the package.
+
+This module contains helper classes for common file and list operations.
+
+Public Classes
+--------------
+- FileHelper: Utility functions for working with files.
+- ListHelper: Functions that operate on lists.
+"""
 
 import ast
 import datetime
@@ -10,22 +18,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 
 class FileHelper:
-    """
-    Utility functions for working with files.
-
-    Methods
-    -------
-    save_to_json(obj, filepath)
-        Serialise an object to a JSON file.
-    read_json(filepath)
-        Read a JSON file and return its contents.
-    check_filepath(filepath)
-        Ensure that the parent directory for ``filepath`` exists.
-    split_filepath(fullfilepath)
-        Split a full file path into path, name and extension.
-    file_exists(fullfilepath)
-        Return ``True`` if the file exists on disk.
-    """
+    """Utility functions for working with files."""
 
     @staticmethod
     def save_to_json(obj: Any, filepath: str) -> None:
@@ -38,6 +31,22 @@ class FileHelper:
             The object to serialise.
         filepath : str
             The path to the output JSON file.
+
+        Raises
+        ------
+        IOError
+            If the file cannot be written to.
+        TypeError
+            If the object contains a type that cannot be serialized to JSON.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Utils import FileHelper
+
+        my_dict = {"key": "value", "date": datetime.date(2023, 1, 1)}
+        FileHelper.save_to_json(my_dict, "/tmp/my_data.json")
+        ```
         """
 
         def json_default(value):
@@ -63,6 +72,24 @@ class FileHelper:
         -------
         Any
             The deserialized JSON content.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the file does not exist.
+        json.JSONDecodeError
+            If the file is not valid JSON.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Utils import FileHelper
+
+        # Assuming /tmp/my_data.json exists from the previous example
+        data = FileHelper.read_json("/tmp/my_data.json")
+        print(data['key'])
+        # value
+        ```
         """
         with open(file=filepath, mode="r") as json_file:
             return json.load(json_file)
@@ -78,6 +105,11 @@ class FileHelper:
         ----------
         filepath : str
             The file path whose parent directory will be checked.
+
+        Raises
+        ------
+        OSError
+            If the directory cannot be created.
         """
         if (
             not os.path.exists(os.path.dirname(filepath))
@@ -97,8 +129,22 @@ class FileHelper:
 
         Returns
         -------
-        tuple of str
+        tuple[str, str, str]
             A tuple containing the file path, file name, and file extension.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Utils import FileHelper
+
+        path, name, ext = FileHelper.split_filepath("/path/to/my_file.txt.gz")
+        print(path)
+        # /path/to/
+        print(name)
+        # my_file
+        print(ext)
+        # .txt.gz
+        ```
         """
         p = pathlib.Path(fullfilepath)
         file_path = str(p.parent) + "/"
@@ -114,15 +160,31 @@ class FileHelper:
         """
         Return ``True`` if the file exists on disk.
 
+        This method supports wildcards in the filename part.
+
         Parameters
         ----------
         fullfilepath : str
-            The full path to the file.
+            The full path to the file, which can include wildcards.
 
         Returns
         -------
         bool
-            ``True`` if the file exists, ``False`` otherwise.
+            ``True`` if a matching file exists, ``False`` otherwise.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Utils import FileHelper
+
+        # Create a dummy file
+        with open("/tmp/my_file-2023.txt", "w") as f:
+            f.write("test")
+
+        exists = FileHelper.file_exists("/tmp/my_file-*.txt")
+        print(exists)
+        # True
+        ```
         """
         file_path, file_name, file_extension = FileHelper.split_filepath(fullfilepath)
 
@@ -132,18 +194,7 @@ class FileHelper:
 
 
 class ListHelper:
-    """
-    Functions that operate on lists.
-
-    Methods
-    -------
-    chunk_list(lst, n)
-        Yield ``n``-sized chunks from ``lst``.
-    convert_list(val)
-        Convert a string representation of a list to an actual list.
-    merge_list(lst1, lst2=None)
-        Merge two lists removing duplicates.
-    """
+    """Functions that operate on lists."""
 
     @staticmethod
     def chunk_list(lst: List[Any], n: int) -> List[List[Any]]:
@@ -159,8 +210,19 @@ class ListHelper:
 
         Returns
         -------
-        list of list
+        list[list[Any]]
             A list containing the chunks.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Utils import ListHelper
+
+        my_list = [1, 2, 3, 4, 5, 6, 7]
+        chunks = ListHelper.chunk_list(my_list, 3)
+        print(chunks)
+        # [[1, 2, 3], [4, 5, 6], [7]]
+        ```
         """
         return [lst[i : i + n] for i in range(0, len(lst), n)]
 
@@ -168,6 +230,9 @@ class ListHelper:
     def convert_list(val: Any) -> Any:
         """
         Convert a string representation of a list to an actual list.
+
+        If the value is not a string or cannot be parsed as a list, it is
+        returned as is.
 
         Parameters
         ----------
@@ -177,7 +242,20 @@ class ListHelper:
         Returns
         -------
         Any
-            The converted list, or the original value if not a string.
+            The converted list, or the original value if not a string or on error.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Utils import ListHelper
+
+        str_list = "[1, 'a', 3.0]"
+        py_list = ListHelper.convert_list(str_list)
+        print(isinstance(py_list, list))
+        # True
+        print(py_list[1])
+        # 'a'
+        ```
         """
         if isinstance(val, str):
             try:
@@ -201,9 +279,25 @@ class ListHelper:
         Returns
         -------
         list
-            The merged list with duplicates removed.
+            The merged list with duplicates removed, preserving order.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Utils import ListHelper
+
+        list1 = [1, 2, 3]
+        list2 = [3, 4, 5]
+        merged = ListHelper.merge_list(list1, list2)
+        print(merged)
+        # [1, 2, 3, 4, 5]
+
+        merged_single = ListHelper.merge_list(list1, 4)
+        print(merged_single)
+        # [1, 2, 3, 4]
+        ```
         """
-        if isinstance(lst2, str) or isinstance(lst2, int):
+        if isinstance(lst2, (str, int)):
             lst2 = [lst2]
         if lst2 is None:
             lst2 = []

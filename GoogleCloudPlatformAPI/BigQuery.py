@@ -1,4 +1,13 @@
-"""Utilities for interacting with Google BigQuery."""
+"""Utilities for interacting with Google BigQuery.
+
+This module provides a high-level wrapper for the Google BigQuery API,
+simplifying common operations such as executing queries, managing tables,
+and loading data from various sources.
+
+Public Classes
+--------------
+- BigQuery: A helper for common BigQuery operations.
+"""
 
 import datetime
 import decimal
@@ -34,41 +43,6 @@ class BigQuery:
     ----------
     SCOPES : list[str]
         The scopes required for the BigQuery API.
-
-    Methods
-    -------
-    execute_query(query, job_config=None)
-        Execute a SQL query and return the resulting rows.
-    execute_stored_procedure(sp_name, sp_params)
-        Execute a stored procedure and return its result set.
-    table_exists(table_id)
-        Check whether a BigQuery table exists.
-    create_schema_from_table(folder, dataset=None)
-        Create a schema definition file based on an existing table.
-    create_external_table(dataset_name, table_name, table_schema, source_uris, partition_field="date", time_partioning=False)
-        Create an external table based on objects stored in Cloud Storage.
-    create_table_from_schema(folder, dataset=None, data_path=None)
-        Create a BigQuery table using a stored schema file.
-    load_from_query(query, table_id, write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
-        Execute a query and write results to a table.
-    delete_partition(table_id, partition_date, partition_name="date")
-        Delete a partition from a table if it exists.
-    load_from_cloud(bucket_name, data_set, table, local_folder, remote_folder, partition_date, partition_name="date", file_mask="*.gz", override=False)
-        Load data from Cloud Storage into a BigQuery table.
-    load_from_local(bucket_name, data_set, table, local_folder, prefix, partition_date, partition_name="date", file_mask="*.csv.gz", override=False)
-        Upload local files to Cloud Storage and load them into BigQuery.
-    load_from_uri(table_id, bucket_name, data_path, partition_date)
-        Load data from a specific Cloud Storage URI.
-    build_job_config(table_name, bucket_name, data_path, partition_date)
-        Build a BigQuery load job configuration.
-    sync_from_cloud(bucket_name, data_set, table, local_folder, remote_folder, partition_date, partition_name="date", override=False)
-        Synchronise data from Cloud Storage into BigQuery.
-    sync_from_local(bucket_name, data_set, table, local_folder, prefix, partition_date, partition_name="date", file_mask="*.csv.gz", override=False)
-        Upload local files then load them into BigQuery.
-    bigquery_to_dataframe(query_string)
-        Run a query and return the results as a DataFrame.
-    dataframe_to_bigquery(dataframe, table_id, write_disposition="WRITE_TRUNCATE")
-        Load a DataFrame into a BigQuery table.
     """
 
     _client: bigquery.Client
@@ -87,6 +61,11 @@ class BigQuery:
             relies on environment configuration.
         project_id : str, optional
             Google Cloud project identifier. Defaults to ``None``.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If no credentials are provided and the environment variable is not set.
         """
         logging.debug("BigQuery::__init__")
         if credentials is not None:
@@ -142,6 +121,23 @@ class BigQuery:
         -------
         list[google.cloud.bigquery.Row]
             Query results as a list of rows.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the query fails.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.BigQuery import BigQuery
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        bq = BigQuery()
+        rows = bq.execute_query("SELECT 1 AS x")
+        print(rows[0]['x'])
+        # 1
+        ```
         """
         logging.debug("BigQuery::execute_query")
         # Only include job_config when provided to match call expectations in tests.
@@ -187,6 +183,11 @@ class BigQuery:
         -------
         pandas.DataFrame
             Data frame containing the stored procedure output.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the stored procedure execution fails.
         """
         logging.debug(f"BigQuery::execute_sp::{sp_name}")
         sp_instruction_params = "@" + ",@".join(sp_param.name for sp_param in sp_params)
@@ -240,6 +241,11 @@ class BigQuery:
         -------
         dict or None
             Schema dictionary if the table exists, otherwise ``None``.
+
+        Raises
+        ------
+        google.cloud.exceptions.NotFound
+            If the table does not exist.
         """
         logging.debug(f"BigQuery::create_schema_from_table::{folder}")
         if dataset is None:
@@ -305,6 +311,11 @@ class BigQuery:
         -------
         bool
             ``True`` if the table was created.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the table creation fails.
         """
         logging.debug(f"BigQuery::create_external_table::{table_name}")
 
@@ -372,6 +383,13 @@ class BigQuery:
         -------
         bool
             ``True`` if the table was created.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the table creation fails.
+        FileNotFoundError
+            If the schema file is not found.
         """
         logging.debug(f"BigQuery::create_table_from_schema::{folder}")
         if dataset is None:
@@ -421,6 +439,11 @@ class BigQuery:
         write_disposition : bigquery.WriteDisposition, optional
             Specifies the action that occurs if the destination table already
             exists. Defaults to ``WRITE_TRUNCATE``.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the query fails or loading fails.
         """
         logging.debug("BigQuery::load_from_query")
         job_config = bigquery.QueryJobConfig(
@@ -452,6 +475,11 @@ class BigQuery:
         -------
         bool
             ``True`` if the partition was deleted, ``False`` otherwise.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the delete query fails.
         """
         if self.table_exists(table_id):
             logging.debug(
@@ -503,6 +531,11 @@ class BigQuery:
         -------
         bool
             ``True`` if the load was successful.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the load job fails.
         """
         table_id = data_set + "." + table
         logging.debug(f"BigQuery::load_from_cloud::{table_id}")
@@ -563,6 +596,11 @@ class BigQuery:
         -------
         bool
             ``True`` if the load was successful.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the upload or load job fails.
         """
         logging.debug(f"BigQuery::load_from_local::{local_folder}")
 
@@ -634,6 +672,11 @@ class BigQuery:
         -------
         bool
             ``True`` if the load was successful.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the load job fails.
         """
         logging.debug("BigQuery::load_from_uri")
         job_config, uri = BigQuery.build_job_config(
@@ -670,6 +713,11 @@ class BigQuery:
         -------
         tuple[bigquery.LoadJobConfig, str]
             A tuple containing the job configuration and the source URI.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the schema file is not found locally after attempting to download it.
         """
         logging.debug("BigQuery::build_job_config")
 
@@ -755,6 +803,11 @@ class BigQuery:
             The name of the partition column. Defaults to 'date'.
         override : bool, optional
             Whether to override the destination partition. Defaults to ``False``.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the load job fails.
         """
         bq = BigQuery()
         bq.load_from_cloud(
@@ -803,6 +856,11 @@ class BigQuery:
             The file mask of the files to upload. Defaults to '*.csv.gz'.
         override : bool, optional
             Whether to override existing files in the bucket. Defaults to ``False``.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the upload or load job fails.
         """
         bq = BigQuery()
         bq.load_from_local(
@@ -830,6 +888,23 @@ class BigQuery:
         -------
         pandas.DataFrame
             A DataFrame containing the query results.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the query fails.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.BigQuery import BigQuery
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        bq = BigQuery()
+        df = bq.bigquery_to_dataframe("SELECT 'hello' as greeting")
+        print(df['greeting'][0])
+        # hello
+        ```
         """
         logging.debug("bigquery_to_dataframe")
         return (
@@ -858,6 +933,25 @@ class BigQuery:
         write_disposition : str, optional
             Specifies the action that occurs if the destination table already
             exists. Defaults to ``WRITE_TRUNCATE``.
+
+        Raises
+        ------
+        google.cloud.exceptions.GoogleCloudError
+            If the load job fails.
+
+        Examples
+        --------
+        ```python
+        import pandas as pd
+        from GoogleCloudPlatformAPI.BigQuery import BigQuery
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        bq = BigQuery()
+        df = pd.DataFrame({'col1': [1, 2], 'col2': ['a', 'b']})
+        # Replace with your project and dataset
+        table_id = "your-project.your_dataset.my_table"
+        bq.dataframe_to_bigquery(df, table_id)
+        ```
         """
         # Construct a BigQuery client object.
         bq_schema: List[bigquery.SchemaField] = []

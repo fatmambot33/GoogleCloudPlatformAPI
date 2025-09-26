@@ -1,4 +1,13 @@
-"""Wrapper for Google Analytics Reporting API."""
+"""Wrapper for Google Analytics Reporting API.
+
+This module provides a high-level wrapper for the Google Analytics
+Reporting API, simplifying the process of fetching report data and converting it
+to a pandas DataFrame.
+
+Public Classes
+--------------
+- Analytics: A helper for the Google Analytics Reporting API.
+"""
 
 import datetime
 import logging
@@ -19,17 +28,8 @@ class Analytics:
     ----------
     SCOPES : list[str]
         The scopes required for the Analytics API.
-
-    Methods
-    -------
-    list_views()
-        Return all accessible Analytics views.
-    get_report(view_id, dimensions=["ga:source", "ga:medium"], metrics=["ga:sessions"], start_date="30daysAgo", end_date="yesterday")
-        Return a report for a specific view as a DataFrame.
-    get_all_reports(dimensions=["ga:source", "ga:medium"], metrics=["ga:sessions"], start_date="30daysAgo", end_date="yesterday")
-        Fetch reports for all available views and combine them.
-    report_to_df(analytics_report)
-        Convert an Analytics API response to a DataFrame.
+    ServiceAccount : ServiceAccount
+        The ServiceAccount class for authentication.
     """
 
     SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
@@ -47,6 +47,11 @@ class Analytics:
         credentials : str, optional
             Path to a service account JSON file. If ``None``, the value from
             ``GOOGLE_APPLICATION_CREDENTIALS`` is used.
+
+        Raises
+        ------
+        google.auth.exceptions.DefaultCredentialsError
+            If no credentials are provided and the environment variable is not set.
         """
         logging.debug("Analytics::__init__")
         if credentials is None:
@@ -69,6 +74,23 @@ class Analytics:
         -------
         list[dict[str, Any]]
             A list of view objects.
+
+        Raises
+        ------
+        googleapiclient.errors.HttpError
+            If the API returns an error.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Analytics import Analytics
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        analytics = Analytics()
+        views = analytics.list_views()
+        for view in views:
+            print(view['name'])
+        ```
         """
         profiles = (
             self._management.management()
@@ -108,6 +130,11 @@ class Analytics:
         -------
         dict[str, Any]
             The raw report from the API.
+
+        Raises
+        ------
+        googleapiclient.errors.HttpError
+            If the API returns an error.
         """
         logging.debug("Analytics::_get_report")
         if isinstance(start_date, datetime.date):
@@ -165,6 +192,24 @@ class Analytics:
         -------
         pandas.DataFrame
             A DataFrame containing the report data.
+
+        Raises
+        ------
+        googleapiclient.errors.HttpError
+            If the API returns an error.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Analytics import Analytics
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        analytics = Analytics()
+        # Replace with a valid view ID
+        view_id = 123456789
+        df = analytics.get_report(view_id=view_id)
+        print(df.head())
+        ```
         """
         logging.debug(f"Analytics::get_report::{view_id}")
         results = self._get_report(
@@ -203,6 +248,22 @@ class Analytics:
         -------
         pandas.DataFrame
             A DataFrame containing the combined report data from all views.
+
+        Raises
+        ------
+        googleapiclient.errors.HttpError
+            If the API returns an error.
+
+        Examples
+        --------
+        ```python
+        from GoogleCloudPlatformAPI.Analytics import Analytics
+
+        # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+        analytics = Analytics()
+        df_all = analytics.get_all_reports()
+        print(df_all.head())
+        ```
         """
         views = self.list_views()
         df_list: List[pd.DataFrame] = []
