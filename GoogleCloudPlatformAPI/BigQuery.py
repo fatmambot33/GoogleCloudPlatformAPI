@@ -43,6 +43,41 @@ class BigQuery:
     ----------
     SCOPES : list[str]
         The scopes required for the BigQuery API.
+
+    Methods
+    -------
+    execute_query(query, job_config=None)
+        Execute a SQL query and return the resulting rows.
+    execute_stored_procedure(sp_name, sp_params)
+        Execute a stored procedure and return its result set.
+    table_exists(table_id)
+        Check whether a BigQuery table exists.
+    create_schema_from_table(folder, dataset=None)
+        Create a schema definition file based on an existing table.
+    create_external_table(...)
+        Create an external table based on objects stored in Cloud Storage.
+    create_table_from_schema(folder, dataset=None, data_path=None)
+        Create a BigQuery table using a stored schema file.
+    load_from_query(query, table_id, write_disposition=...)
+        Execute a query and write results to a table.
+    delete_partition(table_id, partition_date, partition_name='date')
+        Delete a partition from a table if it exists.
+    load_from_cloud(...)
+        Load data from Cloud Storage into a BigQuery table.
+    load_from_local(...)
+        Upload local files to Cloud Storage and load them into BigQuery.
+    load_from_uri(table_id, bucket_name, data_path, partition_date)
+        Load data from a specific Cloud Storage URI.
+    build_job_config(table_name, bucket_name, data_path, partition_date)
+        Build a BigQuery load job configuration.
+    sync_from_cloud(...)
+        Synchronise data from Cloud Storage into BigQuery.
+    sync_from_local(...)
+        Upload local files then load them into BigQuery.
+    bigquery_to_dataframe(query_string)
+        Run a query and return the results as a DataFrame.
+    dataframe_to_bigquery(dataframe, table_id, write_disposition=...)
+        Load a DataFrame into a BigQuery table.
     """
 
     _client: bigquery.Client
@@ -76,7 +111,7 @@ class BigQuery:
             project_id = creds.project_id
         else:
             creds, project_id = auth.default(scopes=self.SCOPES)
-        self._client = bigquery.Client(credentials=creds, project=project_id)
+        self._client = bigquery.Client(credentials=creds, project=project_id)  # type: ignore
 
     def __enter__(self) -> "BigQuery":
         """

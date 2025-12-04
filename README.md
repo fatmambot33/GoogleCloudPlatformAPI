@@ -38,3 +38,39 @@ storage.upload_file_from_filename(
     bucket_name="my-bucket",
 )
 ```
+
+### AdManager
+
+```python
+from GoogleCloudPlatformAPI.AdManager import GamClient
+
+# Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+gam_client = GamClient()
+network_service = gam_client.get_service(
+    service_name="NetworkService",
+    gam_version="v202505"
+)
+print(network_service.getCurrentNetwork())
+```
+
+### Analytics
+
+```python
+from GoogleCloudPlatformAPI.Analytics import Analytics
+
+# Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+analytics = Analytics()
+profile_id = "12345678"  # Replace with your Profile ID
+report = analytics.get_realtime_report(profile_id)
+print(report)
+```
+
+### Oauth
+
+```python
+from GoogleCloudPlatformAPI.Oauth import ServiceAccount
+
+# Assumes GOOGLE_APPLICATION_CREDENTIALS is set
+creds = ServiceAccount.get_service_account_client()
+print(creds.project_id)
+```
