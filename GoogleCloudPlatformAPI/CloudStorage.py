@@ -22,7 +22,35 @@ from .Oauth import ServiceAccount
 
 
 class CloudStorage:
-    """Simple wrapper around the ``google.cloud.storage`` client."""
+    """Simple wrapper around the ``google.cloud.storage`` client.
+
+    Methods
+    -------
+    list_files(bucket_name, prefix)
+        List blob names under a prefix.
+    download_as_string(bucket_name, source_blob_name, destination_file_name)
+        Download a JSON blob and save it locally.
+    upload(bucket_name, destination_blob_name, data, override=True)
+        Upload data to Cloud Storage.
+    upload_from_string(bucket_name, destination_blob_name, data, override=False)
+        Upload a string to Cloud Storage.
+    upload_file_from_filename(...)
+        Upload a local file to Cloud Storage from a filename.
+    upload_file(local_file_path, destination_file_path, override=False)
+        Upload a file to a ``bucket_name/blob_path`` destination.
+    upload_folder(local_folder, remote_folder, bucket_name, file_mask="*.gz", override=False)
+        Upload all files in a local folder to Cloud Storage.
+    file_exists(filepath, bucket_name)
+        Return ``True`` if ``filepath`` exists in ``bucket_name``.
+    delete_file(filename, bucket_name)
+        Delete a single blob from Cloud Storage.
+    delete_files(bucket_name, prefix)
+        Delete all blobs with a given prefix.
+    copy_file(bucket_name, file_name, destination_bucket_name, override=False)
+        Copy a file between buckets.
+    copy_files(bucket_name, prefix, destination_bucket_name, override=False)
+        Copy all files with a prefix to another bucket.
+    """
 
     _client: storage.Client
 

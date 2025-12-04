@@ -159,6 +159,13 @@ class GamClient(ad_manager.AdManagerClient):
         The name of the application.
     network_code : str
         The Ad Manager network code.
+
+    Methods
+    -------
+    get_service(service_name, gam_version)
+        Get a service client for the Ad Manager API.
+    get_data_downloader(gam_version)
+        Get a data downloader for the Ad Manager API.
     """
 
     def __init__(self, app_name: str = APP_NAME, network_code: str = NETWORK_CODE):
@@ -237,7 +244,19 @@ class GamClient(ad_manager.AdManagerClient):
 
 
 class AudienceService:
-    """A wrapper for the Audience service of the Ad Manager API."""
+    """A wrapper for the Audience service of the Ad Manager API.
+
+    Methods
+    -------
+    create(...)
+        Create a new audience segment.
+    list()
+        List all first-party audience segments.
+    list_all()
+        List all audience segments of any type.
+    update(...)
+        Update an existing audience segment.
+    """
 
     _service_name = "AudienceService"
     _gam_service: Any
@@ -489,7 +508,13 @@ class AudienceService:
 
 
 class NetworkService:
-    """A wrapper for the Network service of the Ad Manager API."""
+    """A wrapper for the Network service of the Ad Manager API.
+
+    Methods
+    -------
+    effective_root_ad_unit_id()
+        Get the effective root ad unit ID for the network.
+    """
 
     _service_name = "NetworkService"
     _gam_service: Any
@@ -536,7 +561,19 @@ class NetworkService:
 
 
 class CustomTargetingService:
-    """A wrapper for the CustomTargeting service of the Ad Manager API."""
+    """A wrapper for the CustomTargeting service of the Ad Manager API.
+
+    Methods
+    -------
+    list(targeting_key_id)
+        List all active key-value pairs for a given targeting key.
+    delete(targeting_key_id, key_value_pairs)
+        Delete a list of key-value pairs.
+    update(key_value_pairs)
+        Update a list of key-value pairs.
+    create(created_values)
+        Create a list of key-value pairs.
+    """
 
     _service_name = "CustomTargetingService"
     _gam_service: Any
@@ -714,7 +751,17 @@ class CustomTargetingService:
 
 
 class TargetingPresetService:
-    """A wrapper for the TargetingPreset service of the Ad Manager API."""
+    """A wrapper for the TargetingPreset service of the Ad Manager API.
+
+    Methods
+    -------
+    create(targeting)
+        Create a list of targeting presets.
+    update(targeting)
+        Update a list of targeting presets.
+    list_by_prefix(targeting_preset_prefix)
+        List targeting presets that match a given prefix.
+    """
 
     _service_name = "TargetingPresetService"
     _gam_service: Any
@@ -822,7 +869,21 @@ class TargetingPresetService:
 
 
 class ReportService:
-    """A wrapper for the Report service of the Ad Manager API."""
+    """A wrapper for the Report service of the Ad Manager API.
+
+    Methods
+    -------
+    gen_report_statement(ad_units=None, targeting_value_ids=None, order_id=None)
+        Generate a statement for a report query.
+    gen_report_query(...)
+        Generate a report query job.
+    normalise_report(data_frame)
+        Normalise the column names of a report DataFrame.
+    get_report_dataframe(...)
+        Get a report as a DataFrame.
+    get_report_dataframe_by_statement(...)
+        Get a report as a DataFrame, using a statement.
+    """
 
     data_downloader: ad_manager.DataDownloader
 
@@ -1156,7 +1217,15 @@ class ReportService:
 
 
 class ForecastService:
-    """A wrapper for the Forecast service of the Ad Manager API."""
+    """A wrapper for the Forecast service of the Ad Manager API.
+
+    Methods
+    -------
+    get_forecast(...)
+        Get a forecast for a given set of targeting criteria.
+    get_forecast_by_targeting_preset(...)
+        Get a forecast by targeting presets.
+    """
 
     _service_name = "ForecastService"
     _gam_service: Any
@@ -1446,7 +1515,15 @@ class ForecastService:
 
 
 class TrafficService:
-    """A wrapper for the Traffic service of the Ad Manager API."""
+    """A wrapper for the Traffic service of the Ad Manager API.
+
+    Methods
+    -------
+    get_traffic(...)
+        Get traffic data for a given set of targeting criteria.
+    get_traffic_by_targeting_preset(...)
+        Get traffic data by targeting preset.
+    """
 
     _service_name = "TrafficService"
     _gam_service: Any
