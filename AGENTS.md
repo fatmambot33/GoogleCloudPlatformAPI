@@ -29,7 +29,7 @@ These instructions apply to any automated agent contributing to this repository.
 Before running tests, install the development dependencies:
 
 ```bash
-pip install -r requirements-dev.txt
+pip install .[dev]
 ```
 
 To ensure your changes will pass the automated checks in our Continuous Integration (CI) pipeline, run the following commands locally before committing. All checks must pass.
