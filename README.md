@@ -10,6 +10,21 @@ boilerplate when building data pipelines or analytics tools.
 pip install GoogleCloudPlatformAPI
 ```
 
+For development, install the project in editable mode with the tooling extras:
+
+```bash
+pip install -e .[dev]
+```
+
+Run the project checks locally to match the CI configuration:
+
+```bash
+black --check .
+pydocstyle GoogleCloudPlatformAPI
+pyright GoogleCloudPlatformAPI
+pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=70
+```
+
 Configure authentication with a service account JSON file via the
 `GOOGLE_APPLICATION_CREDENTIALS` environment variable or supply the path to
 individual helpers.
