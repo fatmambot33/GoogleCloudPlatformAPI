@@ -22,6 +22,7 @@ dev = [
     "black",
     "pydocstyle",
     "pyright",
+    "pytest",
     "pytest-cov",
     "pytest-pydocstyle",
 ]
