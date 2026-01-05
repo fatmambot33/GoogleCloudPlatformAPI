@@ -305,12 +305,12 @@ class Analytics:
             m["name"].replace("ga:", "")
             for m in report["columnHeader"]["metricHeader"]["metricHeaderEntries"]
         ]
-        headers: List[str] = list(dimensions) + list(metrics)
+        headers: List[str] = dimensions + metrics
 
         data_rows = report["data"].get("rows", [])
-        data: List[List[str]] = []
-        for row in data_rows:
-            data.append([*row["dimensions"], *row["metrics"][0]["values"]])
+        data: List[List[str]] = [
+            [*row["dimensions"], *row["metrics"][0]["values"]] for row in data_rows
+        ]
         df = pd.DataFrame(data=data, columns=pd.Index(headers))
         if "date" in df.columns:
             df["date"] = pd.to_datetime(df["date"], format="%Y%m%d")

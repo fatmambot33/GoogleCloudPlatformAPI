@@ -145,11 +145,8 @@ class CloudStorage:
         ```
         """
         logging.debug(f"CloudStorage::list_files::{bucket_name}/{prefix}")
-        _return: List[str] = []
         blobs = self._client.list_blobs(bucket_name, prefix=prefix)
-        for blob in blobs:
-            _return.append(blob.name)
-        return _return
+        return [blob.name for blob in blobs]
 
     def download_as_string(
         self, bucket_name: str, source_blob_name: str, destination_file_name: str
