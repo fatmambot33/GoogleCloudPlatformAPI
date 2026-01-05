@@ -224,7 +224,7 @@ class BigQuery:
             If the stored procedure execution fails.
         """
         logging.debug(f"BigQuery::execute_sp::{sp_name}")
-        sp_instruction_params = "@" + ",@".join(sp_param.name for sp_param in sp_params)
+        sp_instruction_params = f"@{',@'.join(sp_param.name for sp_param in sp_params)}"
         query = f"CALL `{sp_name}`({sp_instruction_params})"
 
         query_parameters = [
