@@ -234,7 +234,7 @@ class BigQuery:
 
         job_config = QueryJobConfig(query_parameters=query_parameters)
         query_results = self.execute_query(query, job_config)
-        return pd.DataFrame([dict(**result) for result in query_results])
+        return pd.DataFrame([dict(result) for result in query_results])
 
     def table_exists(self, table_id: str) -> bool:
         """Check if a BigQuery table exists.
@@ -991,14 +991,13 @@ class BigQuery:
         >>> bq.dataframe_to_bigquery(df, table_id)
         """
         # Construct a BigQuery client object.
-        bq_schema: List[bigquery.SchemaField] = []
         # Specify the type of columns whose type cannot be auto-detected
         # (e.g. pandas dtype "object" where the data type is ambiguous).
-        for col_name, dtype in dataframe.dtypes.items():
-            if dtype.name == "object":
-                bq_schema.append(
-                    bigquery.SchemaField(str(col_name), DATA_TYPE_MAPPING[dtype.name])
-                )
+        bq_schema: List[bigquery.SchemaField] = [
+            bigquery.SchemaField(str(col_name), DATA_TYPE_MAPPING[dtype.name])
+            for col_name, dtype in dataframe.dtypes.items()
+            if dtype.name == "object"
+        ]
 
         job_config = bigquery.LoadJobConfig(
             schema=bq_schema, write_disposition=write_disposition

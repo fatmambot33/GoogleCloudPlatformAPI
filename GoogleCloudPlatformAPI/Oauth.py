@@ -93,9 +93,7 @@ class ClientCredentials:
     def get_cloudplatform(
         self,
         credentials_path: Optional[str] = None,
-        scopes: Optional[List[str]] = [
-            "https://www.googleapis.com/auth/cloud-platform"
-        ],
+        scopes: Optional[List[str]] = None,
     ) -> Union[credentials.Credentials, service_account.Credentials]:
         """
         Return Google Cloud credentials for the given scopes.
@@ -118,6 +116,8 @@ class ClientCredentials:
         google.auth.exceptions.DefaultCredentialsError
             If no credentials are found in the environment.
         """
+        if scopes is None:
+            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials_path is not None:
             logging.debug("ClientCredentials::get_cloudplatform::service_account")
             return service_account.Credentials.from_service_account_file(
@@ -133,9 +133,7 @@ class ServiceAccount:
     @staticmethod
     def from_service_account_file(
         credentials: Optional[str] = None,
-        scopes: Optional[List[str]] = [
-            "https://www.googleapis.com/auth/cloud-platform"
-        ],
+        scopes: Optional[List[str]] = None,
     ) -> service_account.Credentials:
         """
         Create credentials from a service account file.
@@ -167,6 +165,8 @@ class ServiceAccount:
         creds = ServiceAccount.from_service_account_file()
         ```
         """
+        if scopes is None:
+            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         return service_account.Credentials.from_service_account_file(
