@@ -960,8 +960,7 @@ class ReportService:
 
         with open(report_file.name) as f:
             report_data = [
-                {k: v for k, v in row.items()}
-                for row in csv.DictReader(f, skipinitialspace=True)
+                dict(row) for row in csv.DictReader(f, skipinitialspace=True)
             ]
         os.remove(report_file.name)
         return report_data
@@ -1298,28 +1297,25 @@ class ForecastService:
     ) -> Dict[str, Any]:
         """Generate forecast options."""
         logging.debug("Forecast::_gen_forecast_options")
-        targets = []
-        for target in targets_list:
-            targets.append(
-                {
-                    "name": target.get("name"),
-                    "targeting": {
-                        "customTargeting": {
-                            "xsi_type": "CustomCriteriaSet",
-                            "logicalOperator": "OR",
-                            "children": {
-                                "xsi_type": "CustomCriteria",
-                                "keyId": target.get("keyId"),
-                                "valueIds": [target.get("valueIds")],
-                                "operator": "IS",
-                            },
-                        }
-                    },
-                }
-            )
-        timeWindows = []
-        for d in range(days):
-            timeWindows.append(report_date + datetime.timedelta(days=d))
+        targets = [
+            {
+                "name": target.get("name"),
+                "targeting": {
+                    "customTargeting": {
+                        "xsi_type": "CustomCriteriaSet",
+                        "logicalOperator": "OR",
+                        "children": {
+                            "xsi_type": "CustomCriteria",
+                            "keyId": target.get("keyId"),
+                            "valueIds": [target.get("valueIds")],
+                            "operator": "IS",
+                        },
+                    }
+                },
+            }
+            for target in targets_list
+        ]
+        timeWindows = [report_date + datetime.timedelta(days=d) for d in range(days)]
         forecast_options = {
             "includeContendingLineItems": True,
             # The field includeTargetingCriteriaBreakdown can only be set if
@@ -1339,22 +1335,17 @@ class ForecastService:
     ) -> Dict[str, Any]:
         """Generate forecast options by targeting presets."""
         logging.debug("Forecast::_gen_forecast_options_by_targeting_presets")
-        timeWindows = []
-        for d in range(days):
-            timeWindows.append(report_date + datetime.timedelta(days=d))
+        timeWindows = [report_date + datetime.timedelta(days=d) for d in range(days)]
 
-        targets = []
-        for targeting_preset in targeting_presets:
-            targets.append(
-                {
-                    "name": targeting_preset["name"],
-                    "targeting": {
-                        "customTargeting": targeting_preset["targeting"][
-                            "customTargeting"
-                        ]
-                    },
-                }
-            )
+        targets = [
+            {
+                "name": targeting_preset["name"],
+                "targeting": {
+                    "customTargeting": targeting_preset["targeting"]["customTargeting"]
+                },
+            }
+            for targeting_preset in targeting_presets
+        ]
         forecast_options = {
             "includeContendingLineItems": True,
             # The field includeTargetingCriteriaBreakdown can only be set if
