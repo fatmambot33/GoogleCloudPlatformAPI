@@ -1,6 +1,7 @@
 """Deterministic tests for OAuth credential selection boundaries."""
 
 import importlib
+from contextlib import ExitStack
 from unittest.mock import MagicMock, patch
 
 
@@ -44,16 +45,17 @@ def test_client_credentials_builds_ads_service_account_client(monkeypatch):
     monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "service-account.json")
     client = MagicMock()
 
-    with (
-        patch.object(
-            oauthmod.oauth2, "GetAPIScope", return_value="scope"
-        ) as get_scope,
-        patch.object(
-            oauthmod.oauth2,
-            "GoogleServiceAccountClient",
-            return_value=client,
-        ) as service_client,
-    ):
+    with ExitStack() as stack:
+        get_scope = stack.enter_context(
+            patch.object(oauthmod.oauth2, "GetAPIScope", return_value="scope")
+        )
+        service_client = stack.enter_context(
+            patch.object(
+                oauthmod.oauth2,
+                "GoogleServiceAccountClient",
+                return_value=client,
+            )
+        )
         result = oauthmod.ClientCredentials().get_service_account_client
 
     assert result is client
@@ -67,12 +69,13 @@ def test_client_credentials_builds_ads_user_client(monkeypatch):
     monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
     client = MagicMock()
 
-    with (
-        patch.object(oauthmod.oauth2, "GetAPIScope", return_value="scope"),
-        patch.object(
-            oauthmod.oauth2, "GoogleOAuth2Client", return_value=client
-        ) as user_client,
-    ):
+    with ExitStack() as stack:
+        stack.enter_context(
+            patch.object(oauthmod.oauth2, "GetAPIScope", return_value="scope")
+        )
+        user_client = stack.enter_context(
+            patch.object(oauthmod.oauth2, "GoogleOAuth2Client", return_value=client)
+        )
         result = oauthmod.ClientCredentials().get_service_account_client
 
     assert result is client
@@ -102,21 +105,24 @@ def test_service_account_helpers_use_environment_defaults(monkeypatch):
     credential = MagicMock()
     ads_client = MagicMock()
 
-    with (
-        patch.object(
-            oauthmod.service_account.Credentials,
-            "from_service_account_file",
-            return_value=credential,
-        ) as from_file,
-        patch.object(
-            oauthmod.oauth2, "GetAPIScope", return_value="scope"
-        ) as get_scope,
-        patch.object(
-            oauthmod.oauth2,
-            "GoogleServiceAccountClient",
-            return_value=ads_client,
-        ) as service_client,
-    ):
+    with ExitStack() as stack:
+        from_file = stack.enter_context(
+            patch.object(
+                oauthmod.service_account.Credentials,
+                "from_service_account_file",
+                return_value=credential,
+            )
+        )
+        get_scope = stack.enter_context(
+            patch.object(oauthmod.oauth2, "GetAPIScope", return_value="scope")
+        )
+        service_client = stack.enter_context(
+            patch.object(
+                oauthmod.oauth2,
+                "GoogleServiceAccountClient",
+                return_value=ads_client,
+            )
+        )
         result = oauthmod.ServiceAccount.from_service_account_file()
         client = oauthmod.ServiceAccount.get_service_account_client()
 
