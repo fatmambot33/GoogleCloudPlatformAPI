@@ -41,7 +41,7 @@ jobs:
         run: pyright GoogleCloudPlatformAPI
 
       - name: Run tests with coverage
-        run: pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=83
+        run: pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=90
 
   package:
     runs-on: ubuntu-latest
