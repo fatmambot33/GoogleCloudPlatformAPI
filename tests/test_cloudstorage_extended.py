@@ -1,21 +1,18 @@
 """Additional deterministic tests for Cloud Storage boundaries."""
 
+import importlib
 from unittest.mock import MagicMock, patch
 
 from GoogleCloudPlatformAPI.CloudStorage import CloudStorage
 
 
-CLIENT_PATH = "GoogleCloudPlatformAPI.CloudStorage.storage.Client"
-SERVICE_ACCOUNT_PATH = (
-    "GoogleCloudPlatformAPI.CloudStorage.ServiceAccount.from_service_account_file"
-)
-GLOB_PATH = "GoogleCloudPlatformAPI.CloudStorage.glob.glob"
+CLOUD_STORAGE_MODULE = importlib.import_module("GoogleCloudPlatformAPI.CloudStorage")
 
 
 def _storage_with_client():
     """Return a CloudStorage instance backed by a mock client."""
     client = MagicMock()
-    with patch(CLIENT_PATH, return_value=client):
+    with patch.object(CLOUD_STORAGE_MODULE.storage, "Client", return_value=client):
         cloud_storage = CloudStorage(project_id="demo")
     return cloud_storage, client
 
@@ -23,7 +20,7 @@ def _storage_with_client():
 def test_init_uses_explicit_credentials():
     credentials = MagicMock()
 
-    with patch(CLIENT_PATH) as client_class:
+    with patch.object(CLOUD_STORAGE_MODULE.storage, "Client") as client_class:
         CloudStorage(credentials=credentials, project_id="demo")
 
     client_class.assert_called_once_with(credentials=credentials, project="demo")
@@ -33,8 +30,12 @@ def test_init_uses_service_account_from_environment(monkeypatch):
     credentials = MagicMock()
     monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/key.json")
 
-    with patch(SERVICE_ACCOUNT_PATH, return_value=credentials) as loader:
-        with patch(CLIENT_PATH) as client_class:
+    with patch.object(
+        CLOUD_STORAGE_MODULE.ServiceAccount,
+        "from_service_account_file",
+        return_value=credentials,
+    ) as loader:
+        with patch.object(CLOUD_STORAGE_MODULE.storage, "Client") as client_class:
             CloudStorage(project_id="demo")
 
     loader.assert_called_once_with()
@@ -104,7 +105,7 @@ def test_upload_folder_dispatches_matching_files():
     cloud_storage, _ = _storage_with_client()
     files = ["/tmp/a.gz", "/tmp/b.gz"]
 
-    with patch(GLOB_PATH, return_value=files):
+    with patch.object(CLOUD_STORAGE_MODULE.glob, "glob", return_value=files):
         with patch.object(cloud_storage, "upload_file_from_filename") as upload:
             cloud_storage.upload_folder("/tmp/", "remote/", "bucket", override=True)
 
