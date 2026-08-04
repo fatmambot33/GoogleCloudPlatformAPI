@@ -2,6 +2,7 @@
 
 import datetime
 import importlib
+from contextlib import ExitStack
 from unittest.mock import MagicMock, call, patch
 
 import pandas as pd
@@ -22,18 +23,21 @@ def test_init_builds_reporting_and_management_clients(monkeypatch):
     reporting = MagicMock()
     management = MagicMock()
 
-    with (
-        patch.object(
-            analyticsmod.Analytics.ServiceAccount,
-            "from_service_account_file",
-            return_value=credential,
-        ) as from_file,
-        patch.object(
-            analyticsmod,
-            "build",
-            side_effect=[reporting, management],
-        ) as build,
-    ):
+    with ExitStack() as stack:
+        from_file = stack.enter_context(
+            patch.object(
+                analyticsmod.Analytics.ServiceAccount,
+                "from_service_account_file",
+                return_value=credential,
+            )
+        )
+        build = stack.enter_context(
+            patch.object(
+                analyticsmod,
+                "build",
+                side_effect=[reporting, management],
+            )
+        )
         analytics = analyticsmod.Analytics()
 
     assert analytics._reporting is reporting
