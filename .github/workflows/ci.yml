@@ -35,7 +35,7 @@ jobs:
         run: pydocstyle GoogleCloudPlatformAPI
 
       - name: Check formatting
-        run: black --check --diff tests/test_codex_tools_extra.py
+        run: black --check .
 
       - name: Run static type analysis
         run: pyright GoogleCloudPlatformAPI
