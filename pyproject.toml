@@ -18,6 +18,9 @@ dependencies = [
     "python-dotenv",
 ]
 
+[project.scripts]
+gcp-api-mcp = "GoogleCloudPlatformAPI.codex.server:main"
+
 [project.optional-dependencies]
 dev = [
     "black==24.8.0",
@@ -28,6 +31,7 @@ dev = [
     "pytest-cov",
     "twine",
 ]
+codex = []
 
 [tool.black]
 target-version = ["py37"]

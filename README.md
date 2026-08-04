@@ -29,6 +29,50 @@ Configure authentication with a service account JSON file via the
 `GOOGLE_APPLICATION_CREDENTIALS` environment variable or supply the path to
 individual helpers.
 
+## Local Codex plugin surface
+
+The package includes a read-only MCP server for Codex CLI, the Codex desktop
+app, and compatible local MCP clients. It runs locally over stdio, inherits the
+current process environment, and never copies or persists Google credentials.
+
+Install the project and verify the entry point:
+
+```bash
+pip install -e '.[codex]'
+gcp-api-mcp
+```
+
+Register the server in your Codex MCP configuration:
+
+```toml
+[mcp_servers.google_cloud_platform_api]
+command = "gcp-api-mcp"
+```
+
+When using a virtual environment, configure the absolute path to its
+`gcp-api-mcp` executable. The server exposes four read-only tools:
+
+- `gcp_context`
+- `bigquery_query`
+- `gcs_list_objects`
+- `gcs_read_text`
+
+BigQuery accepts only statements beginning with `SELECT`, `WITH`, or `EXPLAIN`.
+Cloud Storage reads and all result sets are bounded. No upload, delete, table
+creation, or other mutation tool is exposed.
+
+Example Codex prompts:
+
+```text
+Inspect my local GCP configuration.
+Run SELECT CURRENT_DATE() AS today in BigQuery.
+List objects under reports/ in bucket example-bucket.
+Read reports/latest.json from bucket example-bucket, limited to 50000 bytes.
+```
+
+The reusable workflow guidance is stored in
+`.codex/skills/google-cloud-platform-api/SKILL.md`.
+
 ## Usage
 
 ### BigQuery
