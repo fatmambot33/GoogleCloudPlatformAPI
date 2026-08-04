@@ -40,12 +40,18 @@ def test_create_external_csv_table_configures_schema_and_partitioning():
     csv_options = MagicMock()
     table = MagicMock()
 
-    with patch.object(bqmod.bigquery, "SchemaField", side_effect=lambda **value: value), patch.object(
-        bqmod.bigquery, "ExternalConfig", return_value=external_config
-    ), patch.object(bqmod.bigquery, "CSVOptions", return_value=csv_options), patch.object(
-        bqmod.bigquery, "Table", return_value=table
-    ), patch.object(
-        bqmod.bigquery, "TimePartitioning", return_value="partitioning"
+    with (
+        patch.object(
+            bqmod.bigquery, "SchemaField", side_effect=lambda **value: value
+        ),
+        patch.object(
+            bqmod.bigquery, "ExternalConfig", return_value=external_config
+        ),
+        patch.object(bqmod.bigquery, "CSVOptions", return_value=csv_options),
+        patch.object(bqmod.bigquery, "Table", return_value=table),
+        patch.object(
+            bqmod.bigquery, "TimePartitioning", return_value="partitioning"
+        ),
     ):
         result = bigquery.create_external_table(
             "analytics", "events", _schema(), ["gs://bucket/events/*.csv"]
@@ -66,8 +72,11 @@ def test_create_external_csv_table_configures_schema_and_partitioning():
 def test_create_external_json_table_returns_false_without_creating_table():
     bigquery = _bigquery_with_client()
 
-    with patch.object(bqmod.bigquery, "SchemaField", side_effect=lambda **value: value), patch.object(
-        bqmod.bigquery, "ExternalConfig", return_value=MagicMock()
+    with (
+        patch.object(
+            bqmod.bigquery, "SchemaField", side_effect=lambda **value: value
+        ),
+        patch.object(bqmod.bigquery, "ExternalConfig", return_value=MagicMock()),
     ):
         result = bigquery.create_external_table(
             "analytics",
@@ -92,10 +101,16 @@ def test_create_table_from_schema_uses_report_date_partition(tmp_path):
     (folder / "schema.json").write_text(json.dumps(_schema()), encoding="utf-8")
 
     table = MagicMock()
-    with patch.object(bqmod.bigquery, "SchemaField", side_effect=lambda **value: value), patch.object(
-        bqmod.bigquery, "Table", return_value=table
-    ), patch.object(
-        bqmod.bigquery, "TimePartitioning", return_value="report-date-partition"
+    with (
+        patch.object(
+            bqmod.bigquery, "SchemaField", side_effect=lambda **value: value
+        ),
+        patch.object(bqmod.bigquery, "Table", return_value=table),
+        patch.object(
+            bqmod.bigquery,
+            "TimePartitioning",
+            return_value="report-date-partition",
+        ),
     ):
         result = bigquery.create_table_from_schema(
             "events", dataset="analytics", data_path=f"{tmp_path}/"
@@ -123,9 +138,15 @@ def test_create_table_from_schema_uses_environment_defaults(tmp_path, monkeypatc
     monkeypatch.setenv("DATA_PATH", f"{tmp_path}/")
 
     table = MagicMock()
-    with patch.object(bqmod.bigquery, "SchemaField", side_effect=lambda **value: value), patch.object(
-        bqmod.bigquery, "Table", return_value=table
-    ), patch.object(bqmod.bigquery, "TimePartitioning", return_value="date-partition"):
+    with (
+        patch.object(
+            bqmod.bigquery, "SchemaField", side_effect=lambda **value: value
+        ),
+        patch.object(bqmod.bigquery, "Table", return_value=table),
+        patch.object(
+            bqmod.bigquery, "TimePartitioning", return_value="date-partition"
+        ),
+    ):
         result = bigquery.create_table_from_schema("events")
 
     assert result is True
