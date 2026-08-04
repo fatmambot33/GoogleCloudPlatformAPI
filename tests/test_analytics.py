@@ -22,17 +22,15 @@ def test_init_uses_environment_credentials_and_builds_clients(monkeypatch):
     reporting = MagicMock()
     management = MagicMock()
 
-    with (
-        patch.object(
-            analyticsmod.Analytics.ServiceAccount,
-            "from_service_account_file",
-            return_value=credential,
-        ) as from_file,
-        patch.object(
+    with patch.object(
+        analyticsmod.Analytics.ServiceAccount,
+        "from_service_account_file",
+        return_value=credential,
+    ) as from_file:
+        with patch.object(
             analyticsmod, "build", side_effect=[reporting, management]
-        ) as build,
-    ):
-        analytics = analyticsmod.Analytics()
+        ) as build:
+            analytics = analyticsmod.Analytics()
 
     assert analytics._reporting is reporting
     assert analytics._management is management
@@ -47,9 +45,7 @@ def test_init_uses_environment_credentials_and_builds_clients(monkeypatch):
 
 def test_list_views_returns_items_and_defaults_to_empty_list():
     analytics = _analytics_without_init()
-    request = (
-        analytics._management.management.return_value.profiles.return_value.list
-    )
+    request = analytics._management.management.return_value.profiles.return_value.list
     request.return_value.execute.side_effect = [{"items": [{"id": "1"}]}, {}]
 
     assert analytics.list_views() == [{"id": "1"}]
@@ -105,9 +101,7 @@ def test_get_report_converts_raw_response_to_dataframe():
             {
                 "columnHeader": {
                     "dimensions": ["ga:date", "ga:source"],
-                    "metricHeader": {
-                        "metricHeaderEntries": [{"name": "ga:sessions"}]
-                    },
+                    "metricHeader": {"metricHeaderEntries": [{"name": "ga:sessions"}]},
                 },
                 "data": {
                     "rows": [
@@ -186,9 +180,7 @@ def test_report_to_df_handles_empty_rows():
             {
                 "columnHeader": {
                     "dimensions": ["ga:source"],
-                    "metricHeader": {
-                        "metricHeaderEntries": [{"name": "ga:sessions"}]
-                    },
+                    "metricHeader": {"metricHeaderEntries": [{"name": "ga:sessions"}]},
                 },
                 "data": {"rows": []},
             }
