@@ -5,7 +5,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from GoogleCloudPlatformAPI.codex.tools import CodexTools, _json_value, tool_definitions
+from GoogleCloudPlatformAPI.codex.tools import (
+    CodexTools,
+    _json_value,
+    tool_definitions,
+)
 
 
 def test_json_value_handles_dates_tuples_and_fallback_values():
