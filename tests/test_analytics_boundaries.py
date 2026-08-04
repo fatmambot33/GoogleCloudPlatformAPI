@@ -98,9 +98,7 @@ def test_get_report_converts_api_response_to_dataframe():
             {
                 "columnHeader": {
                     "dimensions": ["ga:source"],
-                    "metricHeader": {
-                        "metricHeaderEntries": [{"name": "ga:sessions"}]
-                    },
+                    "metricHeader": {"metricHeaderEntries": [{"name": "ga:sessions"}]},
                 },
                 "data": {
                     "rows": [
@@ -196,9 +194,7 @@ def test_report_to_df_supports_empty_rows():
             {
                 "columnHeader": {
                     "dimensions": ["ga:source"],
-                    "metricHeader": {
-                        "metricHeaderEntries": [{"name": "ga:sessions"}]
-                    },
+                    "metricHeader": {"metricHeaderEntries": [{"name": "ga:sessions"}]},
                 },
                 "data": {},
             }
