@@ -23,7 +23,7 @@ gcp-api-mcp = "GoogleCloudPlatformAPI.codex.server:main"
 
 [project.optional-dependencies]
 dev = [
-    "black==24.8.0",
+    "black==26.3.1",
     "build",
     "pydocstyle",
     "pyright",
