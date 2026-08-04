@@ -20,6 +20,7 @@ dependencies = [
 
 [project.scripts]
 gcp-api-mcp = "GoogleCloudPlatformAPI.codex.server:main"
+gcp-api-agent = "GoogleCloudPlatformAPI.agents.cli:main"
 
 [project.optional-dependencies]
 dev = [
