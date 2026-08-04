@@ -26,12 +26,15 @@ def test_init_uses_service_account_from_environment(monkeypatch):
     credentials = MagicMock()
     monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/key.json")
 
-    with patch(
-        "GoogleCloudPlatformAPI.CloudStorage.ServiceAccount.from_service_account_file",
-        return_value=credentials,
-    ) as loader, patch(
-        "GoogleCloudPlatformAPI.CloudStorage.storage.Client"
-    ) as client_class:
+    with (
+        patch(
+            "GoogleCloudPlatformAPI.CloudStorage.ServiceAccount.from_service_account_file",
+            return_value=credentials,
+        ) as loader,
+        patch(
+            "GoogleCloudPlatformAPI.CloudStorage.storage.Client"
+        ) as client_class,
+    ):
         CloudStorage(project_id="demo")
 
     loader.assert_called_once_with()
@@ -79,9 +82,7 @@ def test_upload_file_from_filename_respects_override():
     blob = client.bucket.return_value.blob.return_value
 
     with patch.object(storage, "file_exists", return_value=False):
-        storage.upload_file_from_filename(
-            "local.json", "remote/item.json", "bucket"
-        )
+        storage.upload_file_from_filename("local.json", "remote/item.json", "bucket")
 
     blob.upload_from_filename.assert_called_once_with("local.json")
 
@@ -102,10 +103,13 @@ def test_upload_file_splits_bucket_and_blob_path():
 def test_upload_folder_dispatches_matching_files():
     storage, _ = _storage_with_client()
 
-    with patch(
-        "GoogleCloudPlatformAPI.CloudStorage.glob.glob",
-        return_value=["/tmp/a.gz", "/tmp/b.gz"],
-    ), patch.object(storage, "upload_file_from_filename") as upload:
+    with (
+        patch(
+            "GoogleCloudPlatformAPI.CloudStorage.glob.glob",
+            return_value=["/tmp/a.gz", "/tmp/b.gz"],
+        ),
+        patch.object(storage, "upload_file_from_filename") as upload,
+    ):
         storage.upload_folder("/tmp/", "remote/", "bucket", override=True)
 
     assert upload.call_count == 2
@@ -126,9 +130,12 @@ def test_upload_folder_dispatches_matching_files():
 def test_copy_files_dispatches_each_source():
     storage, _ = _storage_with_client()
 
-    with patch.object(
-        storage, "list_files", return_value=["folder/a", "folder/b"]
-    ) as listed, patch.object(storage, "copy_file") as copied:
+    with (
+        patch.object(
+            storage, "list_files", return_value=["folder/a", "folder/b"]
+        ) as listed,
+        patch.object(storage, "copy_file") as copied,
+    ):
         storage.copy_files("source", "folder/", "destination", override=True)
 
     listed.assert_called_once_with(bucket_name="source", prefix="folder/")
