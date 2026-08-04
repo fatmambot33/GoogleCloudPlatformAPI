@@ -72,9 +72,7 @@ def test_call_dispatches_all_tools_and_rejects_unknown_name(monkeypatch):
     monkeypatch.setattr(tools, "storage_read_text", lambda **kwargs: kwargs)
 
     assert tools.call("gcp_context", {}) == {"context": True}
-    assert tools.call("bigquery_query", {"query": "SELECT 1"}) == {
-        "query": "SELECT 1"
-    }
+    assert tools.call("bigquery_query", {"query": "SELECT 1"}) == {"query": "SELECT 1"}
     assert tools.call("gcs_list_objects", {"bucket_name": "bucket"}) == {
         "bucket_name": "bucket"
     }
