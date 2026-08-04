@@ -105,9 +105,7 @@ def test_configured_plugin_references_from_value():
 def test_configured_plugin_references_from_environment(monkeypatch):
     monkeypatch.setenv(PLUGIN_ENV_VAR, "tests.test_agents:AddProjectPlugin")
 
-    assert configured_plugin_references() == [
-        "tests.test_agents:AddProjectPlugin"
-    ]
+    assert configured_plugin_references() == ["tests.test_agents:AddProjectPlugin"]
 
 
 def test_load_plugins_from_explicit_references():
@@ -196,9 +194,7 @@ def test_mcp_server_handles_core_protocol_methods():
 
 def test_mcp_server_runs_json_lines():
     server = MCPServer(FakeTools())
-    stdin = io.StringIO(
-        '\n{"jsonrpc":"2.0","id":1,"method":"ping"}\nnot-json\n'
-    )
+    stdin = io.StringIO('\n{"jsonrpc":"2.0","id":1,"method":"ping"}\nnot-json\n')
     stdout = io.StringIO()
 
     server.run(stdin, stdout)
