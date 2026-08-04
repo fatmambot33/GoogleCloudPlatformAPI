@@ -107,7 +107,9 @@ def test_create_table_from_schema_uses_report_date_partition(tmp_path):
 
     folder = tmp_path / "events"
     folder.mkdir()
-    (folder / "schema.json").write_text(json.dumps(_schema()), encoding="utf-8")
+    (folder / "schema.json").write_text(
+        json.dumps(_schema()), encoding="utf-8"
+    )
 
     table = MagicMock()
     with _patch_bigquery_builders(table=table) as stack:
@@ -139,7 +141,9 @@ def test_create_table_from_schema_uses_environment_defaults(tmp_path, monkeypatc
     folder.mkdir()
     schema = _schema()
     schema["table_schema"][0]["name"] = "date"
-    (folder / "schema.json").write_text(json.dumps(schema), encoding="utf-8")
+    (folder / "schema.json").write_text(
+        json.dumps(schema), encoding="utf-8"
+    )
     monkeypatch.setenv("DEFAULT_BQ_DATASET", "analytics")
     monkeypatch.setenv("DATA_PATH", f"{tmp_path}/")
 
