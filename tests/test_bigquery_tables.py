@@ -33,9 +33,7 @@ def _schema(source_format="CSV"):
 def _patch_bigquery_builders(table=None, external_config=None, csv_options=None):
     stack = ExitStack()
     stack.enter_context(
-        patch.object(
-            bqmod.bigquery, "SchemaField", side_effect=lambda **value: value
-        )
+        patch.object(bqmod.bigquery, "SchemaField", side_effect=lambda **value: value)
     )
     if external_config is not None:
         stack.enter_context(
