@@ -1,9 +1,10 @@
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
 [project]
-name = 'GoogleCloudPlatformAPI'
-version = '2.3.7'
+name = "GoogleCloudPlatformAPI"
+version = "2.3.7"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
@@ -19,13 +20,16 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
+    "black==25.1.0",
     "pydocstyle",
     "pyright",
     "pytest",
     "pytest-cov",
     "pytest-pydocstyle",
 ]
+
+[tool.black]
+target-version = ["py37"]
 
 [tool.pydocstyle]
 convention = "numpy"
