@@ -22,13 +22,16 @@ def test_init_uses_environment_credentials_and_builds_clients(monkeypatch):
     reporting = MagicMock()
     management = MagicMock()
 
-    with patch.object(
-        analyticsmod.Analytics.ServiceAccount,
-        "from_service_account_file",
-        return_value=credential,
-    ) as from_file, patch.object(
-        analyticsmod, "build", side_effect=[reporting, management]
-    ) as build:
+    with (
+        patch.object(
+            analyticsmod.Analytics.ServiceAccount,
+            "from_service_account_file",
+            return_value=credential,
+        ) as from_file,
+        patch.object(
+            analyticsmod, "build", side_effect=[reporting, management]
+        ) as build,
+    ):
         analytics = analyticsmod.Analytics()
 
     assert analytics._reporting is reporting
@@ -44,7 +47,9 @@ def test_init_uses_environment_credentials_and_builds_clients(monkeypatch):
 
 def test_list_views_returns_items_and_defaults_to_empty_list():
     analytics = _analytics_without_init()
-    request = analytics._management.management.return_value.profiles.return_value.list
+    request = (
+        analytics._management.management.return_value.profiles.return_value.list
+    )
     request.return_value.execute.side_effect = [{"items": [{"id": "1"}]}, {}]
 
     assert analytics.list_views() == [{"id": "1"}]
@@ -160,7 +165,10 @@ def test_get_all_reports_adds_view_metadata_and_concatenates():
         ]
     )
     analytics.get_report = MagicMock(
-        side_effect=[pd.DataFrame({"sessions": [1]}), pd.DataFrame({"sessions": [2]})]
+        side_effect=[
+            pd.DataFrame({"sessions": [1]}),
+            pd.DataFrame({"sessions": [2]}),
+        ]
     )
 
     result = analytics.get_all_reports()
