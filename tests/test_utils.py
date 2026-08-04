@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import sys
@@ -28,6 +29,12 @@ def test_merge_list_with_list():
     assert ListHelper.merge_list([1], [1, 2]) == [1, 2]
 
 
+def test_merge_list_with_none_and_duplicates():
+    """Test default merging and stable duplicate removal."""
+    assert ListHelper.merge_list([1, 1, 2]) == [1, 2]
+    assert ListHelper.merge_list([1, 2], [2, 3, 1]) == [1, 2, 3]
+
+
 def test_save_and_read_json(tmp_path: Path):
     """Test saving to and reading from a JSON file."""
     data = {"a": 1, "b": [1, 2, 3]}
@@ -36,6 +43,28 @@ def test_save_and_read_json(tmp_path: Path):
     assert file_path.exists()
     read_data = FileHelper.read_json(str(file_path))
     assert read_data == data
+
+
+def test_save_json_serializes_dates_and_objects(tmp_path: Path):
+    """Test the custom JSON serializer branches."""
+
+    class SerializableObject:
+        def __init__(self) -> None:
+            self.value = "stored"
+
+    file_path = tmp_path / "nested" / "custom.json"
+    FileHelper.save_to_json(
+        {
+            "date": datetime.date(2026, 8, 4),
+            "object": SerializableObject(),
+        },
+        str(file_path),
+    )
+
+    assert FileHelper.read_json(str(file_path)) == {
+        "date": {"year": 2026, "month": 8, "day": 4},
+        "object": {"value": "stored"},
+    }
 
 
 def test_check_filepath(tmp_path: Path):
@@ -47,12 +76,26 @@ def test_check_filepath(tmp_path: Path):
     assert dir_path.exists()
 
 
+def test_check_filepath_without_parent_directory(tmp_path: Path, monkeypatch):
+    """Test that a filename-only path does not attempt directory creation."""
+    monkeypatch.chdir(tmp_path)
+    FileHelper.check_filepath("test.txt")
+    assert not (tmp_path / "test.txt").exists()
+
+
 def test_file_exists(tmp_path: Path):
     """Test the file_exists method."""
     file_path = tmp_path / "existing_file.txt"
     file_path.touch()
     assert FileHelper.file_exists(str(file_path)) is True
     assert FileHelper.file_exists(str(tmp_path / "non_existing_file.txt")) is False
+
+
+def test_file_exists_supports_generated_filename_pattern(tmp_path: Path):
+    """Test timestamp- or identifier-suffixed file discovery."""
+    generated_file = tmp_path / "report-20260804.csv"
+    generated_file.touch()
+    assert FileHelper.file_exists(str(tmp_path / "report.csv")) is True
 
 
 def test_chunk_list():
@@ -70,3 +113,4 @@ def test_convert_list():
     assert ListHelper.convert_list("['a', 'b']") == ["a", "b"]
     assert ListHelper.convert_list([1, 2, 3]) == [1, 2, 3]
     assert ListHelper.convert_list("not a list") == "not a list"
+    assert ListHelper.convert_list("[unterminated") == "[unterminated"
