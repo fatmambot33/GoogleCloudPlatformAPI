@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "GoogleCloudPlatformAPI"
-version = "2.4.0"
+version = "2.5.0"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [

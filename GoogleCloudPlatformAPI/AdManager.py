@@ -51,7 +51,7 @@ METRICS = [
 
 DIMENSIONS = ["DATE", "AD_UNIT_NAME", "CUSTOM_TARGETING_VALUE_ID"]
 
-GAM_VERSION = "v202505"
+GAM_VERSION = "v202602"
 NETWORK_CODE = "5574"
 APP_NAME = "AdManagerAPIClient"
 
@@ -208,7 +208,7 @@ class GamClient(ad_manager.AdManagerClient):
         gam_client = GamClient()
         network_service = gam_client.get_service(
             service_name="NetworkService",
-            gam_version="v202505"
+            gam_version="v202602"
         )
         ```
         """
@@ -236,7 +236,7 @@ class GamClient(ad_manager.AdManagerClient):
 
         # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
         gam_client = GamClient()
-        data_downloader = gam_client.get_data_downloader(gam_version="v202505")
+        data_downloader = gam_client.get_data_downloader(gam_version="v202602")
         ```
         """
         logging.debug(f"GamClient::get_data_downloader:{gam_version}")
