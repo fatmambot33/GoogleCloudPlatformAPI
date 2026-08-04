@@ -33,7 +33,9 @@ def test_build_job_config_csv_partition(tmp_path):
     folder = tmp_path / "events"
     partition = folder / "2026-08-04"
     partition.mkdir(parents=True)
-    (partition / "schema.json").write_text(json.dumps(_schema()), encoding="utf-8")
+    schema = json.dumps(_schema())
+    (folder / "schema.json").write_text(schema, encoding="utf-8")
+    (partition / "schema.json").write_text(schema, encoding="utf-8")
     config = MagicMock()
 
     with patch.object(
@@ -57,12 +59,13 @@ def test_build_job_config_csv_partition(tmp_path):
     assert schema_field.call_count == 2
 
 
-def test_build_job_config_json_without_partition(tmp_path):
+def test_build_job_config_json_partition(tmp_path):
     folder = tmp_path / "events"
-    folder.mkdir()
-    (folder / "schema.json").write_text(
-        json.dumps(_schema("NEWLINE_DELIMITED_JSON")), encoding="utf-8"
-    )
+    partition = folder / "2026-08-04"
+    partition.mkdir(parents=True)
+    schema = json.dumps(_schema("NEWLINE_DELIMITED_JSON"))
+    (folder / "schema.json").write_text(schema, encoding="utf-8")
+    (partition / "schema.json").write_text(schema, encoding="utf-8")
     config = MagicMock()
 
     with patch.object(
@@ -72,12 +75,12 @@ def test_build_job_config_json_without_partition(tmp_path):
             table_name="analytics.events",
             bucket_name="bucket",
             data_path=f"{folder}/",
-            partition_date=None,
+            partition_date=datetime.date(2026, 8, 4),
         )
 
     assert result is config
-    assert uri == f"gs://bucket/{folder}/*.json.gz"
-    assert config.write_disposition == bqmod.bigquery.WriteDisposition.WRITE_TRUNCATE
+    assert uri == "gs://bucket/events/2026-08-04/*.json.gz"
+    assert config.write_disposition == bqmod.bigquery.WriteDisposition.WRITE_APPEND
     assert config.source_format == bqmod.bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
 
 
@@ -87,7 +90,6 @@ def test_build_job_config_downloads_missing_schema(tmp_path):
     partition = folder / "2026-08-04"
     partition.mkdir()
     schema_path = folder / "schema.json"
-
     storage = MagicMock()
 
     def download_schema(**kwargs):
@@ -145,6 +147,44 @@ def test_load_from_cloud_deletes_partition_and_waits_for_job():
         job_config=config,
     )
     job.result.assert_called_once_with()
+
+
+def test_load_from_local_uploads_partition_and_loads_cloud(tmp_path):
+    bigquery = _bigquery_with_client()
+    bigquery.load_from_cloud = MagicMock(return_value=True)
+    partition_date = datetime.date(2026, 8, 4)
+    local_folder = tmp_path / "local"
+    source_folder = local_folder / "2026-08-04"
+    source_folder.mkdir(parents=True)
+    (local_folder / "schema.json").write_text(json.dumps(_schema()), encoding="utf-8")
+    storage = MagicMock()
+    storage_context = MagicMock()
+    storage_context.__enter__.return_value = storage
+
+    with patch.object(bqmod, "CloudStorage", return_value=storage_context):
+        result = bigquery.load_from_local(
+            bucket_name="bucket",
+            data_set="analytics",
+            table="events",
+            local_folder=f"{local_folder}/",
+            prefix="ignored",
+            partition_date=partition_date,
+            override=True,
+        )
+
+    assert result is True
+    storage.delete_files.assert_called_once_with(
+        bucket_name="bucket", prefix="events/2026-08-04/"
+    )
+    storage.upload_folder.assert_called_once_with(
+        local_folder=f"{source_folder}/",
+        remote_folder="events/2026-08-04/",
+        bucket_name="bucket",
+        file_mask="*.csv.gz",
+        override=True,
+    )
+    assert (source_folder / "schema.json").exists()
+    bigquery.load_from_cloud.assert_called_once()
 
 
 def test_load_from_uri_builds_config_and_waits_for_job():
