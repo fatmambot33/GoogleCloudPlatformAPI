@@ -34,5 +34,7 @@ def configured_plugin_references(value: Optional[str] = None) -> List[str]:
 
 def load_plugins(references: Optional[Iterable[str]] = None) -> List[AgentPlugin]:
     """Load plugins from references or ``GCP_API_PLUGINS``."""
-    selected = configured_plugin_references() if references is None else list(references)
+    selected = (
+        configured_plugin_references() if references is None else list(references)
+    )
     return [load_plugin(reference) for reference in selected]
