@@ -107,7 +107,7 @@ from GoogleCloudPlatformAPI.AdManager import GamClient
 gam_client = GamClient()
 network_service = gam_client.get_service(
     service_name="NetworkService",
-    gam_version="v202505"
+    gam_version="v202602"
 )
 print(network_service.getCurrentNetwork())
 ```
