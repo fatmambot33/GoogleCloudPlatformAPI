@@ -97,6 +97,20 @@ def test_get_cloudplatform_supports_custom_service_account_scopes():
     from_file.assert_called_once_with(filename="service-account.json", scopes=scopes)
 
 
+def test_get_cloudplatform_uses_default_scopes_for_user_credentials():
+    credential = MagicMock()
+
+    with patch.object(
+        oauthmod.credentials, "Credentials", return_value=credential
+    ) as user_credentials:
+        result = oauthmod.ClientCredentials().get_cloudplatform()
+
+    assert result is credential
+    user_credentials.assert_called_once_with(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+
+
 def test_service_account_helpers_use_environment_defaults(monkeypatch):
     monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "service-account.json")
     credential = MagicMock()
