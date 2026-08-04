@@ -70,9 +70,7 @@ def test_upload_from_string_respects_override():
     with patch.object(cloud_storage, "file_exists", return_value=True):
         cloud_storage.upload_from_string("bucket", "item.txt", "value")
         blob.upload_from_string.assert_not_called()
-        cloud_storage.upload_from_string(
-            "bucket", "item.txt", "value", override=True
-        )
+        cloud_storage.upload_from_string("bucket", "item.txt", "value", override=True)
 
     blob.upload_from_string.assert_called_once_with("value")
 
@@ -96,9 +94,7 @@ def test_upload_file_splits_bucket_and_blob_path():
     with patch.object(cloud_storage, "file_exists", return_value=False) as exists:
         cloud_storage.upload_file("local.json", "bucket/folder/item.json")
 
-    exists.assert_called_once_with(
-        filepath="folder/item.json", bucket_name="bucket"
-    )
+    exists.assert_called_once_with(filepath="folder/item.json", bucket_name="bucket")
     client.bucket.assert_called_once_with("bucket")
     client.bucket.return_value.blob.assert_called_once_with("folder/item.json")
     blob.upload_from_filename.assert_called_once_with("local.json")
@@ -109,12 +105,8 @@ def test_upload_folder_dispatches_matching_files():
     files = ["/tmp/a.gz", "/tmp/b.gz"]
 
     with patch(GLOB_PATH, return_value=files):
-        with patch.object(
-            cloud_storage, "upload_file_from_filename"
-        ) as upload:
-            cloud_storage.upload_folder(
-                "/tmp/", "remote/", "bucket", override=True
-            )
+        with patch.object(cloud_storage, "upload_file_from_filename") as upload:
+            cloud_storage.upload_folder("/tmp/", "remote/", "bucket", override=True)
 
     assert upload.call_count == 2
     upload.assert_any_call(
@@ -137,9 +129,7 @@ def test_copy_files_dispatches_each_source():
 
     with patch.object(cloud_storage, "list_files", return_value=sources) as listed:
         with patch.object(cloud_storage, "copy_file") as copied:
-            cloud_storage.copy_files(
-                "source", "folder/", "destination", override=True
-            )
+            cloud_storage.copy_files("source", "folder/", "destination", override=True)
 
     listed.assert_called_once_with(bucket_name="source", prefix="folder/")
     assert copied.call_count == 2
