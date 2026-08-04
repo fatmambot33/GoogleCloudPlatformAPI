@@ -59,7 +59,9 @@ def test_client_credentials_builds_ads_service_account_client(monkeypatch):
 
     assert result is client
     get_scope.assert_called_once_with("ad_manager")
-    service_client.assert_called_once_with(key_file="service-account.json", scope="scope")
+    service_client.assert_called_once_with(
+        key_file="service-account.json", scope="scope"
+    )
 
 
 def test_client_credentials_builds_ads_user_client(monkeypatch):
@@ -128,4 +130,6 @@ def test_service_account_helpers_use_environment_defaults(monkeypatch):
         scopes=["https://www.googleapis.com/auth/cloud-platform"],
     )
     get_scope.assert_called_once_with("ad_manager")
-    service_client.assert_called_once_with(key_file="service-account.json", scope="scope")
+    service_client.assert_called_once_with(
+        key_file="service-account.json", scope="scope"
+    )
