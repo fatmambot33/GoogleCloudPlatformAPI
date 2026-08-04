@@ -4,7 +4,6 @@ import importlib
 from contextlib import ExitStack
 from unittest.mock import MagicMock, patch
 
-
 oauthmod = importlib.import_module("GoogleCloudPlatformAPI.Oauth")
 
 
@@ -60,9 +59,7 @@ def test_client_credentials_builds_ads_service_account_client(monkeypatch):
 
     assert result is client
     get_scope.assert_called_once_with("ad_manager")
-    service_client.assert_called_once_with(
-        key_file="service-account.json", scope="scope"
-    )
+    service_client.assert_called_once_with(key_file="service-account.json", scope="scope")
 
 
 def test_client_credentials_builds_ads_user_client(monkeypatch):
@@ -95,9 +92,7 @@ def test_get_cloudplatform_supports_custom_service_account_scopes():
         result = client_credentials.get_cloudplatform("service-account.json", scopes)
 
     assert result is credential
-    from_file.assert_called_once_with(
-        filename="service-account.json", scopes=scopes
-    )
+    from_file.assert_called_once_with(filename="service-account.json", scopes=scopes)
 
 
 def test_service_account_helpers_use_environment_defaults(monkeypatch):
@@ -133,6 +128,4 @@ def test_service_account_helpers_use_environment_defaults(monkeypatch):
         scopes=["https://www.googleapis.com/auth/cloud-platform"],
     )
     get_scope.assert_called_once_with("ad_manager")
-    service_client.assert_called_once_with(
-        key_file="service-account.json", scope="scope"
-    )
+    service_client.assert_called_once_with(key_file="service-account.json", scope="scope")
