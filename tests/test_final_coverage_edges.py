@@ -66,6 +66,44 @@ def test_bigquery_explicit_credentials_and_context_close():
     client.close.assert_called_once_with()
 
 
+def test_bigquery_environment_credentials(monkeypatch):
+    bigquery_module = importlib.import_module("GoogleCloudPlatformAPI.BigQuery")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", "service-account.json")
+    credentials = MagicMock(project_id="project")
+    client = MagicMock()
+
+    with patch.object(
+        bigquery_module.ServiceAccount,
+        "from_service_account_file",
+        return_value=credentials,
+    ) as from_file, patch.object(
+        bigquery_module.bigquery, "Client", return_value=client
+    ) as client_class:
+        bigquery_module.BigQuery()
+
+    from_file.assert_called_once_with()
+    client_class.assert_called_once_with(credentials=credentials, project="project")
+
+
+def test_bigquery_application_default_credentials(monkeypatch):
+    bigquery_module = importlib.import_module("GoogleCloudPlatformAPI.BigQuery")
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+    credentials = MagicMock()
+    client = MagicMock()
+
+    with patch.object(
+        bigquery_module.auth,
+        "default",
+        return_value=(credentials, "project"),
+    ) as default_credentials, patch.object(
+        bigquery_module.bigquery, "Client", return_value=client
+    ) as client_class:
+        bigquery_module.BigQuery()
+
+    default_credentials.assert_called_once_with(scopes=bigquery_module.BigQuery.SCOPES)
+    client_class.assert_called_once_with(credentials=credentials, project="project")
+
+
 def test_mcp_server_maps_invalid_tool_arguments_to_protocol_error():
     tools = MagicMock()
     tools.call.side_effect = ValueError("invalid arguments")
