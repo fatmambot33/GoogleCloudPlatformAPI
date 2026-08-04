@@ -37,9 +37,7 @@ def _patch_bigquery_builders(table=None, external_config=None, csv_options=None)
     )
     if external_config is not None:
         stack.enter_context(
-            patch.object(
-                bqmod.bigquery, "ExternalConfig", return_value=external_config
-            )
+            patch.object(bqmod.bigquery, "ExternalConfig", return_value=external_config)
         )
     if csv_options is not None:
         stack.enter_context(
