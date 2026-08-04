@@ -25,7 +25,6 @@ dev = [
     "pyright",
     "pytest",
     "pytest-cov",
-    "pytest-pydocstyle",
 ]
 
 [tool.black]
