@@ -1,5 +1,6 @@
 """Coverage for remaining deterministic runtime edges."""
 
+import importlib
 import io
 from unittest.mock import MagicMock, patch
 
@@ -27,11 +28,13 @@ def test_agent_plugin_base_run_raises_not_implemented():
 def test_codex_tools_default_factories_construct_clients():
     bigquery = MagicMock()
     storage = MagicMock()
+    bigquery_module = importlib.import_module("GoogleCloudPlatformAPI.BigQuery")
+    storage_module = importlib.import_module("GoogleCloudPlatformAPI.CloudStorage")
 
-    with patch(
-        "GoogleCloudPlatformAPI.BigQuery.BigQuery", return_value=bigquery
-    ) as bigquery_class, patch(
-        "GoogleCloudPlatformAPI.CloudStorage.CloudStorage", return_value=storage
+    with patch.object(
+        bigquery_module, "BigQuery", return_value=bigquery
+    ) as bigquery_class, patch.object(
+        storage_module, "CloudStorage", return_value=storage
     ) as storage_class:
         tools = CodexTools()
 
@@ -40,6 +43,27 @@ def test_codex_tools_default_factories_construct_clients():
 
     bigquery_class.assert_called_once_with()
     storage_class.assert_called_once_with()
+
+
+def test_bigquery_explicit_credentials_and_context_close():
+    bigquery_module = importlib.import_module("GoogleCloudPlatformAPI.BigQuery")
+    credentials = MagicMock(project_id="project")
+    client = MagicMock()
+
+    with patch.object(
+        bigquery_module.ServiceAccount,
+        "from_service_account_file",
+        return_value=credentials,
+    ) as from_file, patch.object(
+        bigquery_module.bigquery, "Client", return_value=client
+    ) as client_class:
+        instance = bigquery_module.BigQuery("service-account.json")
+
+    from_file.assert_called_once_with("service-account.json")
+    client_class.assert_called_once_with(credentials=credentials, project="project")
+    assert instance.__enter__() is instance
+    instance.__exit__(None, None, None)
+    client.close.assert_called_once_with()
 
 
 def test_mcp_server_maps_invalid_tool_arguments_to_protocol_error():
