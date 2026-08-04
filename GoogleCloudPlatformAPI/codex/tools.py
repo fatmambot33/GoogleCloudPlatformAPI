@@ -70,9 +70,9 @@ class CodexTools:
             "project_id": os.environ.get("GOOGLE_CLOUD_PROJECT")
             or os.environ.get("GCLOUD_PROJECT"),
             "credentials_configured": bool(credentials_path),
-            "credentials_file": os.path.basename(credentials_path)
-            if credentials_path
-            else None,
+            "credentials_file": (
+                os.path.basename(credentials_path) if credentials_path else None
+            ),
             "write_tools_enabled": False,
         }
 
@@ -137,8 +137,15 @@ def tool_definitions() -> List[Dict[str, Any]]:
     return [
         {
             "name": "gcp_context",
-            "description": "Inspect local GCP project and credential configuration without exposing secrets.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+            "description": (
+                "Inspect local GCP project and credential configuration without "
+                "exposing secrets."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
+            },
         },
         {
             "name": "bigquery_query",
@@ -147,7 +154,12 @@ def tool_definitions() -> List[Dict[str, Any]]:
                 "type": "object",
                 "properties": {
                     "query": {"type": "string"},
-                    "max_rows": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
+                    "max_rows": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                    },
                 },
                 "required": ["query"],
                 "additionalProperties": False,
@@ -161,7 +173,12 @@ def tool_definitions() -> List[Dict[str, Any]]:
                 "properties": {
                     "bucket_name": {"type": "string"},
                     "prefix": {"type": "string", "default": ""},
-                    "max_results": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
+                    "max_results": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                    },
                 },
                 "required": ["bucket_name"],
                 "additionalProperties": False,
@@ -169,13 +186,20 @@ def tool_definitions() -> List[Dict[str, Any]]:
         },
         {
             "name": "gcs_read_text",
-            "description": "Read a UTF-8 Cloud Storage object with a bounded response size.",
+            "description": (
+                "Read a UTF-8 Cloud Storage object with a bounded response size."
+            ),
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "bucket_name": {"type": "string"},
                     "object_name": {"type": "string"},
-                    "max_bytes": {"type": "integer", "minimum": 1, "maximum": 1000000, "default": 100000},
+                    "max_bytes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000,
+                        "default": 100000,
+                    },
                 },
                 "required": ["bucket_name", "object_name"],
                 "additionalProperties": False,
