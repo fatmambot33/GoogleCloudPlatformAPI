@@ -22,15 +22,18 @@ def test_init_builds_reporting_and_management_clients(monkeypatch):
     reporting = MagicMock()
     management = MagicMock()
 
-    with patch.object(
-        analyticsmod.Analytics.ServiceAccount,
-        "from_service_account_file",
-        return_value=credential,
-    ) as from_file, patch.object(
-        analyticsmod,
-        "build",
-        side_effect=[reporting, management],
-    ) as build:
+    with (
+        patch.object(
+            analyticsmod.Analytics.ServiceAccount,
+            "from_service_account_file",
+            return_value=credential,
+        ) as from_file,
+        patch.object(
+            analyticsmod,
+            "build",
+            side_effect=[reporting, management],
+        ) as build,
+    ):
         analytics = analyticsmod.Analytics()
 
     assert analytics._reporting is reporting
@@ -46,21 +49,20 @@ def test_init_builds_reporting_and_management_clients(monkeypatch):
 
 def test_list_views_returns_items_and_defaults_to_empty_list():
     analytics = _analytics_without_init()
-    execute = (
-        analytics._management.management.return_value.profiles.return_value.list.return_value.execute
-    )
+    profiles = analytics._management.management.return_value.profiles.return_value
+    list_views = profiles.list
+    execute = list_views.return_value.execute
     execute.side_effect = [{"items": [{"id": "1"}]}, {}]
 
     assert analytics.list_views() == [{"id": "1"}]
     assert analytics.list_views() == []
-    analytics._management.management.return_value.profiles.return_value.list.assert_called_with(
-        accountId="~all", webPropertyId="~all"
-    )
+    list_views.assert_called_with(accountId="~all", webPropertyId="~all")
 
 
 def test_get_report_normalizes_dates_and_builds_request_body():
     analytics = _analytics_without_init()
-    execute = analytics._reporting.reports.return_value.batchGet.return_value.execute
+    reports = analytics._reporting.reports.return_value
+    execute = reports.batchGet.return_value.execute
     execute.return_value = {"reports": []}
 
     result = analytics._get_report(
@@ -72,7 +74,7 @@ def test_get_report_normalizes_dates_and_builds_request_body():
     )
 
     assert result == {"reports": []}
-    analytics._reporting.reports.return_value.batchGet.assert_called_once_with(
+    reports.batchGet.assert_called_once_with(
         body={
             "reportRequests": [
                 {
