@@ -24,8 +24,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         dest="plugins",
         help="Plugin reference package.module:attribute; repeatable.",
     )
-    parser.add_argument("--context", type=_json_object, default={}, help="Initial JSON object.")
-    parser.add_argument("--only", action="append", help="Registered plugin name to run; repeatable.")
+    parser.add_argument(
+        "--context", type=_json_object, default={}, help="Initial JSON object."
+    )
+    parser.add_argument(
+        "--only", action="append", help="Registered plugin name to run; repeatable."
+    )
     args = parser.parse_args(argv)
     result = Agent(load_plugins(args.plugins)).run(args.context, args.only)
     print(json.dumps(result, indent=2, sort_keys=True))
