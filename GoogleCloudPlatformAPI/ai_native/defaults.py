@@ -14,7 +14,11 @@ def register_default_capabilities() -> None:
             service="gcp",
             operation="context",
             description="Inspect the active local Google Cloud configuration.",
-            input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+            input_schema={
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
+            },
             output_schema=_OBJECT,
             safety=SafetyLevel.READ_ONLY,
             permissions=[],
@@ -30,7 +34,12 @@ def register_default_capabilities() -> None:
                 "required": ["query"],
                 "properties": {
                     "query": {"type": "string", "minLength": 1},
-                    "max_rows": {"type": "integer", "minimum": 1, "maximum": 10000},
+                    "max_rows": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                    },
                 },
                 "additionalProperties": False,
             },
@@ -49,8 +58,13 @@ def register_default_capabilities() -> None:
                 "required": ["bucket_name"],
                 "properties": {
                     "bucket_name": {"type": "string", "minLength": 1},
-                    "prefix": {"type": "string"},
-                    "max_results": {"type": "integer", "minimum": 1, "maximum": 1000},
+                    "prefix": {"type": "string", "default": ""},
+                    "max_results": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                    },
                 },
                 "additionalProperties": False,
             },
@@ -70,7 +84,12 @@ def register_default_capabilities() -> None:
                 "properties": {
                     "bucket_name": {"type": "string", "minLength": 1},
                     "object_name": {"type": "string", "minLength": 1},
-                    "max_bytes": {"type": "integer", "minimum": 1, "maximum": 1000000},
+                    "max_bytes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000,
+                        "default": 100000,
+                    },
                 },
                 "additionalProperties": False,
             },
