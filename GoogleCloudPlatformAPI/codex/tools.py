@@ -8,6 +8,16 @@ from typing import Any, Callable, Dict, List, Optional
 from GoogleCloudPlatformAPI.ai_native import capability_registry
 
 _READ_ONLY_SQL = re.compile(r"^\s*(select|with|explain)\b", re.IGNORECASE)
+_TOOL_ORDER = (
+    "gcp_context",
+    "bigquery_list_datasets",
+    "bigquery_list_tables",
+    "bigquery_table_schema",
+    "bigquery_query",
+    "gcs_list_objects",
+    "gcs_object_metadata",
+    "gcs_read_text",
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -77,13 +87,10 @@ class CodexTools:
         return {
             "project_id": os.environ.get("GOOGLE_CLOUD_PROJECT")
             or os.environ.get("GCLOUD_PROJECT"),
-            "default_bigquery_dataset": os.environ.get("DEFAULT_BQ_DATASET"),
-            "default_storage_bucket": os.environ.get("DEFAULT_GCS_BUCKET"),
             "credentials_configured": bool(credentials_path),
             "credentials_file": (
                 os.path.basename(credentials_path) if credentials_path else None
             ),
-            "access": "read-only",
             "write_tools_enabled": False,
         }
 
@@ -232,15 +239,18 @@ class CodexTools:
 
 
 def tool_definitions() -> List[Dict[str, Any]]:
-    """Generate MCP tool definitions from the canonical capability registry."""
-    return [
-        {
-            "name": capability.name,
-            "description": capability.description,
-            "inputSchema": capability.input_schema,
-        }
-        for capability in capability_registry.list()
-    ]
+    """Generate MCP tool definitions in discovery-first workflow order."""
+    definitions = []
+    for name in _TOOL_ORDER:
+        capability = capability_registry.get(name)
+        definitions.append(
+            {
+                "name": capability.name,
+                "description": capability.description,
+                "inputSchema": capability.input_schema,
+            }
+        )
+    return definitions
 
 
 def text_content(payload: Dict[str, Any]) -> List[Dict[str, str]]:
