@@ -12,7 +12,10 @@ from GoogleCloudPlatformAPI.ai_native import (
     ResultMetadata,
     SafetyLevel,
     capability_registry,
+    execute_capability,
+    redact,
 )
+from GoogleCloudPlatformAPI.codex.tools import tool_definitions
 
 
 def test_default_registry_exposes_current_tools():
@@ -24,6 +27,16 @@ def test_default_registry_exposes_current_tools():
         "gcs_read_text",
     }
     json.dumps(capability_registry.schema())
+
+
+def test_mcp_definitions_are_generated_from_registry():
+    """MCP schemas stay synchronized with the canonical registry."""
+    definitions = {item["name"]: item for item in tool_definitions()}
+    assert set(definitions) == {
+        item.name for item in capability_registry.list()
+    }
+    for capability in capability_registry.list():
+        assert definitions[capability.name]["inputSchema"] == capability.input_schema
 
 
 def test_registry_rejects_duplicates():
@@ -64,3 +77,27 @@ def test_result_envelope_is_json_serializable():
     assert payload["error"]["code"] == "permission_denied"
     assert SafetyLevel.READ_ONLY.value == "read_only"
     json.dumps(payload)
+
+
+def test_execution_runtime_returns_stable_envelope():
+    """Runtime execution adds metadata without changing handler results."""
+    result = execute_capability(
+        capability_registry,
+        "gcp_context",
+        {},
+        handler=lambda: {"project_id": "example"},
+    )
+    assert result.ok is True
+    assert result.data == {"project_id": "example"}
+    assert result.metadata.service == "gcp"
+    json.dumps(result.to_dict())
+
+
+def test_secret_redaction_is_recursive():
+    """Secret-bearing keys are removed before logging."""
+    assert redact(
+        {"token": "secret", "nested": {"password": "secret", "safe": 1}}
+    ) == {
+        "token": "[REDACTED]",
+        "nested": {"password": "[REDACTED]", "safe": 1},
+    }
