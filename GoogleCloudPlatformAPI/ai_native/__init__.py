@@ -7,6 +7,11 @@ from GoogleCloudPlatformAPI.ai_native.contracts import (
     SafetyLevel,
 )
 from GoogleCloudPlatformAPI.ai_native.defaults import register_default_capabilities
+from GoogleCloudPlatformAPI.ai_native.evaluation import (
+    EvaluationResult,
+    evaluate_registry,
+    readiness_score,
+)
 from GoogleCloudPlatformAPI.ai_native.registry import (
     Capability,
     CapabilityRegistry,
@@ -19,10 +24,13 @@ __all__ = [
     "CapabilityError",
     "CapabilityRegistry",
     "CapabilityResult",
+    "EvaluationResult",
     "ResultMetadata",
     "SafetyLevel",
     "capability_registry",
+    "evaluate_registry",
     "execute_capability",
+    "readiness_score",
     "redact",
     "register_default_capabilities",
 ]
