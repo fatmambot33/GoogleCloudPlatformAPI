@@ -1,4 +1,4 @@
-"""Read-only tool adapters for the local Codex MCP server."""
+"""Safe, read-only tool adapters for the Codex MCP server."""
 
 import json
 import os
@@ -28,6 +28,12 @@ def _row_to_dict(row: Any) -> Dict[str, Any]:
     if hasattr(row, "items"):
         return {str(key): _json_value(value) for key, value in row.items()}
     return {"value": _json_value(row)}
+
+
+def _bounded(value: int, name: str, maximum: int) -> None:
+    """Validate a positive bounded integer argument."""
+    if value < 1 or value > maximum:
+        raise ValueError("{0} must be between 1 and {1}.".format(name, maximum))
 
 
 class CodexTools:
@@ -69,19 +75,20 @@ class CodexTools:
         return {
             "project_id": os.environ.get("GOOGLE_CLOUD_PROJECT")
             or os.environ.get("GCLOUD_PROJECT"),
+            "default_bigquery_dataset": os.environ.get("DEFAULT_BQ_DATASET"),
+            "default_storage_bucket": os.environ.get("DEFAULT_GCS_BUCKET"),
             "credentials_configured": bool(credentials_path),
             "credentials_file": (
                 os.path.basename(credentials_path) if credentials_path else None
             ),
-            "write_tools_enabled": False,
+            "access": "read-only",
         }
 
     def bigquery_query(self, query: str, max_rows: int = 100) -> Dict[str, Any]:
         """Execute a read-only BigQuery query and return structured rows."""
         if not isinstance(query, str) or not _READ_ONLY_SQL.match(query):
             raise ValueError("Only SELECT, WITH, and EXPLAIN queries are allowed.")
-        if max_rows < 1 or max_rows > 1000:
-            raise ValueError("max_rows must be between 1 and 1000.")
+        _bounded(max_rows, "max_rows", 1000)
         rows = self._bigquery().execute_query(query)
         limited = rows[:max_rows]
         return {
@@ -90,12 +97,73 @@ class CodexTools:
             "truncated": len(rows) > max_rows,
         }
 
+    def bigquery_list_datasets(self, max_results: int = 100) -> Dict[str, Any]:
+        """List datasets visible to the configured BigQuery client."""
+        _bounded(max_results, "max_results", 1000)
+        client = self._bigquery()._client
+        datasets = list(client.list_datasets(max_results=max_results + 1))
+        limited = datasets[:max_results]
+        return {
+            "datasets": [
+                {
+                    "dataset_id": item.dataset_id,
+                    "project": getattr(item, "project", None),
+                    "full_id": getattr(item, "full_dataset_id", None),
+                }
+                for item in limited
+            ],
+            "returned_datasets": len(limited),
+            "truncated": len(datasets) > max_results,
+        }
+
+    def bigquery_list_tables(
+        self, dataset_id: str, max_results: int = 100
+    ) -> Dict[str, Any]:
+        """List tables in a BigQuery dataset."""
+        _bounded(max_results, "max_results", 1000)
+        client = self._bigquery()._client
+        tables = list(client.list_tables(dataset_id, max_results=max_results + 1))
+        limited = tables[:max_results]
+        return {
+            "dataset_id": dataset_id,
+            "tables": [
+                {
+                    "table_id": item.table_id,
+                    "table_type": getattr(item, "table_type", None),
+                    "full_id": getattr(item, "full_table_id", None),
+                }
+                for item in limited
+            ],
+            "returned_tables": len(limited),
+            "truncated": len(tables) > max_results,
+        }
+
+    def bigquery_table_schema(self, table_id: str) -> Dict[str, Any]:
+        """Describe a BigQuery table and its schema."""
+        table = self._bigquery()._client.get_table(table_id)
+        return {
+            "table_id": getattr(table, "full_table_id", table_id),
+            "table_type": getattr(table, "table_type", None),
+            "description": getattr(table, "description", None),
+            "num_rows": getattr(table, "num_rows", None),
+            "num_bytes": getattr(table, "num_bytes", None),
+            "partitioning": _json_value(getattr(table, "time_partitioning", None)),
+            "fields": [
+                {
+                    "name": field.name,
+                    "type": field.field_type,
+                    "mode": field.mode,
+                    "description": field.description,
+                }
+                for field in table.schema
+            ],
+        }
+
     def storage_list(
         self, bucket_name: str, prefix: str = "", max_results: int = 100
     ) -> Dict[str, Any]:
         """List object names in a Cloud Storage bucket."""
-        if max_results < 1 or max_results > 1000:
-            raise ValueError("max_results must be between 1 and 1000.")
+        _bounded(max_results, "max_results", 1000)
         names = self._storage().list_files(bucket_name, prefix)
         return {
             "objects": names[:max_results],
@@ -103,14 +171,29 @@ class CodexTools:
             "truncated": len(names) > max_results,
         }
 
+    def storage_object_metadata(
+        self, bucket_name: str, object_name: str
+    ) -> Dict[str, Any]:
+        """Return metadata for one Cloud Storage object."""
+        blob = self._storage()._client.bucket(bucket_name).get_blob(object_name)
+        if blob is None:
+            raise ValueError("Object not found: {0}".format(object_name))
+        return {
+            "bucket_name": bucket_name,
+            "object_name": object_name,
+            "size": getattr(blob, "size", None),
+            "content_type": getattr(blob, "content_type", None),
+            "generation": getattr(blob, "generation", None),
+            "updated": _json_value(getattr(blob, "updated", None)),
+            "md5_hash": getattr(blob, "md5_hash", None),
+        }
+
     def storage_read_text(
         self, bucket_name: str, object_name: str, max_bytes: int = 100000
     ) -> Dict[str, Any]:
         """Read a UTF-8 Cloud Storage object without writing it locally."""
-        if max_bytes < 1 or max_bytes > 1000000:
-            raise ValueError("max_bytes must be between 1 and 1000000.")
-        storage = self._storage()
-        blob = storage._client.bucket(bucket_name).blob(object_name)
+        _bounded(max_bytes, "max_bytes", 1000000)
+        blob = self._storage()._client.bucket(bucket_name).blob(object_name)
         data = blob.download_as_bytes()
         limited = data[:max_bytes]
         return {
@@ -124,7 +207,11 @@ class CodexTools:
         handlers = {
             "gcp_context": lambda: self.context(),
             "bigquery_query": lambda: self.bigquery_query(**arguments),
+            "bigquery_list_datasets": lambda: self.bigquery_list_datasets(**arguments),
+            "bigquery_list_tables": lambda: self.bigquery_list_tables(**arguments),
+            "bigquery_table_schema": lambda: self.bigquery_table_schema(**arguments),
             "gcs_list_objects": lambda: self.storage_list(**arguments),
+            "gcs_object_metadata": lambda: self.storage_object_metadata(**arguments),
             "gcs_read_text": lambda: self.storage_read_text(**arguments),
         }
         if name not in handlers:
@@ -132,34 +219,65 @@ class CodexTools:
         return handlers[name]()
 
 
+def _limit_schema(name: str, maximum: int, default: int) -> Dict[str, Any]:
+    """Build a reusable bounded integer JSON schema property."""
+    return {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": maximum,
+        "default": default,
+        "description": "Maximum number of {0} returned.".format(name),
+    }
+
+
 def tool_definitions() -> List[Dict[str, Any]]:
-    """Return MCP tool definitions exposed by the local server."""
+    """Return the focused MCP tool catalog exposed to Codex."""
     return [
         {
             "name": "gcp_context",
-            "description": (
-                "Inspect local GCP project and credential configuration without "
-                "exposing secrets."
-            ),
+            "description": "Inspect active GCP defaults and credential presence safely.",
+            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+        {
+            "name": "bigquery_list_datasets",
+            "description": "Discover BigQuery datasets visible to the active project.",
             "inputSchema": {
                 "type": "object",
-                "properties": {},
+                "properties": {"max_results": _limit_schema("datasets", 1000, 100)},
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "bigquery_list_tables",
+            "description": "Discover tables and views in a BigQuery dataset.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "dataset_id": {"type": "string", "description": "Dataset ID or fully qualified dataset."},
+                    "max_results": _limit_schema("tables", 1000, 100),
+                },
+                "required": ["dataset_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "bigquery_table_schema",
+            "description": "Inspect a BigQuery table schema and lightweight metadata.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"table_id": {"type": "string", "description": "Fully qualified table ID."}},
+                "required": ["table_id"],
                 "additionalProperties": False,
             },
         },
         {
             "name": "bigquery_query",
-            "description": "Run a read-only BigQuery SELECT, WITH, or EXPLAIN query.",
+            "description": "Run a bounded read-only BigQuery SELECT, WITH, or EXPLAIN query.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string"},
-                    "max_rows": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 1000,
-                        "default": 100,
-                    },
+                    "query": {"type": "string", "description": "Read-only Standard SQL."},
+                    "max_rows": _limit_schema("rows", 1000, 100),
                 },
                 "required": ["query"],
                 "additionalProperties": False,
@@ -167,39 +285,37 @@ def tool_definitions() -> List[Dict[str, Any]]:
         },
         {
             "name": "gcs_list_objects",
-            "description": "List object names in a Cloud Storage bucket.",
+            "description": "Discover Cloud Storage objects under an optional prefix.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "bucket_name": {"type": "string"},
                     "prefix": {"type": "string", "default": ""},
-                    "max_results": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 1000,
-                        "default": 100,
-                    },
+                    "max_results": _limit_schema("objects", 1000, 100),
                 },
                 "required": ["bucket_name"],
                 "additionalProperties": False,
             },
         },
         {
+            "name": "gcs_object_metadata",
+            "description": "Inspect Cloud Storage object metadata without downloading content.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"bucket_name": {"type": "string"}, "object_name": {"type": "string"}},
+                "required": ["bucket_name", "object_name"],
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "gcs_read_text",
-            "description": (
-                "Read a UTF-8 Cloud Storage object with a bounded response size."
-            ),
+            "description": "Read bounded UTF-8 text from a Cloud Storage object.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "bucket_name": {"type": "string"},
                     "object_name": {"type": "string"},
-                    "max_bytes": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 1000000,
-                        "default": 100000,
-                    },
+                    "max_bytes": _limit_schema("bytes", 1000000, 100000),
                 },
                 "required": ["bucket_name", "object_name"],
                 "additionalProperties": False,
