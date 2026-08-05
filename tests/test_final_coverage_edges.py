@@ -2,6 +2,8 @@
 
 import importlib
 import io
+import runpy
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -146,3 +148,22 @@ def test_server_main_runs_stdio_transport(monkeypatch):
     servermod.main()
 
     server.run.assert_called_once_with(stdin, stdout)
+
+
+def test_agent_cli_module_entry_point(monkeypatch, capsys):
+    """Execute the CLI module through its guarded entry point."""
+    monkeypatch.setattr(sys, "argv", ["gcp-agent"])
+
+    with pytest.raises(SystemExit) as error:
+        runpy.run_module("GoogleCloudPlatformAPI.agents.cli", run_name="__main__")
+
+    assert error.value.code == 0
+    assert capsys.readouterr().out == "{}\n"
+
+
+def test_codex_server_module_entry_point(monkeypatch):
+    """Execute the MCP server module through its guarded entry point."""
+    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+
+    runpy.run_module("GoogleCloudPlatformAPI.codex.server", run_name="__main__")
