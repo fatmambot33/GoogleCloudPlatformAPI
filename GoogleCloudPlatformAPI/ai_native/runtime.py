@@ -52,11 +52,13 @@ def execute_capability(
     started = time.monotonic()
     if selected_handler is None:
         return CapabilityResult(
+            ok=False,
             data=None,
             metadata=ResultMetadata(
                 request_id=request_id,
                 service=capability.service,
                 operation=capability.operation,
+                duration_ms=0,
             ),
             error=CapabilityError(
                 code="handler_unavailable",
@@ -82,7 +84,7 @@ def execute_capability(
             message=str(exc),
             retryable=False,
         )
-    duration_ms = round((time.monotonic() - started) * 1000, 3)
+    duration_ms = int(round((time.monotonic() - started) * 1000))
     metadata = ResultMetadata(
         request_id=request_id,
         service=capability.service,
@@ -98,4 +100,9 @@ def execute_capability(
             "success": error is None,
         },
     )
-    return CapabilityResult(data=data, metadata=metadata, error=error)
+    return CapabilityResult(
+        ok=error is None,
+        data=data,
+        metadata=metadata,
+        error=error,
+    )
