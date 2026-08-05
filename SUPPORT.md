@@ -1,24 +1,33 @@
 # Support
 
-## Questions and Usage Help
+## Getting help
 
-Use GitHub Discussions when available, or open a focused GitHub issue when the question identifies a documentation gap or reproducible product problem.
+Use GitHub issues for reproducible bugs, documentation problems, and focused
+feature requests. Include the package version, Python version, operating system,
+service involved, minimal reproduction, and the sanitized error code or request
+ID.
 
-Before opening an issue:
+Never include credentials, access tokens, service-account JSON, private query
+results, or sensitive object contents.
 
-- Read the README and examples.
-- Check existing issues.
-- Confirm the behavior with the latest released version.
-- Remove credentials, tokens, account identifiers, and private data.
+## AI and MCP diagnostics
 
-## Bug Reports
+For agent-facing problems, include:
 
-Include the package version, Python version, affected Google service, minimal reproduction, expected behavior, actual behavior, and relevant sanitized error output.
+- the capability name and semantic version;
+- the MCP client or agent adapter;
+- sanitized arguments;
+- the machine-readable error code and guidance;
+- whether the result was truncated;
+- the readiness scorecard output;
+- confirmation that the issue reproduces with current `main`.
 
-## Feature Requests
+## Feature requests
 
-Explain the user problem, why existing official Google clients are insufficient for the workflow, and how the proposal supports `PRODUCT.md`.
+New capabilities should identify the user workflow, required Google permission,
+read-only or mutation classification, expected input and output schemas, bounds,
+and compatibility impact.
 
-## Not Covered
-
-This project cannot provide support for Google Cloud account configuration, billing, quotas, service availability, or bugs in upstream Google APIs. Use official Google Cloud support channels for those cases.
+Requests for mutation tools must also explain authorization, dry-run,
+confirmation, idempotency, audit, and evaluation requirements. Framework or UI
+integrations should demonstrate concrete demand before becoming core scope.

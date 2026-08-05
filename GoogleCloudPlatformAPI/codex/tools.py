@@ -5,6 +5,8 @@ import os
 import re
 from typing import Any, Callable, Dict, List, Optional
 
+from GoogleCloudPlatformAPI.ai_native import capability_registry
+
 _READ_ONLY_SQL = re.compile(r"^\s*(select|with|explain)\b", re.IGNORECASE)
 
 
@@ -121,90 +123,31 @@ class CodexTools:
 
     def call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Dispatch a named MCP tool call."""
+        try:
+            capability_registry.get(name)
+        except KeyError:
+            raise ValueError("Unknown tool: {0}".format(name))
         handlers = {
             "gcp_context": lambda: self.context(),
             "bigquery_query": lambda: self.bigquery_query(**arguments),
             "gcs_list_objects": lambda: self.storage_list(**arguments),
             "gcs_read_text": lambda: self.storage_read_text(**arguments),
         }
-        if name not in handlers:
-            raise ValueError("Unknown tool: {0}".format(name))
-        return handlers[name]()
+        handler = handlers.get(name)
+        if handler is None:
+            raise ValueError("Tool has no local handler: {0}".format(name))
+        return handler()
 
 
 def tool_definitions() -> List[Dict[str, Any]]:
-    """Return MCP tool definitions exposed by the local server."""
+    """Generate MCP tool definitions from the canonical capability registry."""
     return [
         {
-            "name": "gcp_context",
-            "description": (
-                "Inspect local GCP project and credential configuration without "
-                "exposing secrets."
-            ),
-            "inputSchema": {
-                "type": "object",
-                "properties": {},
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "bigquery_query",
-            "description": "Run a read-only BigQuery SELECT, WITH, or EXPLAIN query.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "query": {"type": "string"},
-                    "max_rows": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 1000,
-                        "default": 100,
-                    },
-                },
-                "required": ["query"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "gcs_list_objects",
-            "description": "List object names in a Cloud Storage bucket.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "bucket_name": {"type": "string"},
-                    "prefix": {"type": "string", "default": ""},
-                    "max_results": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 1000,
-                        "default": 100,
-                    },
-                },
-                "required": ["bucket_name"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "gcs_read_text",
-            "description": (
-                "Read a UTF-8 Cloud Storage object with a bounded response size."
-            ),
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "bucket_name": {"type": "string"},
-                    "object_name": {"type": "string"},
-                    "max_bytes": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 1000000,
-                        "default": 100000,
-                    },
-                },
-                "required": ["bucket_name", "object_name"],
-                "additionalProperties": False,
-            },
-        },
+            "name": capability.name,
+            "description": capability.description,
+            "inputSchema": capability.input_schema,
+        }
+        for capability in capability_registry.list()
     ]
 
 

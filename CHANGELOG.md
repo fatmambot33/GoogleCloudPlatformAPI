@@ -1,48 +1,43 @@
 # Changelog
 
-All notable changes to this project are documented here.
-
-The format follows Keep a Changelog principles and the project uses semantic versioning.
+All notable changes to this project are documented in this file.
 
 ## Unreleased
 
-## 2.6.0 - 2026-08-05
-
 ### Added
 
-- Deterministic coverage for BigQuery load workflows, authentication paths, agent entry points, and read-only Codex adapters.
-- Read-only Codex tools for GCP context, bounded BigQuery queries, Cloud Storage listing, and bounded text reads.
+- Canonical AI-native capability registry with stable names, semantic versions,
+  JSON-compatible schemas, permission metadata, safety classifications, and
+  bounded timeouts.
+- Structured capability result and error envelopes with request IDs, duration,
+  truncation, warning, provenance, and cursor metadata.
+- Observable capability execution runtime with structured logging hooks and
+  recursive secret redaction.
+- Deterministic AI readiness evaluations and release scorecard.
+- Machine-readable `llms.txt` documentation index.
 
 ### Changed
 
-- Raised the enforced test coverage threshold to 90% across Python 3.8 through 3.12.
-- Expanded CI validation for packaging, formatting, documentation style, and static typing.
+- MCP/Codex tool definitions are now generated from the canonical capability
+  registry instead of duplicated manually.
 
-### Fixed
+### Security
 
-- Closed remaining Python 3.8 coverage gaps without lowering the quality gate.
+- The published tool surface remains read-only and bounded. Mutation tools are
+  explicitly gated on authorization, dry-run, confirmation, idempotency, audit,
+  and evaluation controls.
 
-## 2.4.0 - 2026-08-04
+## 2.6.0
 
-### Added
+- Added the typed agent runtime and `gcp-api-agent` command.
+- Added Codex/MCP support for bounded read-only BigQuery and Cloud Storage use.
+- Added product, contribution, support, security, roadmap, release, and agent
+  guidance documentation.
 
-- Standard product, roadmap, contribution, security, support, and release policies.
-- Public API consistency, authentication, and error-handling policies.
-- PEP 561 `py.typed` marker for downstream type checkers.
-- Distribution build and validation in CI.
-- Python 3.12 CI coverage.
+## 2.5.0
 
-### Changed
+- Added a local read-only MCP server for Codex-compatible clients.
 
-- Expanded the product vision and decision framework.
-- Standardized roadmap and contribution processes.
-- Modernized GitHub Actions and enabled pip caching.
-- Stabilized development tooling by pinning the formatter.
+## 2.4.0
 
-### Fixed
-
-- Removed the obsolete pytest-pydocstyle plugin that was incompatible with current pytest releases.
-
-### Deferred
-
-- Raising coverage from 70.84% to 90% remains tracked in issue #29 and is not represented as complete in this release.
+- Improved packaging, documentation, tests, and release automation.

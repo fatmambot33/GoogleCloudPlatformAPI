@@ -1,17 +1,41 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-Security fixes are applied to the latest released version. Older versions may require upgrading before a fix can be provided.
+Security fixes are applied to the latest supported release line.
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-Do not disclose suspected vulnerabilities in a public issue.
+Report suspected vulnerabilities privately through GitHub security reporting.
+Do not open a public issue containing credentials, tokens, private data, or an
+exploitable proof of concept.
 
-Report the problem privately through GitHub's security advisory feature when available. Include the affected version, reproduction steps, impact, and any suggested mitigation.
+## Credentials
 
-Security reports will be reviewed before public disclosure. A fix may include a patch release, dependency update, documentation change, or coordinated migration guidance.
+Use Application Default Credentials, service accounts, workload identity, or
+other supported Google authentication mechanisms. Never commit credentials or
+place them in prompts, logs, tests, examples, exceptions, or tool results.
 
-## Scope
+The local MCP server inherits credentials from the current process and does not
+copy or persist them. Secret-bearing keys are recursively redacted before
+structured argument logging.
 
-Reports should concern code maintained in this repository. Vulnerabilities in Google services or official Google client libraries should also be reported to their respective maintainers.
+## AI tool boundaries
+
+The published AI surface is read-only. BigQuery accepts only `SELECT`, `WITH`,
+and `EXPLAIN`. Query rows, Cloud Storage object listings, downloaded bytes, and
+execution timeouts are bounded.
+
+Data returned by Google services must be treated as untrusted content. Agents
+must not interpret data rows or object contents as instructions that override
+the caller's policy or tool safety constraints.
+
+Mutating tools must not ship until they provide explicit authorization,
+dry-run behavior, user confirmation, idempotency, audit metadata, and dedicated
+security and prompt-injection evaluations.
+
+## Errors and observability
+
+Errors should be machine readable and actionable without exposing secrets.
+Logs may include capability names, request IDs, duration, status, and redacted
+arguments, but must not contain credentials or unrestricted returned data.

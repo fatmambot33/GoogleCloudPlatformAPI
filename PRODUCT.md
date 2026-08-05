@@ -1,87 +1,44 @@
 # Product
 
-## Purpose
-
-This document is the north star for GoogleCloudPlatformAPI. Every issue, pull request, architectural decision, and release should reinforce it.
-
 ## Mission
 
-Provide a simple, reliable, typed, and production-ready Python interface for common Google Cloud Platform services.
+Build a simple, reliable, typed, and production-ready Python interface for
+common Google Cloud workflows that is equally usable by developers, automation,
+and AI agents.
 
-## Product Promise
+## Product promise
 
-Users should consistently experience an API that is:
+Every supported capability should be:
 
-- Easy to understand.
-- Predictable and explicit.
-- Reliable in production.
-- Well documented and tested.
-- Type safe.
-- Backward compatible within a major version.
+- easy to discover and understand;
+- predictable and strongly typed;
+- safe by default;
+- bounded and observable;
+- documented for humans and machines;
+- backward compatible within a major release;
+- represented once and reused across Python, CLI, MCP, and agent surfaces.
 
-## Target Users
+## Target users
 
-Primary users are Python developers and data engineers building analytics, automation, and data-pipeline integrations with Google Cloud services.
+Primary users are Python developers and data teams using BigQuery, Cloud
+Storage, Analytics, or Ad Manager who want less boilerplate without hiding the
+underlying Google services.
 
-Secondary users are analysts and small teams that need reusable helpers without maintaining low-level Google client boilerplate.
+Secondary users are automation systems and AI agents that need deterministic,
+machine-readable, permission-aware tools.
 
-The project is not intended to replace official Google SDKs, hide every Google API detail, or provide a complete framework for all Google Cloud products.
+The project is not intended to replace the complete official Google Cloud SDKs,
+provide an unrestricted remote control plane, or expose broad mutation tools by
+default.
 
-## Problems We Solve
+## Product principles
 
-- Repeated authentication and client setup.
-- Inconsistent helper interfaces across Google services.
-- Boilerplate for common BigQuery, Cloud Storage, Analytics, and Ad Manager workflows.
-- Fragile integrations caused by unclear errors, missing types, or undocumented behavior.
-
-## Product Principles
-
-1. Developer experience first.
-2. Explicit over magic.
-3. Simple over clever.
-4. Reliability over feature count.
-5. Consistency across services.
-6. Documentation, tests, and types are part of every feature.
-7. Prefer official Google clients and supported APIs.
-8. Preserve backward compatibility unless a major release justifies a break.
-
-## Scope
-
-The project provides focused wrappers, shared authentication helpers, consistent error handling, and practical examples for supported Google services.
-
-## Non-Goals
-
-- Reimplementing official Google client libraries.
-- Supporting every Google Cloud service.
-- Building a general-purpose workflow orchestrator.
-- Adding abstractions that obscure Google API concepts.
-
-## Success Criteria
-
-The product is successful when:
-
-- Common integrations require materially less boilerplate.
-- Public APIs are documented, typed, and tested.
-- Errors are actionable and consistent.
-- Releases are predictable and backward compatible.
-- New contributors can understand and validate changes quickly.
-
-## Decision Framework
-
-When evaluating a change, ask in order:
-
-1. Does it solve a real user problem?
-2. Does it fit the supported product scope?
-3. Can the API remain simple and explicit?
-4. Is it documented, typed, and tested?
-5. Does it preserve compatibility and reliability?
-
-If the answer is no, simplify, defer, or reject the change.
-
-## Compatibility Policy
-
-Public APIs follow semantic versioning. Breaking changes require a major release, migration guidance, and a clear user benefit. Deprecations should be documented before removal whenever practical.
-
-## Release Philosophy
-
-Prefer small, focused, validated releases. Reliability fixes and compatibility work take priority over expanding service coverage.
+1. Keep the package Python-first and lean.
+2. Prefer explicit contracts over magic.
+3. Generate adapters from one canonical capability registry.
+4. Keep credentials local and redact secrets before logging.
+5. Bound rows, bytes, pages, and execution time.
+6. Ship read-only agent tools before considering mutations.
+7. Treat compatibility, security, documentation, and evaluations as release
+   gates.
+8. Add framework-specific integrations only when usage justifies them.

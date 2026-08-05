@@ -1,36 +1,44 @@
 # Contributing
 
-Contributions should be small, focused, and aligned with `PRODUCT.md`.
+Contributions should keep GoogleCloudPlatformAPI simple, typed, safe, and
+backward compatible.
 
 ## Workflow
 
-1. Open or select a GitHub issue.
-2. Confirm the problem, scope, and acceptance criteria.
-3. Create a focused branch.
-4. Implement the smallest complete change.
-5. Add or update tests, type hints, and documentation.
-6. Update `CHANGELOG.md` for user-facing changes.
-7. Run the project checks.
-8. Open a pull request that references the issue.
+1. Start from the current default branch.
+2. Keep each pull request focused on one coherent change.
+3. Add or update tests and documentation.
+4. Record user-visible changes in the changelog.
+5. Run the complete checks before requesting review.
 
-## Required Checks
+## AI-facing capabilities
+
+Register each operation once in the canonical capability registry. Do not
+manually duplicate schemas in MCP, CLI, or agent adapters.
+
+A capability proposal must include:
+
+- stable name and semantic version;
+- service and operation identifiers;
+- typed, JSON-compatible input and output contracts;
+- required Google permissions;
+- read-only or mutation safety classification;
+- row, byte, page, and timeout bounds;
+- success, failure, truncation, serialization, and redaction tests.
+
+Mutating capabilities additionally require authorization, dry-run behavior,
+confirmation, idempotency, audit metadata, and dedicated safety evaluations.
+
+## Checks
 
 ```bash
 black --check .
 pydocstyle GoogleCloudPlatformAPI
 pyright GoogleCloudPlatformAPI
 pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=70
+python -m build
+python -m twine check dist/*
 ```
 
-## Design Rules
-
-- Prefer explicit APIs over hidden behavior.
-- Reuse official Google clients rather than reimplementing them.
-- Keep interfaces consistent across services.
-- Avoid unrelated refactoring in focused changes.
-- Preserve backward compatibility within a major version.
-- Use NumPy-style docstrings without duplicating type information.
-
-## Pull Requests
-
-A pull request should explain what changed, why it changed, how it was validated, and whether it affects compatibility. It should close or reference the relevant issue.
+AI-surface changes must keep the deterministic readiness score at 100% and
+preserve MCP-to-registry synchronization.

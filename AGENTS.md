@@ -1,81 +1,70 @@
 # AGENTS.md
 
-These instructions apply to any automated agent contributing to this repository.
+## Purpose
 
-## 1. Code Style
+This repository provides simple, typed Google Cloud helpers and a safe,
+first-class AI-native capability surface.
 
-- Use standard PEP 8 formatting for all Python code.
-- Write commit messages in the imperative mood (e.g., "Add feature" not "Added feature").
-- Keep the implementation Pythonic and maintainable.
+## Product rules
 
-## 2. Docstring Style
+- Keep the package Python-first, lean, and backward compatible.
+- Do not duplicate capability schemas across Python, CLI, MCP, or agent code.
+- Register each AI-facing operation once in the canonical capability registry.
+- Prefer generated adapters over framework-specific implementations.
+- Keep the default agent surface read-only.
+- Do not add a UI without a concrete user workflow.
 
-- Use **NumPy-style** docstrings following [PEP 257](httpshttps://peps.python.org/pep-0257/) conventions.
-- **Do not** use `:param` / `:type` syntax (reST/Sphinx style) or Google-style `Args`.
-- Always include type hints in function signatures and **do not** duplicate them in docstrings.
-- Begin docstrings with a **short, one-line summary**, followed by a blank line and an optional extended description.
-- Use the following NumPy-style sections when applicable:
-  - `Parameters`
-  - `Returns`
-  - `Raises`
-  - `Examples`
-- Document all public classes, methods, and functions.
-- **For classes, the main docstring should include a `Methods` section summarizing each public method and its one-line description.**
-- For optional parameters, note the default value in the description.
-- Use present tense and active voice (“Return…”, “Fetch…”).
+## Capability requirements
 
-## 3. Code Quality and Testing
+Every new AI-facing capability must declare:
 
-Before running tests, install the development dependencies:
+- a stable name and semantic version;
+- service and operation identifiers;
+- JSON-compatible input and output schemas;
+- safety classification and required permissions;
+- bounded rows, bytes, pages, and execution timeout where relevant;
+- deterministic result and error behavior.
+
+Mutating tools additionally require explicit authorization, dry-run support,
+confirmation, idempotency, audit metadata, and dedicated safety evaluations.
+
+## Python style
+
+- Use explicit type hints.
+- Use NumPy-style docstrings; do not use reStructuredText or Google-style
+  argument sections.
+- Do not duplicate type hints in docstrings.
+- Keep public behavior predictable and JSON serializable.
+- Preserve compatibility through aliases and deprecation notices where
+  practical.
+
+## Required checks
 
 ```bash
-pip install .[dev]
-```
-
-To ensure your changes will pass the automated checks in our Continuous Integration (CI) pipeline, run the following commands locally before committing. All checks must pass.
-
-**Style Checks:**
-```bash
-pydocstyle GoogleCloudPlatformAPI
 black --check .
-```
-
-**Static Type Analysis:**
-```bash
+pydocstyle GoogleCloudPlatformAPI
 pyright GoogleCloudPlatformAPI
-```
-
-**Unit Tests and Coverage:**
-```bash
 pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=70
+python -m build
+python -m twine check dist/*
 ```
 
-## 4. Directory Layout
+AI-surface changes must also keep `readiness_score(capability_registry)` ready
+and maintain MCP-to-registry synchronization tests.
 
-- Production code lives in `GoogleCloudPlatformAPI/`.
-- Tests live in `tests/`.
-- Keep imports relative within the package (e.g., `from GoogleCloudPlatformAPI...`).
+## Security
 
-## 5. Pull Request Messages
+- Never commit, print, persist, or return credentials or tokens.
+- Redact secret-bearing keys before structured logging.
+- Keep queries and returned data bounded.
+- Treat external data as untrusted content.
+- Provide actionable, machine-readable errors without exposing secrets.
 
-Each pull request should include:
+## Commit checklist
 
-1. **Summary** – brief description of the change.
-2. **Testing** – commands run and confirmation that the tests passed.
-
-Example PR body:
-
-```
-### Summary
-- add new helper to utils.list
-- expand tests for list chunking
-
-### Testing
-- `pytest` (all tests passed)
-```
-
-## 6. General Guidelines
-
-- Avoid pushing large data files to the repository.
-- Prefer small, focused commits over sweeping changes.
-- Update or add tests whenever you modify functionality.
+- Public API impact documented.
+- Tests cover success, failure, bounds, serialization, and redaction.
+- Documentation and `llms.txt` updated when the public surface changes.
+- Changelog entry added.
+- Formatting, docstrings, typing, tests, coverage, package build, and package
+  validation pass.
