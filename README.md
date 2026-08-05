@@ -31,18 +31,16 @@ individual helpers.
 
 ## Local Codex plugin surface
 
-The package includes a read-only MCP server for Codex CLI, the Codex desktop
-app, and compatible local MCP clients. It runs locally over stdio, inherits the
-current process environment, and never copies or persists Google credentials.
+The package includes a focused read-only MCP server for Codex CLI, the Codex
+desktop app, and compatible local MCP clients. It runs locally over stdio,
+inherits the current process environment, and never copies or persists Google
+credentials.
 
-Install the project and verify the entry point:
+Install the project and register its single command:
 
 ```bash
-pip install -e '.[codex]'
-gcp-api-mcp
+pip install 'GoogleCloudPlatformAPI[codex]'
 ```
-
-Register the server in your Codex MCP configuration:
 
 ```toml
 [mcp_servers.google_cloud_platform_api]
@@ -50,11 +48,24 @@ command = "gcp-api-mcp"
 ```
 
 When using a virtual environment, configure the absolute path to its
-`gcp-api-mcp` executable. The server exposes four read-only tools:
+`gcp-api-mcp` executable.
+
+The surface follows two simple discovery workflows:
+
+```text
+BigQuery:     context → datasets → tables → schema → bounded query
+Cloud Storage: context → objects → metadata → bounded text read
+```
+
+Exposed tools:
 
 - `gcp_context`
+- `bigquery_list_datasets`
+- `bigquery_list_tables`
+- `bigquery_table_schema`
 - `bigquery_query`
 - `gcs_list_objects`
+- `gcs_object_metadata`
 - `gcs_read_text`
 
 BigQuery accepts only statements beginning with `SELECT`, `WITH`, or `EXPLAIN`.
@@ -64,10 +75,11 @@ creation, or other mutation tool is exposed.
 Example Codex prompts:
 
 ```text
-Inspect my local GCP configuration.
-Run SELECT CURRENT_DATE() AS today in BigQuery.
+Inspect my GCP context and list available BigQuery datasets.
+List tables in demo.analytics, then inspect demo.analytics.events.
+Draft and run a bounded query using only the columns needed.
 List objects under reports/ in bucket example-bucket.
-Read reports/latest.json from bucket example-bucket, limited to 50000 bytes.
+Inspect reports/latest.json metadata, then read its first 50000 bytes.
 ```
 
 The reusable workflow guidance is stored in
