@@ -25,13 +25,29 @@ pyright GoogleCloudPlatformAPI
 pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=70
 ```
 
-Configure authentication with a service account JSON file via the
-`GOOGLE_APPLICATION_CREDENTIALS` environment variable or supply the path to
+Python 3.8 through 3.12 are supported. Configure authentication with a service
+account JSON file through `GOOGLE_APPLICATION_CREDENTIALS` or supply the path to
 individual helpers.
+
+## Stable public API
+
+Core services and package-defined exceptions are available from the package root:
+
+```python
+from GoogleCloudPlatformAPI import (
+    AuthenticationError,
+    BigQuery,
+    CloudStorage,
+    GoogleCloudPlatformAPIError,
+)
+```
+
+Direct module imports remain supported. See `docs/public-api.md` for naming,
+exception, and compatibility rules.
 
 ## AI-native platform surface
 
-The package now uses one canonical capability registry for Python, agent, and
+The package uses one canonical capability registry for Python, agent, and
 MCP/Codex integrations. Each operation has a stable name, semantic version,
 JSON-compatible input and output schemas, permission metadata, safety level,
 and bounded timeout.
@@ -70,12 +86,23 @@ command = "gcp-api-mcp"
 ```
 
 When using a virtual environment, configure the absolute path to its
-`gcp-api-mcp` executable. The server exposes four read-only tools:
+`gcp-api-mcp` executable. The server exposes eight read-only tools:
 
 - `gcp_context`
+- `bigquery_list_datasets`
+- `bigquery_list_tables`
+- `bigquery_table_schema`
 - `bigquery_query`
 - `gcs_list_objects`
+- `gcs_object_metadata`
 - `gcs_read_text`
+
+The intended workflow is discovery first:
+
+```text
+BigQuery:      context -> datasets -> tables -> schema -> bounded query
+Cloud Storage: context -> objects -> metadata -> bounded text read
+```
 
 BigQuery accepts only statements beginning with `SELECT`, `WITH`, or `EXPLAIN`.
 Cloud Storage reads and all result sets are bounded. No upload, delete, table
@@ -84,10 +111,10 @@ creation, or other mutation tool is exposed.
 Example Codex prompts:
 
 ```text
-Inspect my local GCP configuration.
-Run SELECT CURRENT_DATE() AS today in BigQuery.
-List objects under reports/ in bucket example-bucket.
-Read reports/latest.json from bucket example-bucket, limited to 50000 bytes.
+Show my active GCP context, then list available BigQuery datasets.
+Inspect project.dataset.table and draft a safe bounded query.
+List JSON objects under reports/ and inspect the newest object's metadata.
+Read reports/latest.json, limited to 50000 bytes.
 ```
 
 The reusable workflow guidance is stored in
@@ -98,7 +125,7 @@ The reusable workflow guidance is stored in
 ### BigQuery
 
 ```python
-from GoogleCloudPlatformAPI.BigQuery import BigQuery
+from GoogleCloudPlatformAPI import BigQuery
 
 bq = BigQuery()
 df = bq.bigquery_to_dataframe("SELECT CURRENT_DATE() AS today")
@@ -108,7 +135,7 @@ print(df)
 ### Cloud Storage
 
 ```python
-from GoogleCloudPlatformAPI.CloudStorage import CloudStorage
+from GoogleCloudPlatformAPI import CloudStorage
 
 storage = CloudStorage()
 storage.upload_file_from_filename(
@@ -118,7 +145,7 @@ storage.upload_file_from_filename(
 )
 ```
 
-### AdManager
+### Ad Manager
 
 ```python
 from GoogleCloudPlatformAPI.AdManager import GamClient
@@ -127,7 +154,7 @@ from GoogleCloudPlatformAPI.AdManager import GamClient
 gam_client = GamClient()
 network_service = gam_client.get_service(
     service_name="NetworkService",
-    gam_version="v202602"
+    gam_version="v202602",
 )
 print(network_service.getCurrentNetwork())
 ```
@@ -135,19 +162,19 @@ print(network_service.getCurrentNetwork())
 ### Analytics
 
 ```python
-from GoogleCloudPlatformAPI.Analytics import Analytics
+from GoogleCloudPlatformAPI import Analytics
 
 # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
 analytics = Analytics()
-profile_id = "12345678"  # Replace with your Profile ID
+profile_id = "12345678"
 report = analytics.get_realtime_report(profile_id)
 print(report)
 ```
 
-### Oauth
+### OAuth
 
 ```python
-from GoogleCloudPlatformAPI.Oauth import ServiceAccount
+from GoogleCloudPlatformAPI import ServiceAccount
 
 # Assumes GOOGLE_APPLICATION_CREDENTIALS is set
 creds = ServiceAccount.get_service_account_client()
