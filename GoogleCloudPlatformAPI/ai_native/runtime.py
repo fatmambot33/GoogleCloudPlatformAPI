@@ -13,14 +13,25 @@ from GoogleCloudPlatformAPI.ai_native.contracts import (
 from GoogleCloudPlatformAPI.ai_native.registry import CapabilityRegistry
 
 _LOGGER = logging.getLogger("GoogleCloudPlatformAPI.ai_native")
-_REDACTED_KEYS = {"authorization", "credential", "credentials", "password", "secret", "token"}
+_REDACTED_KEYS = {
+    "authorization",
+    "credential",
+    "credentials",
+    "password",
+    "secret",
+    "token",
+}
 
 
 def redact(value: Any) -> Any:
     """Recursively redact common secret-bearing mapping keys."""
     if isinstance(value, dict):
         return {
-            str(key): "[REDACTED]" if str(key).lower() in _REDACTED_KEYS else redact(item)
+            str(key): (
+                "[REDACTED]"
+                if str(key).lower() in _REDACTED_KEYS
+                else redact(item)
+            )
             for key, item in value.items()
         }
     if isinstance(value, (list, tuple)):
@@ -55,7 +66,11 @@ def execute_capability(
         )
     _LOGGER.info(
         "capability.start",
-        extra={"capability": name, "request_id": request_id, "arguments": redact(arguments)},
+        extra={
+            "capability": name,
+            "request_id": request_id,
+            "arguments": redact(arguments),
+        },
     )
     try:
         data = selected_handler(**arguments)
