@@ -11,6 +11,7 @@ from GoogleCloudPlatformAPI.ai_native.registry import (
     CapabilityRegistry,
     capability_registry,
 )
+from GoogleCloudPlatformAPI.ai_native.defaults import register_default_capabilities
 
 __all__ = [
     "Capability",
@@ -20,4 +21,5 @@ __all__ = [
     "ResultMetadata",
     "SafetyLevel",
     "capability_registry",
+    "register_default_capabilities",
 ]
