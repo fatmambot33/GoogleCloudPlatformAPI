@@ -6,6 +6,22 @@ The format follows Keep a Changelog principles and the project uses semantic ver
 
 ## Unreleased
 
+## 2.6.0 - 2026-08-05
+
+### Added
+
+- Deterministic coverage for BigQuery load workflows, authentication paths, agent entry points, and read-only Codex adapters.
+- Read-only Codex tools for GCP context, bounded BigQuery queries, Cloud Storage listing, and bounded text reads.
+
+### Changed
+
+- Raised the enforced test coverage threshold to 90% across Python 3.8 through 3.12.
+- Expanded CI validation for packaging, formatting, documentation style, and static typing.
+
+### Fixed
+
+- Closed remaining Python 3.8 coverage gaps without lowering the quality gate.
+
 ## 2.4.0 - 2026-08-04
 
 ### Added
