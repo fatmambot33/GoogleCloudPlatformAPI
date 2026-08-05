@@ -22,9 +22,13 @@ from GoogleCloudPlatformAPI.codex.tools import tool_definitions
 def test_default_registry_exposes_current_tools():
     """The current MCP surface is represented by stable contracts."""
     assert {item.name for item in capability_registry.list()} == {
+        "bigquery_list_datasets",
+        "bigquery_list_tables",
         "bigquery_query",
+        "bigquery_table_schema",
         "gcp_context",
         "gcs_list_objects",
+        "gcs_object_metadata",
         "gcs_read_text",
     }
     json.dumps(capability_registry.schema())
@@ -33,9 +37,7 @@ def test_default_registry_exposes_current_tools():
 def test_mcp_definitions_are_generated_from_registry():
     """MCP schemas stay synchronized with the canonical registry."""
     definitions = {item["name"]: item for item in tool_definitions()}
-    assert set(definitions) == {
-        item.name for item in capability_registry.list()
-    }
+    assert set(definitions) == {item.name for item in capability_registry.list()}
     for capability in capability_registry.list():
         assert definitions[capability.name]["inputSchema"] == capability.input_schema
 
@@ -96,9 +98,7 @@ def test_execution_runtime_returns_stable_envelope():
 
 def test_secret_redaction_is_recursive():
     """Secret-bearing keys are removed before logging."""
-    assert redact(
-        {"token": "secret", "nested": {"password": "secret", "safe": 1}}
-    ) == {
+    assert redact({"token": "secret", "nested": {"password": "secret", "safe": 1}}) == {
         "token": "[REDACTED]",
         "nested": {"password": "[REDACTED]", "safe": 1},
     }

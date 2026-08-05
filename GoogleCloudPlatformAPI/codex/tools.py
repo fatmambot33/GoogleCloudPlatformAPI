@@ -1,4 +1,4 @@
-"""Read-only tool adapters for the local Codex MCP server."""
+"""Safe, read-only tool adapters for the local Codex MCP server."""
 
 import json
 import os
@@ -8,6 +8,16 @@ from typing import Any, Callable, Dict, List, Optional
 from GoogleCloudPlatformAPI.ai_native import capability_registry
 
 _READ_ONLY_SQL = re.compile(r"^\s*(select|with|explain)\b", re.IGNORECASE)
+_TOOL_ORDER = (
+    "gcp_context",
+    "bigquery_list_datasets",
+    "bigquery_list_tables",
+    "bigquery_table_schema",
+    "bigquery_query",
+    "gcs_list_objects",
+    "gcs_object_metadata",
+    "gcs_read_text",
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -30,6 +40,12 @@ def _row_to_dict(row: Any) -> Dict[str, Any]:
     if hasattr(row, "items"):
         return {str(key): _json_value(value) for key, value in row.items()}
     return {"value": _json_value(row)}
+
+
+def _bounded(value: int, name: str, maximum: int) -> None:
+    """Validate a positive bounded integer argument."""
+    if value < 1 or value > maximum:
+        raise ValueError("{0} must be between 1 and {1}.".format(name, maximum))
 
 
 class CodexTools:
@@ -78,12 +94,77 @@ class CodexTools:
             "write_tools_enabled": False,
         }
 
+    def bigquery_list_datasets(self, max_results: int = 100) -> Dict[str, Any]:
+        """List datasets visible to the configured BigQuery client."""
+        _bounded(max_results, "max_results", 1000)
+        datasets = list(
+            self._bigquery()._client.list_datasets(max_results=max_results + 1)
+        )
+        limited = datasets[:max_results]
+        return {
+            "datasets": [
+                {
+                    "dataset_id": item.dataset_id,
+                    "project": getattr(item, "project", None),
+                    "full_id": getattr(item, "full_dataset_id", None),
+                }
+                for item in limited
+            ],
+            "returned_datasets": len(limited),
+            "truncated": len(datasets) > max_results,
+        }
+
+    def bigquery_list_tables(
+        self, dataset_id: str, max_results: int = 100
+    ) -> Dict[str, Any]:
+        """List tables and views in a BigQuery dataset."""
+        _bounded(max_results, "max_results", 1000)
+        tables = list(
+            self._bigquery()._client.list_tables(
+                dataset_id, max_results=max_results + 1
+            )
+        )
+        limited = tables[:max_results]
+        return {
+            "dataset_id": dataset_id,
+            "tables": [
+                {
+                    "table_id": item.table_id,
+                    "table_type": getattr(item, "table_type", None),
+                    "full_id": getattr(item, "full_table_id", None),
+                }
+                for item in limited
+            ],
+            "returned_tables": len(limited),
+            "truncated": len(tables) > max_results,
+        }
+
+    def bigquery_table_schema(self, table_id: str) -> Dict[str, Any]:
+        """Describe a BigQuery table and its schema."""
+        table = self._bigquery()._client.get_table(table_id)
+        return {
+            "table_id": getattr(table, "full_table_id", table_id),
+            "table_type": getattr(table, "table_type", None),
+            "description": getattr(table, "description", None),
+            "num_rows": getattr(table, "num_rows", None),
+            "num_bytes": getattr(table, "num_bytes", None),
+            "partitioning": _json_value(getattr(table, "time_partitioning", None)),
+            "fields": [
+                {
+                    "name": field.name,
+                    "type": field.field_type,
+                    "mode": field.mode,
+                    "description": field.description,
+                }
+                for field in table.schema
+            ],
+        }
+
     def bigquery_query(self, query: str, max_rows: int = 100) -> Dict[str, Any]:
         """Execute a read-only BigQuery query and return structured rows."""
         if not isinstance(query, str) or not _READ_ONLY_SQL.match(query):
             raise ValueError("Only SELECT, WITH, and EXPLAIN queries are allowed.")
-        if max_rows < 1 or max_rows > 1000:
-            raise ValueError("max_rows must be between 1 and 1000.")
+        _bounded(max_rows, "max_rows", 1000)
         rows = self._bigquery().execute_query(query)
         limited = rows[:max_rows]
         return {
@@ -96,8 +177,7 @@ class CodexTools:
         self, bucket_name: str, prefix: str = "", max_results: int = 100
     ) -> Dict[str, Any]:
         """List object names in a Cloud Storage bucket."""
-        if max_results < 1 or max_results > 1000:
-            raise ValueError("max_results must be between 1 and 1000.")
+        _bounded(max_results, "max_results", 1000)
         names = self._storage().list_files(bucket_name, prefix)
         return {
             "objects": names[:max_results],
@@ -105,14 +185,29 @@ class CodexTools:
             "truncated": len(names) > max_results,
         }
 
+    def storage_object_metadata(
+        self, bucket_name: str, object_name: str
+    ) -> Dict[str, Any]:
+        """Return metadata for one Cloud Storage object."""
+        blob = self._storage()._client.bucket(bucket_name).get_blob(object_name)
+        if blob is None:
+            raise ValueError("Object not found: {0}".format(object_name))
+        return {
+            "bucket_name": bucket_name,
+            "object_name": object_name,
+            "size": getattr(blob, "size", None),
+            "content_type": getattr(blob, "content_type", None),
+            "generation": getattr(blob, "generation", None),
+            "updated": _json_value(getattr(blob, "updated", None)),
+            "md5_hash": getattr(blob, "md5_hash", None),
+        }
+
     def storage_read_text(
         self, bucket_name: str, object_name: str, max_bytes: int = 100000
     ) -> Dict[str, Any]:
         """Read a UTF-8 Cloud Storage object without writing it locally."""
-        if max_bytes < 1 or max_bytes > 1000000:
-            raise ValueError("max_bytes must be between 1 and 1000000.")
-        storage = self._storage()
-        blob = storage._client.bucket(bucket_name).blob(object_name)
+        _bounded(max_bytes, "max_bytes", 1000000)
+        blob = self._storage()._client.bucket(bucket_name).blob(object_name)
         data = blob.download_as_bytes()
         limited = data[:max_bytes]
         return {
@@ -129,8 +224,12 @@ class CodexTools:
             raise ValueError("Unknown tool: {0}".format(name))
         handlers = {
             "gcp_context": lambda: self.context(),
+            "bigquery_list_datasets": lambda: self.bigquery_list_datasets(**arguments),
+            "bigquery_list_tables": lambda: self.bigquery_list_tables(**arguments),
+            "bigquery_table_schema": lambda: self.bigquery_table_schema(**arguments),
             "bigquery_query": lambda: self.bigquery_query(**arguments),
             "gcs_list_objects": lambda: self.storage_list(**arguments),
+            "gcs_object_metadata": lambda: self.storage_object_metadata(**arguments),
             "gcs_read_text": lambda: self.storage_read_text(**arguments),
         }
         handler = handlers.get(name)
@@ -140,15 +239,18 @@ class CodexTools:
 
 
 def tool_definitions() -> List[Dict[str, Any]]:
-    """Generate MCP tool definitions from the canonical capability registry."""
-    return [
-        {
-            "name": capability.name,
-            "description": capability.description,
-            "inputSchema": capability.input_schema,
-        }
-        for capability in capability_registry.list()
-    ]
+    """Generate MCP tool definitions in discovery-first workflow order."""
+    definitions = []
+    for name in _TOOL_ORDER:
+        capability = capability_registry.get(name)
+        definitions.append(
+            {
+                "name": capability.name,
+                "description": capability.description,
+                "inputSchema": capability.input_schema,
+            }
+        )
+    return definitions
 
 
 def text_content(payload: Dict[str, Any]) -> List[Dict[str, str]]:

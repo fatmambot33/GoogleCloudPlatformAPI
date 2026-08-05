@@ -1,44 +1,54 @@
 """Public package exports for GoogleCloudPlatformAPI."""
 
-from .Oauth import ServiceAccount, ClientCredentials
-from .BigQuery import BigQuery
-from .CloudStorage import CloudStorage
-from .Analytics import Analytics
 from .AdManager import (
     AudienceService,
-    NetworkService,
-    CustomTargetingService,
-    TargetingPresetService,
-    ReportService,
-    TrafficService,
-)
-from .AdManager import (
-    Operator,
-    KeyValuePair,
     CustomCriteria,
-    CustomCriteriaSubSet,
     CustomCriteriaSet,
+    CustomCriteriaSubSet,
+    CustomTargetingService,
+    KeyValuePair,
+    NetworkService,
+    Operator,
+    ReportService,
     Targeting,
     TargetingPreset,
+    TargetingPresetService,
+    TrafficService,
+)
+from .Analytics import Analytics
+from .BigQuery import BigQuery
+from .CloudStorage import CloudStorage
+from .Oauth import ClientCredentials, ServiceAccount
+from .exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    GoogleCloudPlatformAPIError,
+    ServiceError,
+    TransportError,
 )
 
 __all__ = [
-    "ServiceAccount",
-    "ClientCredentials",
-    "BigQuery",
-    "CloudStorage",
     "Analytics",
     "AudienceService",
-    "NetworkService",
-    "CustomTargetingService",
-    "TargetingPresetService",
-    "ReportService",
-    "TrafficService",
-    "Operator",
-    "KeyValuePair",
+    "AuthenticationError",
+    "BigQuery",
+    "ClientCredentials",
+    "CloudStorage",
+    "ConfigurationError",
     "CustomCriteria",
-    "CustomCriteriaSubSet",
     "CustomCriteriaSet",
+    "CustomCriteriaSubSet",
+    "CustomTargetingService",
+    "GoogleCloudPlatformAPIError",
+    "KeyValuePair",
+    "NetworkService",
+    "Operator",
+    "ReportService",
+    "ServiceAccount",
+    "ServiceError",
     "Targeting",
     "TargetingPreset",
+    "TargetingPresetService",
+    "TrafficService",
+    "TransportError",
 ]

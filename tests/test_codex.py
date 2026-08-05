@@ -57,7 +57,7 @@ def test_read_tools_return_structured_results():
 def test_server_lists_and_calls_tools():
     server = MCPServer(tools())
     listed = server.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
-    assert len(listed["result"]["tools"]) == 4
+    assert len(listed["result"]["tools"]) == 8
     called = server.handle(
         {
             "jsonrpc": "2.0",

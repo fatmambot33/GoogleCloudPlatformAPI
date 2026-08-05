@@ -64,7 +64,7 @@ def test_storage_adapters_list_and_read_bounded_data():
         tools.storage_read_text("bucket", "object", max_bytes=0)
 
 
-def test_call_dispatches_all_tools_and_rejects_unknown_name(monkeypatch):
+def test_call_dispatches_existing_tools_and_rejects_unknown_name(monkeypatch):
     tools = CodexTools()
     monkeypatch.setattr(tools, "context", lambda: {"context": True})
     monkeypatch.setattr(tools, "bigquery_query", lambda **kwargs: kwargs)
@@ -88,7 +88,11 @@ def test_tool_definitions_include_all_read_only_tools():
 
     assert [definition["name"] for definition in definitions] == [
         "gcp_context",
+        "bigquery_list_datasets",
+        "bigquery_list_tables",
+        "bigquery_table_schema",
         "bigquery_query",
         "gcs_list_objects",
+        "gcs_object_metadata",
         "gcs_read_text",
     ]

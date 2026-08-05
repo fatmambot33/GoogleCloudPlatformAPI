@@ -15,11 +15,16 @@ All notable changes to this project are documented in this file.
   recursive secret redaction.
 - Deterministic AI readiness evaluations and release scorecard.
 - Machine-readable `llms.txt` documentation index.
+- Discovery-first BigQuery dataset, table, and schema tools.
+- Cloud Storage object metadata inspection before bounded content reads.
+- Stable package-root imports and a documented package exception hierarchy.
 
 ### Changed
 
-- MCP/Codex tool definitions are now generated from the canonical capability
+- MCP/Codex tool definitions are generated from the canonical capability
   registry instead of duplicated manually.
+- The Codex workflow now discovers resources before running queries or reads.
+- Python 3.8 through 3.12 support is explicit in package metadata.
 
 ### Security
 
