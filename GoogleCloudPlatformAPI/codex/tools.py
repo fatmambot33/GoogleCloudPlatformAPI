@@ -217,9 +217,7 @@ class CodexTools:
             raise ValueError("Unknown tool: {0}".format(name))
         handlers = {
             "gcp_context": lambda: self.context(),
-            "bigquery_list_datasets": lambda: self.bigquery_list_datasets(
-                **arguments
-            ),
+            "bigquery_list_datasets": lambda: self.bigquery_list_datasets(**arguments),
             "bigquery_list_tables": lambda: self.bigquery_list_tables(**arguments),
             "bigquery_table_schema": lambda: self.bigquery_table_schema(**arguments),
             "bigquery_query": lambda: self.bigquery_query(**arguments),

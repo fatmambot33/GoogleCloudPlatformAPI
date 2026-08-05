@@ -78,9 +78,7 @@ def register_default_capabilities() -> None:
             input_schema={
                 "type": "object",
                 "required": ["table_id"],
-                "properties": {
-                    "table_id": {"type": "string", "minLength": 1}
-                },
+                "properties": {"table_id": {"type": "string", "minLength": 1}},
                 "additionalProperties": False,
             },
             output_schema=_OBJECT,

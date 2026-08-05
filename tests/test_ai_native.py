@@ -98,9 +98,7 @@ def test_execution_runtime_returns_stable_envelope():
 
 def test_secret_redaction_is_recursive():
     """Secret-bearing keys are removed before logging."""
-    assert redact(
-        {"token": "secret", "nested": {"password": "secret", "safe": 1}}
-    ) == {
+    assert redact({"token": "secret", "nested": {"password": "secret", "safe": 1}}) == {
         "token": "[REDACTED]",
         "nested": {"password": "[REDACTED]", "safe": 1},
     }

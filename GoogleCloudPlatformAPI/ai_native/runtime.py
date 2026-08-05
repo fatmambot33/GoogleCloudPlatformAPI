@@ -28,9 +28,7 @@ def redact(value: Any) -> Any:
     if isinstance(value, dict):
         return {
             str(key): (
-                "[REDACTED]"
-                if str(key).lower() in _REDACTED_KEYS
-                else redact(item)
+                "[REDACTED]" if str(key).lower() in _REDACTED_KEYS else redact(item)
             )
             for key, item in value.items()
         }
