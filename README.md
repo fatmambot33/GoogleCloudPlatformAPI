@@ -29,6 +29,26 @@ Configure authentication with a service account JSON file via the
 `GOOGLE_APPLICATION_CREDENTIALS` environment variable or supply the path to
 individual helpers.
 
+## AI-native platform surface
+
+The package now uses one canonical capability registry for Python, agent, and
+MCP/Codex integrations. Each operation has a stable name, semantic version,
+JSON-compatible input and output schemas, permission metadata, safety level,
+and bounded timeout.
+
+```python
+from GoogleCloudPlatformAPI.ai_native import (
+    capability_registry,
+    readiness_score,
+)
+
+print(capability_registry.schema())
+print(readiness_score(capability_registry))
+```
+
+See `docs/ai-native-platform.md`, `docs/ai-native-scorecard.md`, and `llms.txt`
+for the machine-readable contract and release gates.
+
 ## Local Codex plugin surface
 
 The package includes a read-only MCP server for Codex CLI, the Codex desktop
