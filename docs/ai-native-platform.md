@@ -1,54 +1,66 @@
 # AI-native platform contract
 
-GoogleCloudPlatformAPI exposes one canonical capability registry for Python,
-CLI, MCP/Codex, and future agent adapters.
+GoogleCloudPlatformAPI is Python-first and exposes one canonical capability
+registry for all AI-facing operations.
 
 ## Contract
 
-Every capability has a stable name, service, operation, description, semantic
-version, JSON-compatible input and output schemas, safety level, permissions,
-and timeout. Capability results use one deterministic envelope containing:
+Every capability declares:
 
-- `ok` and JSON-compatible `data`;
-- request, service, operation, duration, truncation, cursor, warning, and
-  provenance metadata;
-- a machine-readable error with a stable code, retry classification, recovery
-  guidance, and optional details.
+- a stable name and semantic version;
+- service and operation identifiers;
+- JSON-compatible input and output schemas;
+- safety classification and required permissions;
+- a bounded execution timeout;
+- deterministic, serializable result metadata.
 
-## Safety policy
+The canonical registry is available as
+`GoogleCloudPlatformAPI.ai_native.capability_registry`.
 
-Read-only capabilities are the default. Mutating capabilities must not be
-published until they implement explicit authorization, dry-run behavior,
-confirmation, idempotency, bounded execution, audit metadata, and regression
-coverage.
+## Execution envelope
 
-Credentials must remain in the local process environment. Schemas, logs,
-results, exceptions, tests, and documentation must never expose secrets.
+AI-facing executions return:
 
-## Current registry
+- `ok`;
+- `data`;
+- `metadata`, including request ID, service, operation, duration, truncation,
+  warnings, provenance, and pagination cursor;
+- a machine-readable `error` with code, message, retryability, guidance, and
+  details.
 
-- `gcp_context`
-- `bigquery_query`
-- `gcs_list_objects`
-- `gcs_read_text`
+`execute_capability` adds request IDs, timing metadata, structured logging hooks,
+and stable errors around adapters. `redact` removes common secret-bearing keys
+before arguments are logged.
 
-The registry is available from Python:
+## MCP and agents
 
-```python
-from GoogleCloudPlatformAPI.ai_native import capability_registry
+The MCP server generates tool definitions directly from the registry. This
+prevents schema drift between the package and Codex-compatible clients. The
+framework-neutral registry can also be consumed by agent adapters without
+introducing framework-specific dependencies into the core package.
 
-for capability in capability_registry.list():
-    print(capability.name, capability.safety.value)
+## Evaluation
 
-schema = capability_registry.schema()
-```
+`evaluate_registry` and `readiness_score` provide deterministic CI-friendly
+checks for registry completeness, object input schemas, bounded timeouts, and
+semantic versions. Live model calls are intentionally not required.
+
+## Safety
+
+The shipped surface is read-only. BigQuery accepts only `SELECT`, `WITH`, and
+`EXPLAIN`. Result rows, listed objects, object bytes, and execution timeouts are
+bounded. Credentials are inherited from the local environment and are never
+copied or persisted.
+
+Mutating capabilities must not be added until they implement explicit
+permissions, dry-run behavior, confirmation, idempotency, audit metadata, and
+safety evaluations.
 
 ## Adding a capability
 
-1. Define the typed operation in the service layer.
-2. Add a stable `Capability` definition to the registry.
-3. Keep inputs and outputs deterministic and JSON compatible.
-4. Apply explicit row, byte, page, and time limits.
-5. Add contract, permission, failure, truncation, and redaction tests.
-6. Generate adapter metadata from the registry; do not duplicate schemas.
-7. Record compatibility impact and update the changelog.
+1. Add one `Capability` definition to the registry source.
+2. Add or connect its Python handler.
+3. Add contract, safety, boundedness, and serialization tests.
+4. Confirm MCP definitions are generated without manual schema duplication.
+5. Run the readiness scorecard and the full CI matrix.
+6. Document compatibility and release impact.
