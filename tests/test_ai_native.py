@@ -13,6 +13,7 @@ from GoogleCloudPlatformAPI.ai_native import (
     SafetyLevel,
     capability_registry,
     execute_capability,
+    readiness_score,
     redact,
 )
 from GoogleCloudPlatformAPI.codex.tools import tool_definitions
@@ -101,3 +102,11 @@ def test_secret_redaction_is_recursive():
         "token": "[REDACTED]",
         "nested": {"password": "[REDACTED]", "safe": 1},
     }
+
+
+def test_readiness_score_is_release_friendly():
+    """The deterministic scorecard is complete and JSON serializable."""
+    scorecard = readiness_score(capability_registry)
+    assert scorecard["ready"] is True
+    assert scorecard["score"] == 100.0
+    json.dumps(scorecard)
