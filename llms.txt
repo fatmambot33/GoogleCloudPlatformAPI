@@ -1,0 +1,23 @@
+# GoogleCloudPlatformAPI
+
+> Typed Python helpers and a safe local agent tool surface for Google Cloud Platform.
+
+## Start here
+
+- README.md: installation, authentication, Python examples, MCP/Codex setup.
+- PRODUCT.md: mission, target users, and product principles.
+- docs/ai-native-platform.md: canonical capability contracts and safety policy.
+- AGENTS.md: repository instructions for coding agents.
+- .codex/skills/google-cloud-platform-api/SKILL.md: reusable Codex workflow guidance.
+
+## Machine-readable surface
+
+Import `GoogleCloudPlatformAPI.ai_native.capability_registry` and call
+`schema()` to obtain the versioned capability catalogue, including JSON input
+and output schemas, permissions, safety classification, and timeouts.
+
+## Safety
+
+The published MCP tools are local and read-only. BigQuery statements and Cloud
+Storage results are bounded. Credentials stay in the process environment and
+must never be copied into prompts, results, logs, tests, or documentation.
