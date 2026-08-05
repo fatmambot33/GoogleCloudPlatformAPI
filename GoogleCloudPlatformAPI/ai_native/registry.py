@@ -20,7 +20,9 @@ class Capability:
     version: str = "1.0.0"
     permissions: List[str] = field(default_factory=list)
     timeout_seconds: int = 30
-    handler: Optional[Callable[..., Any]] = field(default=None, compare=False, repr=False)
+    handler: Optional[Callable[..., Any]] = field(
+        default=None, compare=False, repr=False
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         """Return public, JSON-serializable capability metadata."""
