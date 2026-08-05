@@ -6,12 +6,13 @@ from GoogleCloudPlatformAPI.ai_native.contracts import (
     ResultMetadata,
     SafetyLevel,
 )
+from GoogleCloudPlatformAPI.ai_native.defaults import register_default_capabilities
 from GoogleCloudPlatformAPI.ai_native.registry import (
     Capability,
     CapabilityRegistry,
     capability_registry,
 )
-from GoogleCloudPlatformAPI.ai_native.defaults import register_default_capabilities
+from GoogleCloudPlatformAPI.ai_native.runtime import execute_capability, redact
 
 __all__ = [
     "Capability",
@@ -21,5 +22,7 @@ __all__ = [
     "ResultMetadata",
     "SafetyLevel",
     "capability_registry",
+    "execute_capability",
+    "redact",
     "register_default_capabilities",
 ]
