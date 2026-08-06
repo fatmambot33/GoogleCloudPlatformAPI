@@ -95,9 +95,12 @@ def test_call_dispatches_registry_adapters_and_validates_results(monkeypatch):
     assert tools.call("gcp_context", {})["write_tools_enabled"] is False
     assert tools.call("bigquery_query", {"query": "SELECT 1"})["rows"] == []
     assert tools.call("gcs_list_objects", {"bucket_name": "bucket"})["objects"] == []
-    assert tools.call(
-        "gcs_read_text", {"bucket_name": "bucket", "object_name": "object"}
-    )["text"] == ""
+    assert (
+        tools.call("gcs_read_text", {"bucket_name": "bucket", "object_name": "object"})[
+            "text"
+        ]
+        == ""
+    )
     with pytest.raises(ValueError, match="Unknown tool"):
         tools.call("missing", {})
     with pytest.raises(ValueError, match="unexpected property"):

@@ -39,9 +39,7 @@ def _expected_types(schema_type: SchemaType) -> Iterable[str]:
     return tuple(schema_type)
 
 
-def validate_json_schema(
-    value: Any, schema: Dict[str, Any], path: str = "$"
-) -> None:
+def validate_json_schema(value: Any, schema: Dict[str, Any], path: str = "$") -> None:
     """Validate a value against the package's supported JSON Schema subset.
 
     Parameters

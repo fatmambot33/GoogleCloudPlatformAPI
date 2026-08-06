@@ -76,6 +76,8 @@ def test_generated_contract_artifacts_are_current():
         separators=(",", ":"),
     ).encode("utf-8")
     expected = (
-        root / "tests/snapshots/capability-contracts.sha256"
-    ).read_text(encoding="utf-8").strip()
+        (root / "tests/snapshots/capability-contracts.sha256")
+        .read_text(encoding="utf-8")
+        .strip()
+    )
     assert hashlib.sha256(payload).hexdigest() == expected

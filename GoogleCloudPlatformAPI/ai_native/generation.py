@@ -97,14 +97,14 @@ def compare_compatibility_snapshots(
         )
         if reasons:
             breaking = True
-            changes.append(
-                {"capability": name, "kind": "breaking", "reasons": reasons}
-            )
+            changes.append({"capability": name, "kind": "breaking", "reasons": reasons})
         elif before_item != after_item:
             additive = True
             changes.append({"capability": name, "kind": "changed"})
 
-    classification = "breaking" if breaking else "additive" if additive else "compatible"
+    classification = (
+        "breaking" if breaking else "additive" if additive else "compatible"
+    )
     return {"classification": classification, "changes": changes}
 
 

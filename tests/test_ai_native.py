@@ -194,9 +194,7 @@ def test_compatibility_snapshots_classify_contract_changes():
     before = compatibility_snapshot(registry)
 
     registry.register(_example_capability("second"))
-    additive = compare_compatibility_snapshots(
-        before, compatibility_snapshot(registry)
-    )
+    additive = compare_compatibility_snapshots(before, compatibility_snapshot(registry))
     assert additive["classification"] == "additive"
 
     changed = CapabilityRegistry()
@@ -212,9 +210,7 @@ def test_compatibility_snapshots_classify_contract_changes():
             ),
         )
     )
-    breaking = compare_compatibility_snapshots(
-        before, compatibility_snapshot(changed)
-    )
+    breaking = compare_compatibility_snapshots(before, compatibility_snapshot(changed))
     assert breaking["classification"] == "breaking"
 
 

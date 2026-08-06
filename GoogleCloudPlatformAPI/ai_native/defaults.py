@@ -13,9 +13,7 @@ def _typed(schema_type: SchemaTypes, **constraints: Any) -> Dict[str, Any]:
     return {"type": schema_type, **constraints}
 
 
-def _object(
-    properties: Dict[str, Any], required: List[str]
-) -> Dict[str, Any]:
+def _object(properties: Dict[str, Any], required: List[str]) -> Dict[str, Any]:
     """Build a strict object schema."""
     return {
         "type": "object",
@@ -100,17 +98,11 @@ def register_default_capabilities() -> None:
             service="bigquery",
             operation="list_datasets",
             description="Discover BigQuery datasets visible to the active project.",
-            input_schema=_object(
-                {"max_results": _limit_schema(1000, 100)}, []
-            ),
+            input_schema=_object({"max_results": _limit_schema(1000, 100)}, []),
             output_schema=_object(
                 {
-                    "datasets": _typed(
-                        "array", items=_dataset_schema(), maxItems=1000
-                    ),
-                    "returned_datasets": _typed(
-                        "integer", minimum=0, maximum=1000
-                    ),
+                    "datasets": _typed("array", items=_dataset_schema(), maxItems=1000),
+                    "returned_datasets": _typed("integer", minimum=0, maximum=1000),
                     "truncated": _typed("boolean"),
                 },
                 ["datasets", "returned_datasets", "truncated"],
@@ -135,12 +127,8 @@ def register_default_capabilities() -> None:
             output_schema=_object(
                 {
                     "dataset_id": _typed("string", minLength=1),
-                    "tables": _typed(
-                        "array", items=_table_schema(), maxItems=1000
-                    ),
-                    "returned_tables": _typed(
-                        "integer", minimum=0, maximum=1000
-                    ),
+                    "tables": _typed("array", items=_table_schema(), maxItems=1000),
+                    "returned_tables": _typed("integer", minimum=0, maximum=1000),
                     "truncated": _typed("boolean"),
                 },
                 ["dataset_id", "tables", "returned_tables", "truncated"],
@@ -166,9 +154,7 @@ def register_default_capabilities() -> None:
                     "num_rows": _typed(["integer", "null"], minimum=0),
                     "num_bytes": _typed(["integer", "null"], minimum=0),
                     "partitioning": _typed(["string", "null"]),
-                    "fields": _typed(
-                        "array", items=_field_schema(), maxItems=10000
-                    ),
+                    "fields": _typed("array", items=_field_schema(), maxItems=10000),
                 },
                 [
                     "table_id",
@@ -204,9 +190,7 @@ def register_default_capabilities() -> None:
                         items={"type": "object", "additionalProperties": True},
                         maxItems=1000,
                     ),
-                    "returned_rows": _typed(
-                        "integer", minimum=0, maximum=1000
-                    ),
+                    "returned_rows": _typed("integer", minimum=0, maximum=1000),
                     "truncated": _typed("boolean"),
                 },
                 ["rows", "returned_rows", "truncated"],
@@ -231,12 +215,8 @@ def register_default_capabilities() -> None:
             ),
             output_schema=_object(
                 {
-                    "objects": _typed(
-                        "array", items=_typed("string"), maxItems=1000
-                    ),
-                    "returned_objects": _typed(
-                        "integer", minimum=0, maximum=1000
-                    ),
+                    "objects": _typed("array", items=_typed("string"), maxItems=1000),
+                    "returned_objects": _typed("integer", minimum=0, maximum=1000),
                     "truncated": _typed("boolean"),
                 },
                 ["objects", "returned_objects", "truncated"],
@@ -299,9 +279,7 @@ def register_default_capabilities() -> None:
             output_schema=_object(
                 {
                     "text": _typed("string", maxLength=1000000),
-                    "bytes_returned": _typed(
-                        "integer", minimum=0, maximum=1000000
-                    ),
+                    "bytes_returned": _typed("integer", minimum=0, maximum=1000000),
                     "truncated": _typed("boolean"),
                 },
                 ["text", "bytes_returned", "truncated"],
