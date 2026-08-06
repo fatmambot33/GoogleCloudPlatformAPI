@@ -55,9 +55,15 @@ Protect the `pypi` environment with required reviewers when appropriate.
 
 1. Update the version and changelog.
 2. Open and merge a release pull request after CI succeeds.
-3. Create the GitHub release and tag, for example `v2.7.0`.
-4. The release workflow builds and smoke-tests the wheel, generates an SBOM,
-   creates provenance attestations, attaches release evidence, and publishes to
-   PyPI through Trusted Publishing.
-5. Verify installation, CLI entry points, MCP startup, packaged documentation,
+3. A version-bearing change merged to `main` triggers the release workflow.
+4. The workflow checks PyPI first and safely skips versions that are already
+   published.
+5. For a new version, the workflow builds and smoke-tests the wheel, generates
+   an SBOM, creates provenance attestations, publishes through Trusted
+   Publishing, creates the `vX.Y.Z` tag and GitHub release, and attaches the
+   distributions and release evidence.
+6. Verify installation, CLI entry points, MCP startup, packaged documentation,
    registry readiness, and package metadata from the published artifact.
+
+The workflow can also be started manually with `workflow_dispatch` while the
+current `pyproject.toml` version is not yet present on PyPI.
