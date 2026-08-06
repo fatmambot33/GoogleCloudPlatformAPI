@@ -1,3 +1,4 @@
+# Publishes each package version once, then creates matching release evidence.
 name: Release Python package
 
 on:
