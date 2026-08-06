@@ -86,21 +86,49 @@ def test_storage_metadata_is_structured_and_missing_objects_are_clear():
 
 def test_dispatch_includes_discovery_tools(monkeypatch):
     tools = CodexTools()
-    monkeypatch.setattr(tools, "bigquery_list_datasets", lambda **kwargs: kwargs)
-    monkeypatch.setattr(tools, "bigquery_list_tables", lambda **kwargs: kwargs)
-    monkeypatch.setattr(tools, "bigquery_table_schema", lambda **kwargs: kwargs)
-    monkeypatch.setattr(tools, "storage_object_metadata", lambda **kwargs: kwargs)
+    datasets = {
+        "datasets": [],
+        "returned_datasets": 0,
+        "truncated": False,
+    }
+    tables = {
+        "dataset_id": "events",
+        "tables": [],
+        "returned_tables": 0,
+        "truncated": False,
+    }
+    schema = {
+        "table_id": "events.sessions",
+        "table_type": "TABLE",
+        "description": None,
+        "num_rows": 0,
+        "num_bytes": 0,
+        "partitioning": None,
+        "fields": [],
+    }
+    metadata = {
+        "bucket_name": "bucket",
+        "object_name": "object",
+        "size": 0,
+        "content_type": None,
+        "generation": None,
+        "updated": None,
+        "md5_hash": None,
+    }
+    monkeypatch.setattr(tools, "bigquery_list_datasets", lambda **kwargs: datasets)
+    monkeypatch.setattr(tools, "bigquery_list_tables", lambda **kwargs: tables)
+    monkeypatch.setattr(tools, "bigquery_table_schema", lambda **kwargs: schema)
+    monkeypatch.setattr(tools, "storage_object_metadata", lambda **kwargs: metadata)
 
-    assert tools.call("bigquery_list_datasets", {"max_results": 10}) == {
-        "max_results": 10
-    }
-    assert tools.call("bigquery_list_tables", {"dataset_id": "events"}) == {
-        "dataset_id": "events"
-    }
-    assert tools.call("bigquery_table_schema", {"table_id": "events.sessions"}) == {
-        "table_id": "events.sessions"
-    }
-    assert tools.call(
-        "gcs_object_metadata",
-        {"bucket_name": "bucket", "object_name": "object"},
-    ) == {"bucket_name": "bucket", "object_name": "object"}
+    assert tools.call("bigquery_list_datasets", {"max_results": 10}) == datasets
+    assert tools.call("bigquery_list_tables", {"dataset_id": "events"}) == tables
+    assert (
+        tools.call("bigquery_table_schema", {"table_id": "events.sessions"}) == schema
+    )
+    assert (
+        tools.call(
+            "gcs_object_metadata",
+            {"bucket_name": "bucket", "object_name": "object"},
+        )
+        == metadata
+    )

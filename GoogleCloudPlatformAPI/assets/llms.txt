@@ -10,6 +10,7 @@ surface.
 - docs/public-api.md: stable imports, naming, exceptions, and compatibility
 - docs/ai-native-platform.md: canonical capability and execution contract
 - docs/ai-native-scorecard.md: release gates and mutation guardrails
+- docs/capabilities.md: generated human-readable capability reference
 - AGENTS.md: repository instructions for coding agents
 - SECURITY.md: vulnerability and credential guidance
 - ROADMAP.md: execution order and deliberately gated work
@@ -20,10 +21,21 @@ surface.
 - GoogleCloudPlatformAPI.ai_native.capability_registry
 - GoogleCloudPlatformAPI.ai_native.execute_capability
 - GoogleCloudPlatformAPI.ai_native.readiness_score
+- GoogleCloudPlatformAPI.ai_native.compatibility_snapshot
+- GoogleCloudPlatformAPI.ai_native.compare_compatibility_snapshots
+- GoogleCloudPlatformAPI.ai_native.capability_reference_markdown
 - GoogleCloudPlatformAPI.assets.read_text_resource
 - GoogleCloudPlatformAPI.GoogleCloudPlatformAPIError
 - gcp-api-mcp
-- gcp-api-agent
+- gcp-api-agent --list-capabilities
+
+## Contract behavior
+
+- Inputs are validated before adapter execution.
+- Outputs are validated before crossing a tool boundary.
+- MCP input schemas, output schemas, and safety annotations are registry-generated.
+- Adapter dispatch uses canonical registry metadata rather than a second tool map.
+- Compatibility snapshots classify additive and breaking contract changes.
 
 ## Read-only capability flow
 

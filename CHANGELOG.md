@@ -4,9 +4,24 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Strict input and output JSON Schema contracts for every AI-facing capability.
+- Dependency-free runtime validation before and after adapter execution.
+- Generated MCP output schemas and safety annotations.
+- Registry-driven adapter dispatch instead of a second hard-coded tool map.
+- `gcp-api-agent --list-capabilities` for machine-readable capability discovery.
+- Generated compatibility snapshots, API-diff classification, and Markdown
+  capability references.
+- Capability deprecation and replacement metadata.
+
+### Changed
+
+- The registry schema version is now 1.1.0.
+- AI readiness requires strict schemas and a declared execution adapter.
+
 ### Planned
 
-- Strict capability input and output validation from #57.
 - Enforced billable-read safety and operational limits from #58.
 - Behavioral agent evaluations and generated release evidence from #59.
 
