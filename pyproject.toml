@@ -43,7 +43,7 @@ dev = [
 codex = []
 
 [tool.black]
-target-version = ["py310"]
+target-version = ["py38"]
 
 [tool.pydocstyle]
 convention = "numpy"
