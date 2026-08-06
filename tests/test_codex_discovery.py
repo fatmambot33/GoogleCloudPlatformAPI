@@ -11,25 +11,30 @@ from GoogleCloudPlatformAPI.codex.tools import CodexTools
 
 def test_bigquery_discovery_is_bounded_and_structured():
     client = MagicMock()
-    client.list_datasets.return_value = [
-        SimpleNamespace(
-            dataset_id="events",
-            project="project",
-            full_dataset_id="project:events",
-        ),
-        SimpleNamespace(
-            dataset_id="archive",
-            project="project",
-            full_dataset_id="project:archive",
-        ),
-    ]
-    client.list_tables.return_value = [
-        SimpleNamespace(
-            table_id="sessions",
-            table_type="TABLE",
-            full_table_id="project:events.sessions",
-        )
-    ]
+    datasets_iterator = MagicMock()
+    datasets_iterator.__iter__.return_value = iter(
+        [
+            SimpleNamespace(
+                dataset_id="events",
+                project="project",
+                full_dataset_id="project:events",
+            ),
+        ]
+    )
+    datasets_iterator.next_page_token = "next-datasets"
+    client.list_datasets.return_value = datasets_iterator
+    tables_iterator = MagicMock()
+    tables_iterator.__iter__.return_value = iter(
+        [
+            SimpleNamespace(
+                table_id="sessions",
+                table_type="TABLE",
+                full_table_id="project:events.sessions",
+            )
+        ]
+    )
+    tables_iterator.next_page_token = None
+    client.list_tables.return_value = tables_iterator
     client.get_table.return_value = SimpleNamespace(
         full_table_id="project:events.sessions",
         table_type="TABLE",
@@ -55,7 +60,9 @@ def test_bigquery_discovery_is_bounded_and_structured():
 
     assert datasets["returned_datasets"] == 1
     assert datasets["truncated"] is True
+    assert datasets["next_cursor"]
     assert tables["tables"][0]["table_id"] == "sessions"
+    assert tables["next_cursor"] is None
     assert schema["fields"][0]["name"] == "session_id"
     with pytest.raises(ValueError, match="between 1 and 1000"):
         tools.bigquery_list_datasets(max_results=0)
@@ -90,12 +97,14 @@ def test_dispatch_includes_discovery_tools(monkeypatch):
         "datasets": [],
         "returned_datasets": 0,
         "truncated": False,
+        "next_cursor": None,
     }
     tables = {
         "dataset_id": "events",
         "tables": [],
         "returned_tables": 0,
         "truncated": False,
+        "next_cursor": None,
     }
     schema = {
         "table_id": "events.sessions",

@@ -1,13 +1,15 @@
 """Optional OpenTelemetry hooks with a dependency-free fallback."""
 
+import importlib
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, Dict, Iterator, Optional, Tuple
 
 
-def _otel() -> Optional[Any]:
+def _otel() -> Optional[Tuple[Any, Any]]:
     """Return the OpenTelemetry API when its optional extra is installed."""
     try:
-        from opentelemetry import metrics, trace
+        trace = importlib.import_module("opentelemetry.trace")
+        metrics = importlib.import_module("opentelemetry.metrics")
     except ImportError:
         return None
     return trace, metrics

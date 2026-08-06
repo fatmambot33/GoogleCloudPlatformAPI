@@ -48,7 +48,9 @@ def run_with_timeout(
     handler: Callable[..., Any], arguments: Dict[str, Any], timeout_seconds: int
 ) -> Any:
     """Execute a handler within the capability's bounded wall-clock timeout."""
-    executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="gcp-api-capability")
+    executor = ThreadPoolExecutor(
+        max_workers=1, thread_name_prefix="gcp-api-capability"
+    )
     future = executor.submit(handler, **arguments)
     try:
         return future.result(timeout=timeout_seconds)

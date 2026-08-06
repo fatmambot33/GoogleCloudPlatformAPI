@@ -169,9 +169,7 @@ class CodexTools:
         tables = list(iterator)
         limited = tables[:max_results]
         provider_cursor = _optional_str(getattr(iterator, "next_page_token", None))
-        next_cursor = encode_cursor(
-            "bigquery", "list_tables", provider_cursor, context
-        )
+        next_cursor = encode_cursor("bigquery", "list_tables", provider_cursor, context)
         return {
             "dataset_id": dataset_id,
             "tables": [
@@ -257,13 +255,9 @@ class CodexTools:
             job_timeout_ms=timeout_seconds * 1000,
             use_query_cache=True,
         )
-        job = client.query(
-            safe_query, job_config=job_config, timeout=timeout_seconds
-        )
+        job = client.query(safe_query, job_config=job_config, timeout=timeout_seconds)
         try:
-            iterator = job.result(
-                timeout=timeout_seconds, max_results=max_rows + 1
-            )
+            iterator = job.result(timeout=timeout_seconds, max_results=max_rows + 1)
             rows = list(iterator)
         except FutureTimeoutError as exc:
             try:

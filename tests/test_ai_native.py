@@ -140,7 +140,7 @@ def test_result_envelope_is_json_serializable():
     )
     payload = result.to_dict()
     assert payload["error"]["code"] == "permission_denied"
-    assert SafetyLevel.READ_ONLY.value == "read_only"
+    assert SafetyLevel.READ_ONLY.value == "inspection"
     json.dumps(payload)
 
 

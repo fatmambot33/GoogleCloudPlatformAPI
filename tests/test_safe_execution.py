@@ -25,7 +25,9 @@ from GoogleCloudPlatformAPI.codex.tools import CodexTools
 def test_sql_validator_allows_literals_and_rejects_scripts_and_mutation():
     """Only one conservative read statement crosses the billable boundary."""
     assert validate_single_read_query("SELECT ';' AS value;") == "SELECT ';' AS value"
-    assert validate_single_read_query("-- comment\nWITH x AS (SELECT 1) SELECT * FROM x")
+    assert validate_single_read_query(
+        "-- comment\nWITH x AS (SELECT 1) SELECT * FROM x"
+    )
     with pytest.raises(ValueError, match="multiple statements"):
         validate_single_read_query("SELECT 1; SELECT 2")
     with pytest.raises(ValueError, match="disabled statement keywords"):
@@ -38,15 +40,11 @@ def test_opaque_cursor_round_trip_and_context_binding():
         "bigquery", "list_tables", "provider-token", {"dataset_id": "events"}
     )
     assert (
-        decode_cursor(
-            cursor, "bigquery", "list_tables", {"dataset_id": "events"}
-        )
+        decode_cursor(cursor, "bigquery", "list_tables", {"dataset_id": "events"})
         == "provider-token"
     )
     with pytest.raises(CursorError, match="does not match"):
-        decode_cursor(
-            cursor, "bigquery", "list_tables", {"dataset_id": "archive"}
-        )
+        decode_cursor(cursor, "bigquery", "list_tables", {"dataset_id": "archive"})
 
 
 def test_error_normalization_is_stable_retryable_and_redacted():
@@ -65,6 +63,7 @@ def test_error_normalization_is_stable_retryable_and_redacted():
 
 def test_generic_timeout_is_enforced():
     """Capability handlers cannot wait forever."""
+
     def slow():
         time.sleep(0.05)
         return True

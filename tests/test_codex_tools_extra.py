@@ -43,9 +43,7 @@ def test_json_value_handles_dates_tuples_and_fallback_values():
 
 
 def test_bigquery_query_limits_rows_and_rejects_unsafe_inputs():
-    tools, bigquery, _ = _query_tools(
-        [{"value": 1}, {"value": 2}, {"value": 3}]
-    )
+    tools, bigquery, _ = _query_tools([{"value": 1}, {"value": 2}, {"value": 3}])
 
     result = tools.bigquery_query("SELECT value FROM table", max_rows=2)
 

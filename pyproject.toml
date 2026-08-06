@@ -41,6 +41,7 @@ dev = [
     "twine>=6,<7",
 ]
 codex = []
+telemetry = ["opentelemetry-api>=1.25,<2"]
 
 [tool.black]
 target-version = ["py38"]

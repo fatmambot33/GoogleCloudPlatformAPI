@@ -79,7 +79,10 @@ class FakeStorageClient:
     def list_blobs(self, bucket_name, **kwargs):
         prefix = kwargs.get("prefix", "")
         return FakeIterator(
-            [SimpleNamespace(name=prefix + "a.txt"), SimpleNamespace(name=prefix + "b.txt")]
+            [
+                SimpleNamespace(name=prefix + "a.txt"),
+                SimpleNamespace(name=prefix + "b.txt"),
+            ]
         )
 
 
