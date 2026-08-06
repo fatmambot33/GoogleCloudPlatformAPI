@@ -6,10 +6,12 @@ from typing import Any, Dict, List, Optional
 
 
 class SafetyLevel(str, Enum):
-    """Safety classification for a capability."""
+    """Safety and cost classification for a capability."""
 
-    READ_ONLY = "read_only"
+    INSPECTION = "inspection"
+    BILLABLE_READ = "billable_read"
     MUTATING = "mutating"
+    READ_ONLY = "inspection"
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,9 @@ class ResultMetadata:
     service: str
     operation: str
     duration_ms: int
+    safety: str = SafetyLevel.INSPECTION.value
+    timeout_seconds: Optional[int] = None
+    retry_count: int = 0
     truncated: bool = False
     warnings: List[str] = field(default_factory=list)
     provenance: Dict[str, Any] = field(default_factory=dict)
