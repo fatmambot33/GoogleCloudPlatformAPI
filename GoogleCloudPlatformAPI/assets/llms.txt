@@ -1,0 +1,37 @@
+# GoogleCloudPlatformAPI
+
+Python-first helpers for Google Cloud services with a safe, generated AI tool
+surface.
+
+## Primary documentation
+
+- README.md: installation, SDK usage, MCP/Codex setup, and quick start
+- PRODUCT.md: product promise, users, and principles
+- docs/public-api.md: stable imports, naming, exceptions, and compatibility
+- docs/ai-native-platform.md: canonical capability and execution contract
+- docs/ai-native-scorecard.md: release gates and mutation guardrails
+- AGENTS.md: repository instructions for coding agents
+- SECURITY.md: vulnerability and credential guidance
+- ROADMAP.md: execution order and deliberately gated work
+- RELEASE.md: release process
+
+## Machine-readable interfaces
+
+- GoogleCloudPlatformAPI.ai_native.capability_registry
+- GoogleCloudPlatformAPI.ai_native.execute_capability
+- GoogleCloudPlatformAPI.ai_native.readiness_score
+- GoogleCloudPlatformAPI.assets.read_text_resource
+- GoogleCloudPlatformAPI.GoogleCloudPlatformAPIError
+- gcp-api-mcp
+- gcp-api-agent
+
+## Read-only capability flow
+
+- BigQuery: context, datasets, tables, schema, bounded query
+- Cloud Storage: context, objects, metadata, bounded text read
+
+## Safety
+
+The shipped MCP surface is read-only. BigQuery statements and Cloud Storage
+responses are bounded. Credentials remain local and secret-bearing keys are
+redacted before structured logging.

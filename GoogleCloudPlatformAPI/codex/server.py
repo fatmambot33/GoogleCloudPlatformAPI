@@ -2,11 +2,20 @@
 
 import json
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Dict, Optional, TextIO
 
 from .tools import CodexTools, text_content, tool_definitions
 
 _PROTOCOL_VERSION = "2025-06-18"
+
+
+def _package_version() -> str:
+    """Return installed package metadata with a source-tree fallback."""
+    try:
+        return version("GoogleCloudPlatformAPI")
+    except PackageNotFoundError:
+        return "2.7.0"
 
 
 class MCPServer:
@@ -30,7 +39,7 @@ class MCPServer:
                     "capabilities": {"tools": {"listChanged": False}},
                     "serverInfo": {
                         "name": "google-cloud-platform-api",
-                        "version": "2.4.0",
+                        "version": _package_version(),
                     },
                 }
             elif method == "ping":
