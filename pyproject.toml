@@ -32,7 +32,7 @@ gcp-api-agent = "GoogleCloudPlatformAPI.agents.cli:main"
 
 [project.optional-dependencies]
 dev = [
-    "black>=26.3,<27",
+    "black==24.8.0",
     "build>=1.2,<2",
     "pydocstyle>=6.3,<7",
     "pyright>=1.1,<2",
