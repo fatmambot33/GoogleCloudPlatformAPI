@@ -8,8 +8,8 @@ from GoogleCloudPlatformAPI.ai_native.contracts import CapabilityError
 _SECRET_PATTERNS = (
     re.compile(r"(?i)(authorization:\s*bearer\s+)[^\s,;]+"),
     re.compile(
-        r"(?i)((?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret)"
-        r"\s*[=:]\s*)[^\s,;]+"
+        r"(?i)((?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|"
+        r"password|secret)\s*[=:]\s*)[^\s,;]+"
     ),
     re.compile(r"(?i)(credentials?\s+(?:file|path)\s*[=:]\s*)[^\s,;]+"),
 )
