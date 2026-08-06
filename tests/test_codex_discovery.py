@@ -122,10 +122,13 @@ def test_dispatch_includes_discovery_tools(monkeypatch):
 
     assert tools.call("bigquery_list_datasets", {"max_results": 10}) == datasets
     assert tools.call("bigquery_list_tables", {"dataset_id": "events"}) == tables
-    assert tools.call(
-        "bigquery_table_schema", {"table_id": "events.sessions"}
-    ) == schema
-    assert tools.call(
-        "gcs_object_metadata",
-        {"bucket_name": "bucket", "object_name": "object"},
-    ) == metadata
+    assert (
+        tools.call("bigquery_table_schema", {"table_id": "events.sessions"}) == schema
+    )
+    assert (
+        tools.call(
+            "gcs_object_metadata",
+            {"bucket_name": "bucket", "object_name": "object"},
+        )
+        == metadata
+    )
