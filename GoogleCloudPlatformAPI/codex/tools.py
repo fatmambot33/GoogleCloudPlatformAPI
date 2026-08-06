@@ -3,7 +3,7 @@
 import json
 import os
 import re
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, cast
 
 from GoogleCloudPlatformAPI.ai_native import (
     capability_registry,
@@ -230,8 +230,9 @@ class CodexTools:
         handler = getattr(self, capability.adapter_method, None)
         if not callable(handler):
             raise ValueError("Tool adapter is unavailable: {0}".format(name))
+        typed_handler = cast(Callable[..., Dict[str, Any]], handler)
         capability_registry.validate_input(name, arguments)
-        payload = handler(**arguments)
+        payload = typed_handler(**arguments)
         capability_registry.validate_output(name, payload)
         return payload
 
