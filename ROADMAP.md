@@ -14,27 +14,28 @@
 - [x] Strict generated input and output contracts
 - [x] Registry-driven MCP and CLI surfaces
 - [x] Structured result and error envelopes
-- [x] Request IDs, duration metadata, logging hooks, and secret redaction
-- [x] Deterministic AI readiness evaluation and release scorecard
+- [x] Provider-enforced cost, timeout, range, pagination, and error controls
+- [x] Request IDs, duration metadata, optional telemetry, and secret redaction
+- [x] Behavioral golden scenarios and prompt-injection containment tests
+- [x] MCP protocol conformance tests
+- [x] Generated JSON, Markdown, and JUnit AI readiness evidence
+- [x] Optional OpenAI Agents SDK adapters generated from shared contracts
 - [x] Human and machine-readable AI platform documentation
 
 ## Execution roadmap
 
 1. [x] #56 Release 2.7.0 as a truthful installable AI-native package.
 2. [x] #57 Make capability contracts strict and generated across surfaces.
-3. [ ] #58 Enforce safe observable execution for billable and remote operations.
-4. [ ] #59 Add behavioral agent evaluations and release evidence.
+3. [x] #58 Enforce safe observable execution for billable and remote operations.
+4. [x] #59 Add behavioral agent evaluations and release evidence.
 
-Issue #58 is implemented in PR #62 and remains incomplete until every CI gate
-passes and the pull request is merged. Issue #59 starts only from that green
-baseline.
-
-Each milestone must merge with a green main branch before work starts on the
-next dependency. Release expansion follows evidence, not framework count.
+Every roadmap milestone is implemented behind a green release gate. The 2.8.0
+release carries the behavioral scorecard, MCP conformance evidence, SBOM, and
+provenance beside the installable distributions.
 
 ## Deliberately gated
 
-Mutation tools, remote HTTP deployment, OpenAPI, TypeScript, graphical UI, and
-framework-specific adapters are not default roadmap requirements. Add them only
-when concrete usage requires them and after the shared registry, safety,
-authorization, audit, compatibility, and evaluation contracts remain satisfied.
+Mutation tools, remote HTTP deployment, OpenAPI, TypeScript, and graphical UI
+are not default roadmap requirements. Add them only when concrete usage
+requires them and after authorization, audit, compatibility, and evaluation
+contracts remain satisfied.

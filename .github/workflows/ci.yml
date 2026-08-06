@@ -85,6 +85,7 @@ jobs:
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
             | .venv-wheel/bin/gcp-api-mcp > mcp-smoke.jsonl
+          .venv-wheel/bin/gcp-api-eval --output wheel-evidence --fail-under 100
           .venv-wheel/bin/python - <<'PY'
           import json
           from importlib.metadata import version
@@ -93,9 +94,38 @@ jobs:
           from GoogleCloudPlatformAPI.assets import read_text_resource
 
           responses = [json.loads(line) for line in Path("mcp-smoke.jsonl").read_text().splitlines()]
-          assert responses[0]["result"]["serverInfo"]["version"] == "2.7.0"
+          scorecard = json.loads(Path("wheel-evidence/scorecard.json").read_text())
+          assert responses[0]["result"]["serverInfo"]["version"] == "2.8.0"
           assert len(responses[1]["result"]["tools"]) == 8
-          assert version("GoogleCloudPlatformAPI") == "2.7.0"
-          assert "GoogleCloudPlatformAPI" in read_text_resource("llms.txt")
+          assert version("GoogleCloudPlatformAPI") == "2.8.0"
+          assert scorecard["ready"] is True
+          assert scorecard["score"] == 100.0
+          assert "gcp-api-eval" in read_text_resource("llms.txt")
           assert "maximum_bytes_billed" in read_text_resource("codex/SKILL.md")
+          assert "Golden scenarios" in read_text_resource("docs/ai-readiness.md")
           PY
+
+  evidence:
+    needs: [quality, dependency-floor, package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+      - name: Generate AI readiness release evidence
+        run: |
+          mkdir -p build/ai-readiness
+          gcp-api-eval --output build/ai-readiness --fail-under 100
+          pytest -q tests/test_behavioral_evaluations.py tests/test_mcp_conformance.py \
+            tests/test_release_evidence.py tests/test_openai_agents_adapter.py \
+            --junitxml=build/ai-readiness/pytest.xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-readiness-evidence
+          path: build/ai-readiness/

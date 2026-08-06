@@ -7,9 +7,10 @@ from GoogleCloudPlatformAPI.assets import read_text_resource, resource_path
 
 def test_packaged_assets_are_readable() -> None:
     """Expose the machine-readable index, skill, and platform documentation."""
-    assert "GoogleCloudPlatformAPI" in read_text_resource("llms.txt")
+    assert "gcp-api-eval" in read_text_resource("llms.txt")
     assert "maximum_bytes_billed" in read_text_resource("codex/SKILL.md")
     assert resource_path("docs/ai-native-platform.md").is_file()
+    assert resource_path("docs/ai-readiness.md").is_file()
 
 
 @pytest.mark.parametrize("path", ["", "../README.md", "/tmp/secret"])

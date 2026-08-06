@@ -1,7 +1,7 @@
 # GoogleCloudPlatformAPI
 
 Python-first helpers for Google Cloud services with a safe, generated AI tool
-surface.
+surface and evidence-backed release gates.
 
 ## Primary documentation
 
@@ -10,10 +10,11 @@ surface.
 - docs/public-api.md: stable imports, naming, exceptions, and compatibility
 - docs/ai-native-platform.md: strict contracts, billable reads, bounds, and errors
 - docs/ai-native-scorecard.md: enforced release gates and mutation guardrails
+- docs/ai-readiness.md: behavioral evaluations and generated release evidence
 - docs/capabilities.md: generated human-readable capability reference
 - AGENTS.md: repository instructions for coding agents
 - SECURITY.md: vulnerability and credential guidance
-- ROADMAP.md: execution order and deliberately gated work
+- ROADMAP.md: completed execution roadmap and deliberately gated work
 - RELEASE.md: release process
 
 ## Machine-readable interfaces
@@ -21,16 +22,23 @@ surface.
 - GoogleCloudPlatformAPI.ai_native.capability_registry
 - GoogleCloudPlatformAPI.ai_native.execute_capability
 - GoogleCloudPlatformAPI.ai_native.readiness_score
+- GoogleCloudPlatformAPI.ai_native.release_scorecard
+- GoogleCloudPlatformAPI.ai_native.golden_scenarios
+- GoogleCloudPlatformAPI.ai_native.write_release_evidence
 - GoogleCloudPlatformAPI.ai_native.compatibility_snapshot
 - GoogleCloudPlatformAPI.ai_native.compare_compatibility_snapshots
 - GoogleCloudPlatformAPI.ai_native.validate_single_read_query
 - GoogleCloudPlatformAPI.ai_native.encode_cursor
 - GoogleCloudPlatformAPI.ai_native.decode_cursor
 - GoogleCloudPlatformAPI.ai_native.normalize_exception
+- GoogleCloudPlatformAPI.agents.openai_tool_specs
+- GoogleCloudPlatformAPI.agents.build_openai_tools
+- GoogleCloudPlatformAPI.agents.build_openai_agent
 - GoogleCloudPlatformAPI.assets.read_text_resource
 - GoogleCloudPlatformAPI.GoogleCloudPlatformAPIError
 - gcp-api-mcp
 - gcp-api-agent --list-capabilities
+- gcp-api-eval --output build/ai-readiness --fail-under 100
 
 ## Contract behavior
 
@@ -43,9 +51,12 @@ surface.
 - Discovery uses opaque context-bound pagination cursors.
 - Cloud Storage reads use provider byte ranges.
 - Provider failures use stable redacted machine-readable errors.
+- Golden scenarios gate tool selection, arguments, sequencing, refusal, recovery,
+  prompt-injection containment, latency, and token footprint.
+- CI and releases publish JSON, Markdown, and JUnit readiness evidence.
 
 ## Safety
 
 The shipped MCP surface exposes inspection and bounded billable reads, but no
-mutations. Credentials remain local and secret-bearing keys and exception text
-are redacted before logging or return.
+mutations. Credentials remain local. Provider content is untrusted, and
+secret-bearing keys and exception text are redacted before logging or return.
