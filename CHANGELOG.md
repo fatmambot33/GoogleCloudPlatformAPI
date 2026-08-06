@@ -6,6 +6,18 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- Inspection, billable-read, and mutating capability safety classifications.
+- Provider-enforced BigQuery dry runs, billing ceilings, deadlines,
+  cancellation, and cost/job metadata.
+- Conservative single-statement BigQuery SQL validation.
+- Context-bound opaque cursors for BigQuery and Cloud Storage discovery.
+- Cloud Storage byte-range reads that avoid downloading complete objects before
+  truncation.
+- Stable authentication, permission, quota, timeout, availability, not-found,
+  and invalid-request error codes with recovery guidance.
+- Structured MCP tool errors instead of leaking provider exceptions through the
+  JSON-RPC boundary.
+- Generic capability deadlines and optional OpenTelemetry tracing and metrics.
 - Strict input and output JSON Schema contracts for every AI-facing capability.
 - Dependency-free runtime validation before and after adapter execution.
 - Generated MCP output schemas and safety annotations.
@@ -17,12 +29,20 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
-- The registry schema version is now 1.1.0.
+- BigQuery query execution is explicitly classified as a billable read.
+- The registry compatibility snapshot now records safety and timeout changes.
+- The registry schema version is 1.1.0.
 - AI readiness requires strict schemas and a declared execution adapter.
+
+### Security
+
+- Secret redaction covers authorization headers, generic tokens, API keys,
+  passwords, secrets, and credential paths.
+- Queries and object reads are bounded at the provider request rather than only
+  truncating fully retrieved results.
 
 ### Planned
 
-- Enforced billable-read safety and operational limits from #58.
 - Behavioral agent evaluations and generated release evidence from #59.
 
 ## 2.7.0 - 2026-08-06
@@ -53,13 +73,14 @@ All notable changes to this project are documented in this file.
 - The Codex workflow now discovers resources before running queries or reads.
 - Python 3.10 through 3.14 support is explicit in package metadata and CI.
 - Runtime dependencies now use bounded compatibility ranges.
-- PyPI publishing uses Trusted Publishing with GitHub OIDC.
+- PyPI publishing uses Trusted Publishing with GitHub OIDC when configured and
+  a masked migration token otherwise.
 
 ### Security
 
-- The published tool surface remains read-only and bounded. Mutation tools are
-  explicitly gated on authorization, dry-run, confirmation, idempotency, audit,
-  and evaluation controls.
+- The published tool surface remains bounded. Mutation tools are explicitly
+  gated on authorization, dry-run, confirmation, idempotency, audit, and
+  evaluation controls.
 - Release distributions receive GitHub provenance attestations and an attached
   software bill of materials.
 

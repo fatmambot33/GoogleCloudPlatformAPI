@@ -2,6 +2,7 @@
 
 import json
 from io import StringIO
+from types import SimpleNamespace
 
 import pytest
 
@@ -9,31 +10,86 @@ from GoogleCloudPlatformAPI.codex.server import MCPServer
 from GoogleCloudPlatformAPI.codex.tools import CodexTools
 
 
+class FakeIterator(list):
+    """List-like result page with provider pagination metadata."""
+
+    next_page_token = None
+    total_rows = 2
+
+
+class FakeDryJob:
+    """Completed BigQuery dry-run metadata."""
+
+    total_bytes_processed = 10
+    statement_type = "SELECT"
+
+
+class FakeQueryJob:
+    """Completed BigQuery query metadata and rows."""
+
+    total_bytes_processed = 10
+    total_bytes_billed = 10
+    cache_hit = False
+    job_id = "job-1"
+
+    def result(self, **kwargs):
+        return FakeIterator([{"answer": 42}, {"answer": 43}])
+
+    def cancel(self, **kwargs):
+        return True
+
+
+class FakeBigQueryClient:
+    """Return one dry run followed by one executed query."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def query(self, query, **kwargs):
+        self.calls += 1
+        return FakeDryJob() if self.calls % 2 else FakeQueryJob()
+
+
 class FakeBigQuery:
-    def execute_query(self, query):
-        return [{"answer": 42}, {"answer": 43}]
+    """Minimal BigQuery helper used by Codex adapter tests."""
+
+    _client = FakeBigQueryClient()
 
 
 class FakeBlob:
-    def download_as_bytes(self):
+    """Minimal ranged Cloud Storage blob."""
+
+    def download_as_bytes(self, **kwargs):
         return b"hello world"
 
 
 class FakeBucket:
+    """Minimal Cloud Storage bucket."""
+
     def blob(self, name):
         return FakeBlob()
 
 
 class FakeStorageClient:
+    """Minimal Cloud Storage client with bounded listing."""
+
     def bucket(self, name):
         return FakeBucket()
 
+    def list_blobs(self, bucket_name, **kwargs):
+        prefix = kwargs.get("prefix", "")
+        return FakeIterator(
+            [
+                SimpleNamespace(name=prefix + "a.txt"),
+                SimpleNamespace(name=prefix + "b.txt"),
+            ]
+        )
+
 
 class FakeStorage:
-    _client = FakeStorageClient()
+    """Minimal Cloud Storage helper."""
 
-    def list_files(self, bucket_name, prefix):
-        return [prefix + "a.txt", prefix + "b.txt"]
+    _client = FakeStorageClient()
 
 
 def tools():
@@ -46,7 +102,9 @@ def test_bigquery_is_read_only():
 
 
 def test_read_tools_return_structured_results():
-    assert tools().bigquery_query("SELECT 42")["rows"][0]["answer"] == 42
+    query = tools().bigquery_query("SELECT 42")
+    assert query["rows"][0]["answer"] == 42
+    assert query["dry_run_bytes_processed"] == 10
     assert tools().storage_list("bucket", "data/")["objects"] == [
         "data/a.txt",
         "data/b.txt",

@@ -5,6 +5,8 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Dict, Optional, TextIO
 
+from GoogleCloudPlatformAPI.ai_native import CapabilityExecutionError
+
 from .tools import CodexTools, text_content, tool_definitions
 
 _PROTOCOL_VERSION = "2025-06-18"
@@ -57,12 +59,39 @@ class MCPServer:
             else:
                 return self._error(request_id, -32601, "Method not found")
             return {"jsonrpc": "2.0", "id": request_id, "result": result}
+        except CapabilityExecutionError as exc:
+            payload = {"ok": False, "error": exc.error.to_dict()}
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "content": text_content(payload),
+                    "structuredContent": payload,
+                    "isError": True,
+                },
+            }
         except (TypeError, ValueError) as exc:
             return self._error(request_id, -32602, str(exc))
         except Exception as exc:  # pragma: no cover - defensive protocol boundary
-            return self._error(
-                request_id, -32603, "Tool execution failed: {0}".format(exc)
-            )
+            payload = {
+                "ok": False,
+                "error": {
+                    "code": "protocol_failure",
+                    "message": "Tool execution failed at the protocol boundary.",
+                    "retryable": False,
+                    "guidance": None,
+                    "details": {"exception_type": exc.__class__.__name__},
+                },
+            }
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "content": text_content(payload),
+                    "structuredContent": payload,
+                    "isError": True,
+                },
+            }
 
     @staticmethod
     def _error(request_id: Any, code: int, message: str) -> Dict[str, Any]:
