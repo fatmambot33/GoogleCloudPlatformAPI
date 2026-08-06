@@ -102,8 +102,6 @@ def validate_single_read_query(query: str) -> str:
     denied = sorted(set(words) & _DENIED_KEYWORDS)
     if denied:
         raise ReadOnlyQueryError(
-            "Query contains disabled statement keywords: {0}.".format(
-                ", ".join(denied)
-            )
+            "Query contains disabled statement keywords: {0}.".format(", ".join(denied))
         )
     return query.strip().rstrip(";").rstrip()
