@@ -33,7 +33,7 @@ jobs:
           path: release-evidence
           run-id: ${{ env.SOURCE_RUN_ID }}
           github-token: ${{ github.token }}
-      - name: Upload the original verified artifacts
+      - name: Publish the original verified artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -42,8 +42,15 @@ jobs:
             find release-dist release-evidence -type f -print0
           )
           test "${#assets[@]}" -ge 7
-          gh release view "$TAG" >/dev/null
-          gh release upload "$TAG" "${assets[@]}" --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$TAG" \
+              --target "$EXPECTED_COMMIT" \
+              --title "$TAG" \
+              --generate-notes \
+              "${assets[@]}"
+          fi
       - name: Verify the complete release asset set
         env:
           GH_TOKEN: ${{ github.token }}
