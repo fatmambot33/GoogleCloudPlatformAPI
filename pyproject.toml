@@ -4,26 +4,26 @@ build-backend = "hatchling.build"
 
 [project]
 name = "GoogleCloudPlatformAPI"
-version = "2.6.0"
+version = "2.7.0"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "pandas",
-    "google-api-python-client",
-    "google-cloud-bigquery",
-    "google-cloud-bigquery[pandas]",
-    "google-cloud-storage",
-    "googleads",
-    "db-dtypes",
-    "python-dotenv",
+    "pandas>=2.2.3,<3.0; python_version < '3.11'",
+    "pandas>=3.0,<4.0; python_version >= '3.11'",
+    "google-api-python-client>=2.150,<3.0",
+    "google-cloud-bigquery[pandas]>=3.30,<4.0",
+    "google-cloud-storage>=3.0,<4.0",
+    "googleads>=47.0,<51.0",
+    "db-dtypes>=1.5.1,<2.0",
+    "python-dotenv>=1.0.1,<2.0",
 ]
 
 [project.scripts]
@@ -33,12 +33,12 @@ gcp-api-agent = "GoogleCloudPlatformAPI.agents.cli:main"
 [project.optional-dependencies]
 dev = [
     "black==24.8.0",
-    "build",
-    "pydocstyle",
-    "pyright",
-    "pytest",
-    "pytest-cov",
-    "twine",
+    "build>=1.2,<2",
+    "pydocstyle>=6.3,<7",
+    "pyright>=1.1,<2",
+    "pytest>=8,<10",
+    "pytest-cov>=5,<8",
+    "twine>=6,<7",
 ]
 codex = []
 
@@ -50,16 +50,23 @@ convention = "numpy"
 
 [tool.pyright]
 include = ["GoogleCloudPlatformAPI"]
-pythonVersion = "3.8"
+pythonVersion = "3.10"
 
 [tool.hatch.build.targets.wheel]
 packages = ["GoogleCloudPlatformAPI"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+    "/.codex",
     "/GoogleCloudPlatformAPI",
+    "/docs",
+    "/tests",
+    "/AGENTS.md",
+    "/CHANGELOG.md",
     "/LICENSE",
     "/README.md",
+    "/RELEASE.md",
+    "/ROADMAP.md",
+    "/llms.txt",
     "/pyproject.toml",
-    "/tests",
 ]

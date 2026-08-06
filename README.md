@@ -10,24 +10,29 @@ boilerplate when building data pipelines or analytics tools.
 pip install GoogleCloudPlatformAPI
 ```
 
+Python 3.10 through 3.14 are supported. Runtime dependencies use bounded
+compatibility ranges, and CI tests both the minimum Python 3.10 dependency set
+and the newest compatible dependencies.
+
 For development, install the project in editable mode with the tooling extras:
 
 ```bash
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
-Run the project checks locally to match the CI configuration:
+Run the project checks locally to match CI:
 
 ```bash
 black --check .
 pydocstyle GoogleCloudPlatformAPI
 pyright GoogleCloudPlatformAPI
-pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=70
+pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=90
+python -m build
+python -m twine check dist/*
 ```
 
-Python 3.8 through 3.12 are supported. Configure authentication with a service
-account JSON file through `GOOGLE_APPLICATION_CREDENTIALS` or supply the path to
-individual helpers.
+Configure authentication with a service account JSON file through
+`GOOGLE_APPLICATION_CREDENTIALS` or supply the path to individual helpers.
 
 ## Stable public API
 
@@ -53,17 +58,24 @@ JSON-compatible input and output schemas, permission metadata, safety level,
 and bounded timeout.
 
 ```python
-from GoogleCloudPlatformAPI.ai_native import (
-    capability_registry,
-    readiness_score,
-)
+from GoogleCloudPlatformAPI.ai_native import capability_registry, readiness_score
 
 print(capability_registry.schema())
 print(readiness_score(capability_registry))
 ```
 
+The wheel includes the machine-readable documentation index, Codex skill, and
+AI platform documentation:
+
+```python
+from GoogleCloudPlatformAPI.assets import read_text_resource
+
+print(read_text_resource("llms.txt"))
+print(read_text_resource("codex/SKILL.md"))
+```
+
 See `docs/ai-native-platform.md`, `docs/ai-native-scorecard.md`, and `llms.txt`
-for the machine-readable contract and release gates.
+for the repository copies of these contracts.
 
 ## Local Codex plugin surface
 
@@ -74,7 +86,7 @@ current process environment, and never copies or persists Google credentials.
 Install the project and verify the entry point:
 
 ```bash
-pip install -e '.[codex]'
+pip install 'GoogleCloudPlatformAPI[codex]'
 gcp-api-mcp
 ```
 
@@ -118,7 +130,8 @@ Read reports/latest.json, limited to 50000 bytes.
 ```
 
 The reusable workflow guidance is stored in
-`.codex/skills/google-cloud-platform-api/SKILL.md`.
+`.codex/skills/google-cloud-platform-api/SKILL.md` and in the installed wheel as
+`GoogleCloudPlatformAPI/assets/codex/SKILL.md`.
 
 ## Usage
 

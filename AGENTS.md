@@ -8,6 +8,7 @@ first-class AI-native capability surface.
 ## Product rules
 
 - Keep the package Python-first, lean, and backward compatible.
+- Support Python 3.10 through 3.14 and keep dependency bounds tested.
 - Do not duplicate capability schemas across Python, CLI, MCP, or agent code.
 - Register each AI-facing operation once in the canonical capability registry.
 - Prefer generated adapters over framework-specific implementations.
@@ -44,13 +45,14 @@ confirmation, idempotency, audit metadata, and dedicated safety evaluations.
 black --check .
 pydocstyle GoogleCloudPlatformAPI
 pyright GoogleCloudPlatformAPI
-pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=70
+pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=90
 python -m build
 python -m twine check dist/*
 ```
 
-AI-surface changes must also keep `readiness_score(capability_registry)` ready
-and maintain MCP-to-registry synchronization tests.
+AI-surface changes must also keep `readiness_score(capability_registry)` ready,
+maintain MCP-to-registry synchronization tests, and preserve installed-wheel
+resource and entry-point smoke tests.
 
 ## Security
 
@@ -66,5 +68,5 @@ and maintain MCP-to-registry synchronization tests.
 - Tests cover success, failure, bounds, serialization, and redaction.
 - Documentation and `llms.txt` updated when the public surface changes.
 - Changelog entry added.
-- Formatting, docstrings, typing, tests, coverage, package build, and package
-  validation pass.
+- Formatting, docstrings, typing, tests, coverage, package build, wheel smoke,
+  SBOM, and package validation pass.

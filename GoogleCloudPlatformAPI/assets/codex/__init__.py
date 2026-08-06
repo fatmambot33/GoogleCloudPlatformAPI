@@ -1,0 +1,1 @@
+"""Packaged Codex skill assets."""
