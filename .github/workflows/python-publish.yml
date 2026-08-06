@@ -1,12 +1,14 @@
-# Publishes each package version once, then creates matching release evidence.
+# Publishes each package version once and creates matching release evidence.
+# Set PYPI_TRUSTED_PUBLISHING=true as a repository variable after registering
+# this workflow and the `pypi` environment as a Trusted Publisher on PyPI.
 name: Release Python package
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - pyproject.toml
+      - CHANGELOG.md
       - .github/workflows/python-publish.yml
   workflow_dispatch:
 
@@ -17,10 +19,14 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  PACKAGE_IMPORT: GoogleCloudPlatformAPI
+
 jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
+      project: ${{ steps.version.outputs.project }}
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
       published: ${{ steps.pypi.outputs.published }}
@@ -32,21 +38,30 @@ jobs:
       - name: Resolve package version
         id: version
         run: |
-          version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import tomllib
+          from pathlib import Path
+
+          project = tomllib.loads(Path("pyproject.toml").read_text())["project"]
+          print(f"project={project['name']}")
+          print(f"version={project['version']}")
+          print(f"tag=v{project['version']}")
+          PY
       - name: Check whether the version is already on PyPI
         id: pypi
         env:
+          PROJECT: ${{ steps.version.outputs.project }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           import os
           import urllib.error
+          import urllib.parse
           import urllib.request
 
-          url = "https://pypi.org/pypi/GoogleCloudPlatformAPI/json"
+          project = urllib.parse.quote(os.environ["PROJECT"], safe="")
+          url = f"https://pypi.org/pypi/{project}/json"
           try:
               with urllib.request.urlopen(url, timeout=30) as response:
                   payload = json.load(response)
@@ -59,13 +74,9 @@ jobs:
           published = os.environ["VERSION"] in payload.get("releases", {})
           print(f"published={str(published).lower()}")
           PY
-      - name: Report existing publication
-        if: steps.pypi.outputs.published == 'true'
-        run: echo "GoogleCloudPlatformAPI ${{ steps.version.outputs.version }} is already published; skipping release."
 
   build:
     needs: check
-    if: needs.check.outputs.published != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -84,52 +95,59 @@ jobs:
           python -m build --outdir release-dist
           python -m twine check release-dist/*
       - name: Install and smoke test release wheel
+        env:
+          PROJECT: ${{ needs.check.outputs.project }}
+          VERSION: ${{ needs.check.outputs.version }}
         run: |
           python -m venv .venv-release
           .venv-release/bin/python -m pip install --upgrade pip
           .venv-release/bin/python -m pip install release-dist/*.whl
+          .venv-release/bin/python - <<'PY'
+          import importlib
+          import os
+          from importlib.metadata import version
+
+          importlib.import_module(os.environ["PACKAGE_IMPORT"])
+          assert version(os.environ["PROJECT"]) == os.environ["VERSION"]
+          PY
+      - name: Smoke test MCP entry point
+        run: |
           printf '%s\n' \
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
             | .venv-release/bin/gcp-api-mcp > mcp-smoke.jsonl
           .venv-release/bin/python - <<'PY'
           import json
-          from importlib.metadata import version
           from pathlib import Path
 
           responses = [json.loads(line) for line in Path("mcp-smoke.jsonl").read_text().splitlines()]
-          assert responses[0]["result"]["serverInfo"]["version"] == version("GoogleCloudPlatformAPI")
+          assert len(responses) == 2
           assert len(responses[1]["result"]["tools"]) == 8
           PY
       - name: Generate CycloneDX SBOM
         run: |
-          mkdir -p release-assets
+          mkdir -p release-evidence
           cyclonedx-py environment .venv-release/bin/python \
             --pyproject pyproject.toml \
             --output-format JSON \
             --output-reproducible \
-            --output-file release-assets/sbom.cdx.json
+            --output-file release-evidence/sbom.cdx.json
+          mv mcp-smoke.jsonl release-evidence/mcp-smoke.jsonl
       - name: Attest package distributions
         uses: actions/attest@v4
         with:
           subject-path: "release-dist/*"
-      - name: Upload package distributions
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
           path: release-dist/
-      - name: Upload release evidence
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: release-evidence
-          path: |
-            release-assets/sbom.cdx.json
-            mcp-smoke.jsonl
+          path: release-evidence/
 
   publish:
-    needs:
-      - check
-      - build
+    needs: [check, build]
     if: needs.check.outputs.published != 'true'
     runs-on: ubuntu-latest
     environment: pypi
@@ -140,15 +158,18 @@ jobs:
         with:
           name: python-package-distributions
           path: dist
-      - name: Publish package distributions to PyPI
+      - name: Publish through PyPI Trusted Publishing
+        if: ${{ vars.PYPI_TRUSTED_PUBLISHING == 'true' }}
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish with migration token
+        if: ${{ vars.PYPI_TRUSTED_PUBLISHING != 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
   release:
-    needs:
-      - check
-      - build
-      - publish
-    if: needs.check.outputs.published != 'true'
+    needs: [check, build, publish]
+    if: ${{ always() && needs.build.result == 'success' && (needs.publish.result == 'success' || needs.publish.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -164,11 +185,12 @@ jobs:
         with:
           name: release-evidence
           path: release-evidence
-      - name: Create version tag and GitHub release
+      - name: Create or reconcile version release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.check.outputs.tag }}
           VERSION: ${{ needs.check.outputs.version }}
+          PUBLISHED: ${{ needs.check.outputs.published }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -176,11 +198,15 @@ jobs:
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             tag_commit="$(git rev-list -n 1 "$TAG")"
             if [ "$tag_commit" != "$GITHUB_SHA" ]; then
+              if [ "$PUBLISHED" = "true" ]; then
+                echo "$TAG is already an immutable published release at $tag_commit."
+                exit 0
+              fi
               echo "Existing tag $TAG points to $tag_commit, not $GITHUB_SHA." >&2
               exit 1
             fi
           else
-            git tag -a "$TAG" "$GITHUB_SHA" -m "GoogleCloudPlatformAPI $VERSION"
+            git tag -a "$TAG" "$GITHUB_SHA" -m "${{ needs.check.outputs.project }} $VERSION"
             git push origin "$TAG"
           fi
 
