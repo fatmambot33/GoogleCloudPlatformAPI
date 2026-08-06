@@ -280,9 +280,7 @@ def evaluate_mcp_protocol() -> List[EvaluationResult]:
     missing = server.handle({"jsonrpc": "2.0", "id": 4, "method": "missing"})
     notification = server.handle({"jsonrpc": "2.0", "method": "ping"})
     tools = (
-        listing.get("result", {}).get("tools", [])
-        if isinstance(listing, dict)
-        else []
+        listing.get("result", {}).get("tools", []) if isinstance(listing, dict) else []
     )
     return [
         EvaluationResult(
@@ -290,8 +288,7 @@ def evaluate_mcp_protocol() -> List[EvaluationResult]:
             passed=(
                 isinstance(initialize, dict)
                 and initialize.get("jsonrpc") == "2.0"
-                and initialize.get("result", {}).get("protocolVersion")
-                == "2025-06-18"
+                and initialize.get("result", {}).get("protocolVersion") == "2025-06-18"
             ),
             message="MCP initialize must negotiate the supported protocol.",
             category="protocol",
@@ -388,9 +385,7 @@ def compare_scorecards(
                 continue
             if float(current_metrics[name]) < float(baseline_value):
                 regressions.append(
-                    "{0}: {1} < {2}".format(
-                        name, current_metrics[name], baseline_value
-                    )
+                    "{0}: {1} < {2}".format(name, current_metrics[name], baseline_value)
                 )
     if float(current.get("score", 0.0)) < float(baseline.get("score", 0.0)):
         regressions.append(
@@ -446,9 +441,7 @@ def scorecard_markdown(scorecard: Mapping[str, Any]) -> str:
 def junit_xml(scorecard: Mapping[str, Any]) -> str:
     """Render evaluation results as a minimal JUnit XML document."""
     results = [
-        result
-        for result in scorecard.get("results", [])
-        if isinstance(result, Mapping)
+        result for result in scorecard.get("results", []) if isinstance(result, Mapping)
     ]
     failures = sum(1 for result in results if not result.get("passed"))
     lines = [

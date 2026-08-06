@@ -60,7 +60,9 @@ def test_missing_optional_sdk_has_actionable_error(monkeypatch):
 
     monkeypatch.setattr(openai_adapter.importlib, "import_module", missing)
     with pytest.raises(RuntimeError, match="openai-agents"):
-        openai_adapter.build_openai_tools(lambda _name, arguments: arguments, _registry())
+        openai_adapter.build_openai_tools(
+            lambda _name, arguments: arguments, _registry()
+        )
 
 
 def test_build_openai_tools_validates_and_invokes(monkeypatch):
@@ -83,9 +85,7 @@ def test_build_openai_tools_validates_and_invokes(monkeypatch):
     output = asyncio.run(tools[0].on_invoke_tool(None, '{"value":7}'))
     assert json.loads(output) == {"value": 7}
     with pytest.raises(ValueError, match="unexpected property"):
-        asyncio.run(
-            tools[0].on_invoke_tool(None, '{"value":7,"unexpected":true}')
-        )
+        asyncio.run(tools[0].on_invoke_tool(None, '{"value":7,"unexpected":true}'))
 
 
 def test_build_openai_agent_uses_generated_tools(monkeypatch):

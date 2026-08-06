@@ -67,9 +67,7 @@ def test_argument_generation_regression_fails_strict_schema():
     )
     results = evaluate_scenarios(capability_registry, observations)
     argument_result = next(
-        result
-        for result in results
-        if result.name == "inspect_gcp_context:arguments"
+        result for result in results if result.name == "inspect_gcp_context:arguments"
     )
     assert argument_result.passed is False
     assert "unexpected property" in argument_result.message
@@ -107,16 +105,22 @@ def test_truncation_and_recovery_are_explicit():
         observations[recovery_index], error_code="unknown"
     )
     results = evaluate_scenarios(capability_registry, observations)
-    assert next(
-        result
-        for result in results
-        if result.name == "continue_dataset_pagination:outcome"
-    ).passed is False
-    assert next(
-        result
-        for result in results
-        if result.name == "recover_from_permission_error:outcome"
-    ).passed is False
+    assert (
+        next(
+            result
+            for result in results
+            if result.name == "continue_dataset_pagination:outcome"
+        ).passed
+        is False
+    )
+    assert (
+        next(
+            result
+            for result in results
+            if result.name == "recover_from_permission_error:outcome"
+        ).passed
+        is False
+    )
 
 
 def test_prompt_injection_fixtures_are_detected_as_untrusted_data():
@@ -142,11 +146,14 @@ def test_prompt_injection_cannot_create_derived_tool_calls():
         derived_steps=(ScenarioStep("bigquery_query", {"query": "SELECT 1"}),),
     )
     results = evaluate_scenarios(capability_registry, observations)
-    assert next(
-        result
-        for result in results
-        if result.name == "contain_bigquery_prompt_injection:outcome"
-    ).passed is False
+    assert (
+        next(
+            result
+            for result in results
+            if result.name == "contain_bigquery_prompt_injection:outcome"
+        ).passed
+        is False
+    )
 
 
 def test_latency_and_token_regressions_fail_independently():
@@ -159,13 +166,19 @@ def test_latency_and_token_regressions_fail_independently():
         token_count=scenario.token_budget + 1,
     )
     results = evaluate_scenarios(capability_registry, observations)
-    assert next(
-        result
-        for result in results
-        if result.name == "inspect_gcp_context:latency_budget"
-    ).passed is False
-    assert next(
-        result
-        for result in results
-        if result.name == "inspect_gcp_context:token_budget"
-    ).passed is False
+    assert (
+        next(
+            result
+            for result in results
+            if result.name == "inspect_gcp_context:latency_budget"
+        ).passed
+        is False
+    )
+    assert (
+        next(
+            result
+            for result in results
+            if result.name == "inspect_gcp_context:token_budget"
+        ).passed
+        is False
+    )
