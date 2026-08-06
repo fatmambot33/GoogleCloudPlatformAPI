@@ -1,11 +1,11 @@
 """Access documentation assets packaged with the distribution."""
 
 from importlib.resources import files
-from importlib.resources.abc import Traversable
 from pathlib import PurePosixPath
+from typing import Any
 
 
-def resource_path(relative_path: str) -> Traversable:
+def resource_path(relative_path: str) -> Any:
     """Return a validated path to one packaged documentation asset."""
     path = PurePosixPath(relative_path)
     if not relative_path or path.is_absolute() or ".." in path.parts:
