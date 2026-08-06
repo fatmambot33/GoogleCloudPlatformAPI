@@ -21,9 +21,10 @@ def mcp_tool_definitions(
             "inputSchema": capability.input_schema,
             "outputSchema": capability.output_schema,
             "annotations": {
-                "readOnlyHint": capability.safety.value == "read_only",
+                "readOnlyHint": capability.safety.value != "mutating",
                 "destructiveHint": capability.safety.value == "mutating",
-                "idempotentHint": capability.safety.value == "read_only",
+                "idempotentHint": capability.safety.value != "mutating",
+                "openWorldHint": False,
             },
         }
         for capability in capabilities
@@ -40,11 +41,13 @@ def compatibility_snapshot(registry: CapabilityRegistry) -> Dict[str, Any]:
                 "version": capability.version,
                 "input_schema": capability.input_schema,
                 "output_schema": capability.output_schema,
+                "safety": capability.safety.value,
+                "timeout_seconds": capability.timeout_seconds,
                 "deprecated": capability.deprecated,
                 "replaced_by": capability.replaced_by,
             }
         )
-    return {"snapshot_version": "1.0.0", "capabilities": capabilities}
+    return {"snapshot_version": "1.1.0", "capabilities": capabilities}
 
 
 def _schema_breaks(
@@ -95,6 +98,8 @@ def compare_compatibility_snapshots(
         ) + _schema_breaks(
             before_item["output_schema"], after_item["output_schema"], False
         )
+        if before_item.get("safety") != after_item.get("safety"):
+            reasons.append("changed safety classification")
         if reasons:
             breaking = True
             changes.append({"capability": name, "kind": "breaking", "reasons": reasons})
