@@ -5,7 +5,10 @@ import os
 import re
 from typing import Any, Callable, Dict, List, Optional
 
-from GoogleCloudPlatformAPI.ai_native import capability_registry
+from GoogleCloudPlatformAPI.ai_native import (
+    capability_registry,
+    mcp_tool_definitions,
+)
 
 _READ_ONLY_SQL = re.compile(r"^\s*(select|with|explain)\b", re.IGNORECASE)
 _TOOL_ORDER = (
@@ -217,40 +220,25 @@ class CodexTools:
         }
 
     def call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """Dispatch a named MCP tool call."""
+        """Validate and dispatch one registered MCP tool call."""
         try:
-            capability_registry.get(name)
+            capability = capability_registry.get(name)
         except KeyError:
             raise ValueError("Unknown tool: {0}".format(name))
-        handlers = {
-            "gcp_context": lambda: self.context(),
-            "bigquery_list_datasets": lambda: self.bigquery_list_datasets(**arguments),
-            "bigquery_list_tables": lambda: self.bigquery_list_tables(**arguments),
-            "bigquery_table_schema": lambda: self.bigquery_table_schema(**arguments),
-            "bigquery_query": lambda: self.bigquery_query(**arguments),
-            "gcs_list_objects": lambda: self.storage_list(**arguments),
-            "gcs_object_metadata": lambda: self.storage_object_metadata(**arguments),
-            "gcs_read_text": lambda: self.storage_read_text(**arguments),
-        }
-        handler = handlers.get(name)
-        if handler is None:
-            raise ValueError("Tool has no local handler: {0}".format(name))
-        return handler()
+        if not capability.adapter_method:
+            raise ValueError("Tool has no local adapter: {0}".format(name))
+        handler = getattr(self, capability.adapter_method, None)
+        if not callable(handler):
+            raise ValueError("Tool adapter is unavailable: {0}".format(name))
+        capability_registry.validate_input(name, arguments)
+        payload = handler(**arguments)
+        capability_registry.validate_output(name, payload)
+        return payload
 
 
 def tool_definitions() -> List[Dict[str, Any]]:
     """Generate MCP tool definitions in discovery-first workflow order."""
-    definitions = []
-    for name in _TOOL_ORDER:
-        capability = capability_registry.get(name)
-        definitions.append(
-            {
-                "name": capability.name,
-                "description": capability.description,
-                "inputSchema": capability.input_schema,
-            }
-        )
-    return definitions
+    return mcp_tool_definitions(capability_registry, _TOOL_ORDER)
 
 
 def text_content(payload: Dict[str, Any]) -> List[Dict[str, str]]:

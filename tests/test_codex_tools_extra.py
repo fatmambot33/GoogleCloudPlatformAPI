@@ -64,26 +64,47 @@ def test_storage_adapters_list_and_read_bounded_data():
         tools.storage_read_text("bucket", "object", max_bytes=0)
 
 
-def test_call_dispatches_existing_tools_and_rejects_unknown_name(monkeypatch):
+def test_call_dispatches_registry_adapters_and_validates_results(monkeypatch):
     tools = CodexTools()
-    monkeypatch.setattr(tools, "context", lambda: {"context": True})
-    monkeypatch.setattr(tools, "bigquery_query", lambda **kwargs: kwargs)
-    monkeypatch.setattr(tools, "storage_list", lambda **kwargs: kwargs)
-    monkeypatch.setattr(tools, "storage_read_text", lambda **kwargs: kwargs)
+    monkeypatch.setattr(
+        tools,
+        "context",
+        lambda: {
+            "project_id": None,
+            "credentials_configured": False,
+            "credentials_file": None,
+            "write_tools_enabled": False,
+        },
+    )
+    monkeypatch.setattr(
+        tools,
+        "bigquery_query",
+        lambda **kwargs: {"rows": [], "returned_rows": 0, "truncated": False},
+    )
+    monkeypatch.setattr(
+        tools,
+        "storage_list",
+        lambda **kwargs: {"objects": [], "returned_objects": 0, "truncated": False},
+    )
+    monkeypatch.setattr(
+        tools,
+        "storage_read_text",
+        lambda **kwargs: {"text": "", "bytes_returned": 0, "truncated": False},
+    )
 
-    assert tools.call("gcp_context", {}) == {"context": True}
-    assert tools.call("bigquery_query", {"query": "SELECT 1"}) == {"query": "SELECT 1"}
-    assert tools.call("gcs_list_objects", {"bucket_name": "bucket"}) == {
-        "bucket_name": "bucket"
-    }
+    assert tools.call("gcp_context", {})["write_tools_enabled"] is False
+    assert tools.call("bigquery_query", {"query": "SELECT 1"})["rows"] == []
+    assert tools.call("gcs_list_objects", {"bucket_name": "bucket"})["objects"] == []
     assert tools.call(
         "gcs_read_text", {"bucket_name": "bucket", "object_name": "object"}
-    ) == {"bucket_name": "bucket", "object_name": "object"}
+    )["text"] == ""
     with pytest.raises(ValueError, match="Unknown tool"):
         tools.call("missing", {})
+    with pytest.raises(ValueError, match="unexpected property"):
+        tools.call("gcp_context", {"extra": True})
 
 
-def test_tool_definitions_include_all_read_only_tools():
+def test_tool_definitions_include_generated_output_contracts():
     definitions = tool_definitions()
 
     assert [definition["name"] for definition in definitions] == [
@@ -96,3 +117,5 @@ def test_tool_definitions_include_all_read_only_tools():
         "gcs_object_metadata",
         "gcs_read_text",
     ]
+    assert all("outputSchema" in definition for definition in definitions)
+    assert all(definition["annotations"]["readOnlyHint"] for definition in definitions)

@@ -24,7 +24,7 @@ class EvaluationResult:
 
 
 def evaluate_registry(registry: CapabilityRegistry) -> List[EvaluationResult]:
-    """Evaluate schema, safety, permission, and boundedness invariants."""
+    """Evaluate schema, safety, adapter, and boundedness invariants."""
     results = []
     capabilities = registry.list()
     results.append(
@@ -39,8 +39,20 @@ def evaluate_registry(registry: CapabilityRegistry) -> List[EvaluationResult]:
             [
                 EvaluationResult(
                     name="{0}:input_schema".format(capability.name),
-                    passed=capability.input_schema.get("type") == "object",
-                    message="Tool inputs must use an object JSON Schema.",
+                    passed=capability.input_schema.get("type") == "object"
+                    and capability.input_schema.get("additionalProperties") is False,
+                    message="Tool inputs must use a strict object JSON Schema.",
+                ),
+                EvaluationResult(
+                    name="{0}:output_schema".format(capability.name),
+                    passed=capability.output_schema.get("type") == "object"
+                    and capability.output_schema.get("additionalProperties") is False,
+                    message="Tool outputs must use a strict object JSON Schema.",
+                ),
+                EvaluationResult(
+                    name="{0}:adapter".format(capability.name),
+                    passed=bool(capability.adapter_method or capability.handler),
+                    message="Capabilities must identify an execution adapter.",
                 ),
                 EvaluationResult(
                     name="{0}:bounded_timeout".format(capability.name),

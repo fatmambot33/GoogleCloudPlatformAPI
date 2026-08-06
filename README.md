@@ -54,14 +54,32 @@ exception, and compatibility rules.
 
 The package uses one canonical capability registry for Python, agent, and
 MCP/Codex integrations. Each operation has a stable name, semantic version,
-JSON-compatible input and output schemas, permission metadata, safety level,
-and bounded timeout.
+strict JSON-compatible input and output schemas, one execution adapter,
+permission metadata, safety level, and bounded timeout.
+
+Arguments are validated before execution and adapter results are validated
+before they cross a tool boundary. MCP input schemas, output schemas, safety
+annotations, CLI discovery, capability references, and compatibility snapshots
+are generated from the same registry.
 
 ```python
-from GoogleCloudPlatformAPI.ai_native import capability_registry, readiness_score
+from GoogleCloudPlatformAPI.ai_native import (
+    capability_reference_markdown,
+    capability_registry,
+    compatibility_snapshot,
+    readiness_score,
+)
 
 print(capability_registry.schema())
+print(compatibility_snapshot(capability_registry))
+print(capability_reference_markdown(capability_registry))
 print(readiness_score(capability_registry))
+```
+
+Inspect the same machine-readable registry from the command line:
+
+```bash
+gcp-api-agent --list-capabilities
 ```
 
 The wheel includes the machine-readable documentation index, Codex skill, and
@@ -74,8 +92,9 @@ print(read_text_resource("llms.txt"))
 print(read_text_resource("codex/SKILL.md"))
 ```
 
-See `docs/ai-native-platform.md`, `docs/ai-native-scorecard.md`, and `llms.txt`
-for the repository copies of these contracts.
+See `docs/ai-native-platform.md`, `docs/ai-native-scorecard.md`,
+`docs/capabilities.md`, and `llms.txt` for the repository copies of these
+contracts and generated references.
 
 ## Local Codex plugin surface
 
