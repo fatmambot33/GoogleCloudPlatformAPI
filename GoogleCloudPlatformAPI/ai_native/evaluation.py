@@ -1,7 +1,7 @@
 """Deterministic evaluations for the AI-facing capability surface."""
 
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from GoogleCloudPlatformAPI.ai_native.registry import CapabilityRegistry
 
@@ -13,6 +13,9 @@ class EvaluationResult:
     name: str
     passed: bool
     message: str
+    category: str = "contract"
+    measured: Optional[float] = None
+    threshold: Optional[float] = None
 
     def to_dict(self) -> Dict[str, object]:
         """Return a JSON-compatible evaluation result."""
@@ -20,6 +23,9 @@ class EvaluationResult:
             "name": self.name,
             "passed": self.passed,
             "message": self.message,
+            "category": self.category,
+            "measured": self.measured,
+            "threshold": self.threshold,
         }
 
 
@@ -32,6 +38,7 @@ def evaluate_registry(registry: CapabilityRegistry) -> List[EvaluationResult]:
             name="non_empty_registry",
             passed=bool(capabilities),
             message="At least one capability must be registered.",
+            category="schema",
         )
     )
     for capability in capabilities:
@@ -42,27 +49,34 @@ def evaluate_registry(registry: CapabilityRegistry) -> List[EvaluationResult]:
                     passed=capability.input_schema.get("type") == "object"
                     and capability.input_schema.get("additionalProperties") is False,
                     message="Tool inputs must use a strict object JSON Schema.",
+                    category="schema",
                 ),
                 EvaluationResult(
                     name="{0}:output_schema".format(capability.name),
                     passed=capability.output_schema.get("type") == "object"
                     and capability.output_schema.get("additionalProperties") is False,
                     message="Tool outputs must use a strict object JSON Schema.",
+                    category="schema",
                 ),
                 EvaluationResult(
                     name="{0}:adapter".format(capability.name),
                     passed=bool(capability.adapter_method or capability.handler),
                     message="Capabilities must identify an execution adapter.",
+                    category="behavior",
                 ),
                 EvaluationResult(
                     name="{0}:bounded_timeout".format(capability.name),
                     passed=0 < capability.timeout_seconds <= 300,
                     message="Capabilities must declare a bounded timeout.",
+                    category="latency",
+                    measured=float(capability.timeout_seconds),
+                    threshold=300.0,
                 ),
                 EvaluationResult(
                     name="{0}:version".format(capability.name),
                     passed=len(capability.version.split(".")) == 3,
                     message="Capabilities must use semantic versions.",
+                    category="compatibility",
                 ),
             ]
         )

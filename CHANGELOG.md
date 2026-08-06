@@ -2,11 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## 2.8.0 - 2026-08-06
 
 ### Added
 
-- Inspection, billable-read, and mutating capability safety classifications.
 - Provider-enforced BigQuery dry runs, billing ceilings, deadlines,
   cancellation, and cost/job metadata.
 - Conservative single-statement BigQuery SQL validation.
@@ -18,32 +17,40 @@ All notable changes to this project are documented in this file.
 - Structured MCP tool errors instead of leaking provider exceptions through the
   JSON-RPC boundary.
 - Generic capability deadlines and optional OpenTelemetry tracing and metrics.
-- Strict input and output JSON Schema contracts for every AI-facing capability.
-- Dependency-free runtime validation before and after adapter execution.
-- Generated MCP output schemas and safety annotations.
-- Registry-driven adapter dispatch instead of a second hard-coded tool map.
-- `gcp-api-agent --list-capabilities` for machine-readable capability discovery.
-- Generated compatibility snapshots, API-diff classification, and Markdown
-  capability references.
-- Capability deprecation and replacement metadata.
+- Fourteen deterministic golden scenarios covering all eight AI-facing
+  capabilities, discovery sequencing, bounded arguments, refusal, truncation,
+  pagination, and provider-error recovery.
+- Prompt-injection containment fixtures for instructions embedded in BigQuery
+  rows and Cloud Storage text.
+- MCP protocol conformance checks for initialization, ping, tool discovery,
+  strict schemas, notifications, and JSON-RPC errors.
+- `gcp-api-eval` for generating JSON, Markdown, and JUnit AI readiness evidence
+  without credentials, network access, or provider calls.
+- Release metrics for schema validity, behavior, safety, protocol conformance,
+  latency budgets, compatibility, and approximate token footprint.
+- Baseline scorecard comparison that fails on category or overall-score
+  regressions.
+- Optional OpenAI Agents SDK tools and Agent builders generated from the
+  canonical capability registry.
+- Installed-wheel evaluation smoke tests and uploaded CI/release scorecards.
 
 ### Changed
 
 - BigQuery query execution is explicitly classified as a billable read.
-- The registry compatibility snapshot now records safety and timeout changes.
-- The registry schema version is 1.1.0.
-- AI readiness requires strict schemas and a declared execution adapter.
+- Provider reads are bounded at the request rather than after full retrieval.
+- AI readiness is an evidence-backed release gate rather than a registry-only
+  checklist score.
+- Release evidence is generated from the same deterministic checks used by CI.
+- The roadmap is complete through issue #59.
 
 ### Security
 
 - Secret redaction covers authorization headers, generic tokens, API keys,
   passwords, secrets, and credential paths.
-- Queries and object reads are bounded at the provider request rather than only
-  truncating fully retrieved results.
-
-### Planned
-
-- Behavioral agent evaluations and generated release evidence from #59.
+- Provider-controlled row and object content is explicitly classified as
+  untrusted data and must not create derived tool calls.
+- Mutation requests remain refusals because the shipped capability surface has
+  no write tools.
 
 ## 2.7.0 - 2026-08-06
 
@@ -52,37 +59,30 @@ All notable changes to this project are documented in this file.
 - Canonical AI-native capability registry with stable names, semantic versions,
   JSON-compatible schemas, permission metadata, safety classifications, and
   bounded timeouts.
+- Strict input and output JSON Schema contracts for every AI-facing capability.
+- Registry-driven MCP and CLI tool discovery and adapter dispatch.
 - Structured capability result and error envelopes with request IDs, duration,
-  truncation, warning, provenance, and cursor metadata.
-- Observable capability execution runtime with structured logging hooks and
-  recursive secret redaction.
-- Deterministic AI readiness evaluations and release scorecard.
-- Machine-readable `llms.txt` documentation index.
+  truncation, warnings, provenance, and cursor metadata.
+- Machine-readable `llms.txt` documentation index and packaged Codex skill.
 - Discovery-first BigQuery dataset, table, and schema tools.
 - Cloud Storage object metadata inspection before bounded content reads.
+- Framework-neutral agent runtime and `gcp-api-agent` command.
 - Stable package-root imports and a documented package exception hierarchy.
-- Packaged Codex skill, machine-readable index, and AI platform documentation.
-- Installed-wheel and MCP entry-point smoke tests.
-- Minimum dependency compatibility testing, CycloneDX SBOM generation, and
-  release provenance attestations.
+- Python 3.10 through 3.14 CI, minimum-dependency testing, clean-wheel and MCP
+  smoke tests, CycloneDX SBOMs, and provenance attestations.
 
 ### Changed
 
-- MCP/Codex tool definitions are generated from the canonical capability
-  registry instead of duplicated manually.
-- The Codex workflow now discovers resources before running queries or reads.
-- Python 3.10 through 3.14 support is explicit in package metadata and CI.
-- Runtime dependencies now use bounded compatibility ranges.
+- MCP tool definitions are generated from the canonical capability registry.
+- Runtime dependencies use bounded compatibility ranges.
 - PyPI publishing uses Trusted Publishing with GitHub OIDC when configured and
   a masked migration token otherwise.
 
 ### Security
 
-- The published tool surface remains bounded. Mutation tools are explicitly
-  gated on authorization, dry-run, confirmation, idempotency, audit, and
-  evaluation controls.
-- Release distributions receive GitHub provenance attestations and an attached
-  software bill of materials.
+- The published tool surface contains no mutation tools.
+- Credentials remain local and release distributions receive provenance and an
+  attached software bill of materials.
 
 ## 2.6.0
 

@@ -124,6 +124,12 @@ jobs:
           assert len(responses) == 2
           assert len(responses[1]["result"]["tools"]) == 8
           PY
+      - name: Generate installed-wheel AI readiness evidence
+        run: |
+          mkdir -p release-evidence
+          .venv-release/bin/gcp-api-eval \
+            --output release-evidence/ai-readiness \
+            --fail-under 100
       - name: Generate CycloneDX SBOM
         run: |
           mkdir -p release-evidence

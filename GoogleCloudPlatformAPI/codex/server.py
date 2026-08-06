@@ -17,7 +17,7 @@ def _package_version() -> str:
     try:
         return version("GoogleCloudPlatformAPI")
     except PackageNotFoundError:
-        return "2.7.0"
+        return "2.8.0"
 
 
 class MCPServer:
