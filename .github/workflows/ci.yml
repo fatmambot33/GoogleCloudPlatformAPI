@@ -12,9 +12,6 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -44,29 +41,7 @@ jobs:
         run: pyright GoogleCloudPlatformAPI
 
       - name: Run tests with coverage
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ matrix.python-version }}" != "3.10" ]; then
-            pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=90
-            exit 0
-          fi
-          set +e
-          pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=90 > python310-pytest.log 2>&1
-          status=$?
-          set -e
-          cat python310-pytest.log
-          if [ "$status" -ne 0 ]; then
-            {
-              echo '### Python 3.10 diagnostic failure'
-              echo
-              echo '```text'
-              tail -n 180 python310-pytest.log
-              echo '```'
-            } > python310-comment.md
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file python310-comment.md
-            exit "$status"
-          fi
+        run: pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=90
 
   dependency-floor:
     runs-on: ubuntu-latest
