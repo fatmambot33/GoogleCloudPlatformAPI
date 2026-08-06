@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 2.8.1 - 2026-08-06
+
+### Changed
+
+- Removed the legacy PyPI API-token publishing fallback.
+- Releases now publish exclusively through PyPI Trusted Publishing with GitHub OIDC.
+
 ## 2.8.0 - 2026-08-06
 
 ### Added
