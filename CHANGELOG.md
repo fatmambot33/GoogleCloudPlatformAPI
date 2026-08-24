@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- Removed stale package-version literals from CI wheel validation.
+- MCP initialization now reports installed package metadata and uses an explicit
+  `0+unknown` fallback when distribution metadata is unavailable.
+- Added regression coverage so package and MCP version reporting cannot drift
+  silently on future releases.
+
 ## 2.8.1 - 2026-08-06
 
 ### Changed
