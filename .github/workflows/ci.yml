@@ -95,9 +95,10 @@ jobs:
 
           responses = [json.loads(line) for line in Path("mcp-smoke.jsonl").read_text().splitlines()]
           scorecard = json.loads(Path("wheel-evidence/scorecard.json").read_text())
-          assert responses[0]["result"]["serverInfo"]["version"] == "2.8.0"
+          installed_version = version("GoogleCloudPlatformAPI")
+          assert responses[0]["result"]["serverInfo"]["version"] == installed_version
           assert len(responses[1]["result"]["tools"]) == 8
-          assert version("GoogleCloudPlatformAPI") == "2.8.0"
+          assert installed_version
           assert scorecard["ready"] is True
           assert scorecard["score"] == 100.0
           assert "gcp-api-eval" in read_text_resource("llms.txt")
