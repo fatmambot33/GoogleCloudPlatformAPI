@@ -10,14 +10,15 @@ from GoogleCloudPlatformAPI.ai_native import CapabilityExecutionError
 from .tools import CodexTools, text_content, tool_definitions
 
 _PROTOCOL_VERSION = "2025-06-18"
+_UNKNOWN_PACKAGE_VERSION = "0+unknown"
 
 
 def _package_version() -> str:
-    """Return installed package metadata with a source-tree fallback."""
+    """Return installed package metadata or a truthful unknown fallback."""
     try:
         return version("GoogleCloudPlatformAPI")
     except PackageNotFoundError:
-        return "2.8.0"
+        return _UNKNOWN_PACKAGE_VERSION
 
 
 class MCPServer:
