@@ -1,11 +1,13 @@
 """Tests for the local Codex MCP surface."""
 
 import json
+from importlib.metadata import version
 from io import StringIO
 from types import SimpleNamespace
 
 import pytest
 
+from GoogleCloudPlatformAPI.codex import server as server_module
 from GoogleCloudPlatformAPI.codex.server import MCPServer
 from GoogleCloudPlatformAPI.codex.tools import CodexTools
 
@@ -125,6 +127,28 @@ def test_server_lists_and_calls_tools():
         }
     )
     assert called["result"]["structuredContent"]["returned_rows"] == 2
+
+
+def test_server_initialize_reports_installed_package_version():
+    response = MCPServer(tools()).handle(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": "2025-06-18"},
+        }
+    )
+    assert response["result"]["serverInfo"]["version"] == version(
+        "GoogleCloudPlatformAPI"
+    )
+
+
+def test_package_version_fallback_is_truthful(monkeypatch):
+    def missing_package(_package_name):
+        raise server_module.PackageNotFoundError
+
+    monkeypatch.setattr(server_module, "version", missing_package)
+    assert server_module._package_version() == "0+unknown"
 
 
 def test_server_stdio_smoke():
