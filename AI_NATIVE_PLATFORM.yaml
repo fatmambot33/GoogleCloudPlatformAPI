@@ -1,0 +1,90 @@
+version: 1
+standard:
+  repository: fatmambot33/ai-native-platform
+  ref: 9556c8dcd2f3a7b7804aadbbf911da4309d13697
+quality:
+  typed: true
+  tests: true
+  docs: true
+  examples: true
+  compatibility: true
+  security_scan: true
+release:
+  block_if_quality_fails: true
+  block_if_plugin_invalid: true
+agent:
+  guarantees:
+  - deterministic_tool_discovery
+  - structured_outputs
+  - issue_driven_improvement
+  - ci_validated_changes
+  - governed_autonomy
+self_improvement:
+  enabled: true
+  github:
+    issues: true
+  autonomous:
+    discover_improvements: true
+    create_issues: true
+    generate_pr: true
+    run_ci: true
+  governance:
+    human_approval:
+      breaking_changes: true
+      security_changes: true
+      credential_changes: true
+      public_api_changes: true
+      permission_expansion: true
+      release_changes: true
+product:
+  name: GoogleCloudPlatformAPI
+  profile: agent-tool
+  ai_native: true
+  description: Typed Google Cloud SDK with deterministic MCP tooling, agent interfaces,
+    Codex skills, and release evidence.
+plugin:
+  enabled: false
+  codex:
+    supported: true
+    marketplace: false
+  discovery:
+    entry_points: true
+    manifest: false
+    capabilities: true
+  credentials:
+    required: false
+    local_only: true
+    policy:
+      never_store_remote: true
+      never_commit: true
+      never_echo: true
+interfaces:
+  sdk: true
+  cli: true
+  plugin: false
+  json_schema: true
+  mcp: true
+  openapi: false
+evidence:
+  mode: repository
+  paths:
+    readme: README.md
+    tests: tests
+    agent_instructions: AGENTS.md
+    typing: pyproject.toml
+    ci: .github/workflows/ci.yml
+    sdk: GoogleCloudPlatformAPI
+    cli: GoogleCloudPlatformAPI/agents/cli.py
+    schemas: schemas/ai-native-platform.schema.json
+    mcp: GoogleCloudPlatformAPI/codex/server.py
+    docs: docs
+    examples: examples
+    security_evidence: SECURITY.md
+    self_improvement_workflow: .github/workflows/ai-self-improvement.yml
+    improvement_issue_template: .github/ISSUE_TEMPLATE/ai-improvement.yml
+extensions:
+  ai_readiness:
+    evaluator: gcp-api-eval
+    evidence: docs/ai-readiness.md
+    mcp_conformance: tests/test_mcp_conformance.py
+    behavioral_evaluations: tests/test_behavioral_evaluations.py
