@@ -88,3 +88,8 @@ extensions:
     evidence: docs/ai-readiness.md
     mcp_conformance: tests/test_mcp_conformance.py
     behavioral_evaluations: tests/test_behavioral_evaluations.py
+  branch_protection:
+    required_status_checks:
+    - ci
+    - validate
+    code_scanning: CodeQL
