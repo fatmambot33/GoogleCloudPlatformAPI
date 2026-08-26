@@ -130,3 +130,15 @@ jobs:
         with:
           name: ai-readiness-evidence
           path: build/ai-readiness/
+
+  ci:
+    name: ci
+    if: ${{ always() }}
+    needs: [evidence]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful CI
+        shell: bash
+        run: |
+          echo "evidence=${{ needs.evidence.result }}"
+          test "${{ needs.evidence.result }}" = "success"
