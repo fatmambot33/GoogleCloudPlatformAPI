@@ -46,6 +46,17 @@ def test_schema_drift_is_rejected(
     assert "vendored schema does not match standard.ref" in validator.validate()
 
 
+def test_invalid_schema_drift_is_rejected_before_evaluation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reject an invalid drifted schema before JSON Schema evaluation can fail."""
+    schema = tmp_path / "ai-native-platform.schema.json"
+    schema.write_text('{"type": 5}', encoding="utf-8")
+    monkeypatch.setattr(validator, "SCHEMA", schema)
+
+    assert validator.validate() == ["vendored schema does not match standard.ref"]
+
+
 def test_vendored_schema_matches_pinned_standard() -> None:
     """The committed schema should match the trusted blob for its standard ref."""
     data = load_manifest()
