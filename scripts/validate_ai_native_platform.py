@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections.abc import Mapping, Sequence
@@ -15,6 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "AI_NATIVE_PLATFORM.yaml"
 SCHEMA = ROOT / "schemas/ai-native-platform.schema.json"
 IMMUTABLE_REF = re.compile(r"(?:[0-9a-f]{40}|v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)")
+PINNED_SCHEMA_BLOBS = {
+    "9556c8dcd2f3a7b7804aadbbf911da4309d13697": (
+        "230d4e895ecb15ae9034c4e209475a7dd60ec204"
+    )
+}
 REQUIRED_GUARANTEES = {
     "deterministic_tool_discovery",
     "structured_outputs",
@@ -107,10 +113,24 @@ def path_exists(declaration: str) -> bool:
     return (ROOT / declaration).exists()
 
 
+def git_blob_sha(content: bytes) -> str:
+    """Return the Git object ID used to pin vendored standard content."""
+    header = f"blob {len(content)}\0".encode("ascii")
+    return hashlib.sha1(header + content, usedforsecurity=False).hexdigest()
+
+
+def string_set(value: Any) -> set[str]:
+    """Return only string members from a schema-supplied sequence."""
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return set()
+    return {item for item in value if isinstance(item, str)}
+
+
 def validate() -> list[str]:
     """Return deterministic contract and evidence errors."""
     data = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
-    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    schema_bytes = SCHEMA.read_bytes()
+    schema = json.loads(schema_bytes)
     if not isinstance(data, dict) or not isinstance(schema, dict):
         return ["manifest and schema must contain mappings"]
 
@@ -127,6 +147,11 @@ def validate() -> list[str]:
         reference = str(standard.get("ref", ""))
         if IMMUTABLE_REF.fullmatch(reference) is None:
             errors.append("standard.ref must be an immutable version or commit SHA")
+        expected_schema_blob = PINNED_SCHEMA_BLOBS.get(reference)
+        if expected_schema_blob is None:
+            errors.append("standard.ref has no trusted vendored schema digest")
+        elif git_blob_sha(schema_bytes) != expected_schema_blob:
+            errors.append("vendored schema does not match standard.ref")
 
     product = data.get("product", {})
     profile = product.get("profile") if isinstance(product, Mapping) else None
@@ -150,7 +175,7 @@ def validate() -> list[str]:
 
     agent = data.get("agent", {})
     guarantees = (
-        set(agent.get("guarantees", [])) if isinstance(agent, Mapping) else set()
+        string_set(agent.get("guarantees", [])) if isinstance(agent, Mapping) else set()
     )
     for guarantee in sorted(REQUIRED_GUARANTEES - guarantees):
         errors.append(f"missing agent guarantee: {guarantee}")

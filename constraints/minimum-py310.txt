@@ -5,3 +5,5 @@ google-cloud-storage==3.0.0
 googleads==47.0.0
 db-dtypes==1.5.1
 python-dotenv==1.0.1
+jsonschema==4.23.0
+PyYAML==6.0

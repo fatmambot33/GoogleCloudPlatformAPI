@@ -26,8 +26,8 @@ self_improvement:
   autonomous:
     discover_improvements: true
     create_issues: true
-    generate_pr: true
-    run_ci: true
+    generate_pr: false
+    run_ci: false
   governance:
     human_approval:
       breaking_changes: true
