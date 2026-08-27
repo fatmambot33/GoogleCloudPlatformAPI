@@ -22,7 +22,11 @@ env:
   PACKAGE_IMPORT: GoogleCloudPlatformAPI
 
 jobs:
+  quality-gate:
+    uses: ./.github/workflows/ci.yml
+
   check:
+    needs: quality-gate
     runs-on: ubuntu-latest
     outputs:
       project: ${{ steps.version.outputs.project }}
