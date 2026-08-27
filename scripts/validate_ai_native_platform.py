@@ -175,9 +175,7 @@ def validate() -> list[str]:
 
     agent = data.get("agent", {})
     guarantees = (
-        string_set(agent.get("guarantees", []))
-        if isinstance(agent, Mapping)
-        else set()
+        string_set(agent.get("guarantees", [])) if isinstance(agent, Mapping) else set()
     )
     for guarantee in sorted(REQUIRED_GUARANTEES - guarantees):
         errors.append(f"missing agent guarantee: {guarantee}")
