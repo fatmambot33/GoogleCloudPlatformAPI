@@ -19,6 +19,9 @@ surface and evidence-backed release gates.
 
 ## Machine-readable interfaces
 
+- AI_NATIVE_PLATFORM.yaml: pinned AI-native product contract and repository evidence
+- schemas/ai-native-platform.schema.json: vendored schema pinned to the declared standard ref
+- scripts/validate_ai_native_platform.py: deterministic contract and evidence validator
 - GoogleCloudPlatformAPI.ai_native.capability_registry
 - GoogleCloudPlatformAPI.ai_native.execute_capability
 - GoogleCloudPlatformAPI.ai_native.readiness_score
