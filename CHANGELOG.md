@@ -4,6 +4,23 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Adopted the pinned `fatmambot33/ai-native-platform` repository contract with a
+  machine-readable manifest, vendored schema, deterministic validator, dedicated
+  validation check, and governed self-improvement issue discovery.
+- Documented the intended `Protect main` gates as `ci`, `validate`, and the
+  separate CodeQL code-scanning rule.
+
+### Changed
+
+- Self-improvement metadata now truthfully declares issue discovery and issue
+  creation as autonomous while PR generation and CI execution remain human- or
+  agent-driven follow-up work.
+- Python publishing now invokes the reusable full CI workflow before any release
+  build or PyPI publication can proceed.
+- `llms.txt` now indexes the AI-native manifest, vendored schema, and validator.
+
 ### Fixed
 
 - Removed stale package-version literals from CI wheel validation.
@@ -11,6 +28,9 @@ All notable changes to this project are documented in this file.
   `0+unknown` fallback when distribution metadata is unavailable.
 - Added regression coverage so package and MCP version reporting cannot drift
   silently on future releases.
+- AI-native validation now handles malformed guarantee lists without raising a
+  traceback and verifies the vendored schema against the trusted Git blob for
+  the declared immutable standard ref.
 
 ## 2.8.1 - 2026-08-06
 
