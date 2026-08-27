@@ -130,28 +130,35 @@ def validate() -> list[str]:
     """Return deterministic contract and evidence errors."""
     data = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
     schema_bytes = SCHEMA.read_bytes()
-    schema = json.loads(schema_bytes)
-    if not isinstance(data, dict) or not isinstance(schema, dict):
-        return ["manifest and schema must contain mappings"]
+    if not isinstance(data, dict):
+        return ["manifest must contain a mapping"]
 
     errors = []
+    standard = data.get("standard", {})
+    if not isinstance(standard, Mapping):
+        return ["standard must contain a mapping"]
+
+    reference = str(standard.get("ref", ""))
+    if IMMUTABLE_REF.fullmatch(reference) is None:
+        errors.append("standard.ref must be an immutable version or commit SHA")
+    expected_schema_blob = PINNED_SCHEMA_BLOBS.get(reference)
+    if expected_schema_blob is None:
+        errors.append("standard.ref has no trusted vendored schema digest")
+    elif git_blob_sha(schema_bytes) != expected_schema_blob:
+        errors.append("vendored schema does not match standard.ref")
+    if errors:
+        return errors
+
+    schema = json.loads(schema_bytes)
+    if not isinstance(schema, dict):
+        return ["schema must contain a mapping"]
+
     validator = Draft202012Validator(schema)
     for error in sorted(
         validator.iter_errors(data), key=lambda item: list(item.absolute_path)
     ):
         location = ".".join(str(part) for part in error.absolute_path) or "manifest"
         errors.append(f"schema [{location}]: {error.message}")
-
-    standard = data.get("standard", {})
-    if isinstance(standard, Mapping):
-        reference = str(standard.get("ref", ""))
-        if IMMUTABLE_REF.fullmatch(reference) is None:
-            errors.append("standard.ref must be an immutable version or commit SHA")
-        expected_schema_blob = PINNED_SCHEMA_BLOBS.get(reference)
-        if expected_schema_blob is None:
-            errors.append("standard.ref has no trusted vendored schema digest")
-        elif git_blob_sha(schema_bytes) != expected_schema_blob:
-            errors.append("vendored schema does not match standard.ref")
 
     product = data.get("product", {})
     profile = product.get("profile") if isinstance(product, Mapping) else None
