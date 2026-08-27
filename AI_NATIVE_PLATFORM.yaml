@@ -79,6 +79,7 @@ evidence:
     mcp: GoogleCloudPlatformAPI/codex/server.py
     docs: docs
     examples: examples
+    ai_review_workflow: .github/workflows/ai-native-platform.yml
     security_evidence: SECURITY.md
     self_improvement_workflow: .github/workflows/ai-self-improvement.yml
     improvement_issue_template: .github/ISSUE_TEMPLATE/ai-improvement.yml
