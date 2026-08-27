@@ -61,6 +61,19 @@ jobs:
           pyright GoogleCloudPlatformAPI
           pytest -q --cov=GoogleCloudPlatformAPI --cov-report=term-missing --cov-fail-under=90
 
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install contract validation dependencies
+        run: python -m pip install --disable-pip-version-check 'jsonschema>=4.23,<5' 'PyYAML>=6,<7'
+      - name: Validate the pinned AI-native contract and repository evidence
+        run: python scripts/validate_ai_native_platform.py
+
   package:
     runs-on: ubuntu-latest
     steps:
@@ -103,12 +116,19 @@ jobs:
           assert scorecard["ready"] is True
           assert scorecard["score"] == 100.0
           assert "gcp-api-eval" in read_text_resource("llms.txt")
+          assert "standard:" in read_text_resource("AI_NATIVE_PLATFORM.yaml")
+          assert "AI Native Platform Product Manifest" in read_text_resource(
+              "schemas/ai-native-platform.schema.json"
+          )
+          assert "def validate()" in read_text_resource(
+              "scripts/validate_ai_native_platform.py"
+          )
           assert "maximum_bytes_billed" in read_text_resource("codex/SKILL.md")
           assert "Golden scenarios" in read_text_resource("docs/ai-readiness.md")
           PY
 
   evidence:
-    needs: [quality, dependency-floor, package]
+    needs: [quality, dependency-floor, contract, package]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
