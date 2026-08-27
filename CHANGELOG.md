@@ -19,7 +19,10 @@ All notable changes to this project are documented in this file.
   agent-driven follow-up work.
 - Python publishing now invokes the reusable full CI workflow before any release
   build or PyPI publication can proceed.
-- `llms.txt` now indexes the AI-native manifest, vendored schema, and validator.
+- The reusable CI release gate now includes the canonical AI-native contract and
+  repository-evidence validator.
+- `llms.txt` now indexes the AI-native manifest, vendored schema, and validator,
+  and installed distributions ship synchronized copies of those resources.
 
 ### Fixed
 
@@ -31,6 +34,8 @@ All notable changes to this project are documented in this file.
 - AI-native validation now handles malformed guarantee lists without raising a
   traceback and verifies the vendored schema against the trusted Git blob for
   the declared immutable standard ref.
+- Schema pin verification now runs before schema parsing or evaluation so a
+  drifted invalid schema produces a deterministic contract error.
 
 ## 2.8.1 - 2026-08-06
 
