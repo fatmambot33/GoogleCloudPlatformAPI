@@ -174,7 +174,11 @@ def validate() -> list[str]:
                 errors.append("service requires an OpenAPI or SDK interface")
 
     agent = data.get("agent", {})
-    guarantees = string_set(agent.get("guarantees", [])) if isinstance(agent, Mapping) else set()
+    guarantees = (
+        string_set(agent.get("guarantees", []))
+        if isinstance(agent, Mapping)
+        else set()
+    )
     for guarantee in sorted(REQUIRED_GUARANTEES - guarantees):
         errors.append(f"missing agent guarantee: {guarantee}")
 
