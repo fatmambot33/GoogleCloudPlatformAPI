@@ -74,6 +74,11 @@ def _bounded(value: int, name: str, maximum: int) -> None:
         raise ValueError("{0} must be between 1 and {1}.".format(name, maximum))
 
 
+def _has_public_method(value: Any, name: str) -> bool:
+    """Return whether a concrete helper type defines a public method."""
+    return callable(getattr(type(value), name, None))
+
+
 class CodexTools:
     """Bounded adapters around the package's existing GCP helpers.
 
@@ -129,7 +134,7 @@ class CodexTools:
             cursor, "bigquery", "list_datasets", {"project": "active"}
         )
         helper = self._bigquery()
-        if hasattr(helper, "list_datasets"):
+        if _has_public_method(helper, "list_datasets"):
             iterator = helper.list_datasets(
                 max_results=max_results,
                 page_token=page_token or None,
@@ -170,7 +175,7 @@ class CodexTools:
         context = {"dataset_id": dataset_id}
         page_token = decode_cursor(cursor, "bigquery", "list_tables", context)
         helper = self._bigquery()
-        if hasattr(helper, "list_tables"):
+        if _has_public_method(helper, "list_tables"):
             iterator = helper.list_tables(
                 dataset_id,
                 max_results=max_results,
@@ -203,7 +208,7 @@ class CodexTools:
     def bigquery_table_schema(self, table_id: str) -> Dict[str, Any]:
         """Describe a BigQuery table and its schema."""
         helper = self._bigquery()
-        if hasattr(helper, "get_table"):
+        if _has_public_method(helper, "get_table"):
             table = helper.get_table(table_id)
         else:
             table = helper._client.get_table(table_id)
@@ -318,7 +323,7 @@ class CodexTools:
         context = {"bucket_name": bucket_name, "prefix": prefix}
         page_token = decode_cursor(cursor, "cloud_storage", "list_objects", context)
         helper = self._storage()
-        if hasattr(helper, "list_objects"):
+        if _has_public_method(helper, "list_objects"):
             iterator = helper.list_objects(
                 bucket_name,
                 prefix=prefix,
@@ -351,7 +356,7 @@ class CodexTools:
     ) -> Dict[str, Any]:
         """Return metadata for one Cloud Storage object."""
         helper = self._storage()
-        if hasattr(helper, "get_object_metadata"):
+        if _has_public_method(helper, "get_object_metadata"):
             try:
                 return helper.get_object_metadata(bucket_name, object_name)
             except FileNotFoundError as exc:
@@ -380,7 +385,7 @@ class CodexTools:
         _bounded(max_bytes, "max_bytes", 1000000)
         _bounded(timeout_seconds, "timeout_seconds", 300)
         helper = self._storage()
-        if hasattr(helper, "get_object"):
+        if _has_public_method(helper, "get_object"):
             blob = helper.get_object(bucket_name, object_name)
             if blob is None:
                 raise ValueError("Object not found: {0}".format(object_name))
