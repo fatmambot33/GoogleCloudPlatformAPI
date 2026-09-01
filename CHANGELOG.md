@@ -11,6 +11,9 @@ All notable changes to this project are documented in this file.
   validation check, and governed self-improvement issue discovery.
 - Documented the intended `Protect main` gates as `ci`, `validate`, and the
   separate CodeQL code-scanning rule.
+- Added first-class resource retrieval APIs for BigQuery datasets and tables,
+  Cloud Storage objects, and identifiable Ad Manager resources while keeping
+  data-only TypedDict structures as plain contracts.
 
 ### Changed
 
@@ -23,6 +26,9 @@ All notable changes to this project are documented in this file.
   repository-evidence validator.
 - `llms.txt` now indexes the AI-native manifest, vendored schema, and validator,
   and installed distributions ship synchronized copies of those resources.
+- Codex discovery and object inspection now use the public BigQuery and Cloud
+  Storage retrieval methods for normal package helpers while retaining custom
+  factory compatibility.
 
 ### Fixed
 

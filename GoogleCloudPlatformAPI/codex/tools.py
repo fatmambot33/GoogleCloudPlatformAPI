@@ -74,6 +74,11 @@ def _bounded(value: int, name: str, maximum: int) -> None:
         raise ValueError("{0} must be between 1 and {1}.".format(name, maximum))
 
 
+def _has_public_method(value: Any, name: str) -> bool:
+    """Return whether a concrete helper type defines a public method."""
+    return callable(getattr(type(value), name, None))
+
+
 class CodexTools:
     """Bounded adapters around the package's existing GCP helpers.
 
@@ -128,10 +133,17 @@ class CodexTools:
         page_token = decode_cursor(
             cursor, "bigquery", "list_datasets", {"project": "active"}
         )
-        arguments: Dict[str, Any] = {"max_results": max_results}
-        if page_token:
-            arguments["page_token"] = page_token
-        iterator = self._bigquery()._client.list_datasets(**arguments)
+        helper = self._bigquery()
+        if _has_public_method(helper, "list_datasets"):
+            iterator = helper.list_datasets(
+                max_results=max_results,
+                page_token=page_token or None,
+            )
+        else:
+            arguments: Dict[str, Any] = {"max_results": max_results}
+            if page_token:
+                arguments["page_token"] = page_token
+            iterator = helper._client.list_datasets(**arguments)
         datasets = list(iterator)
         limited = datasets[:max_results]
         provider_cursor = _optional_str(getattr(iterator, "next_page_token", None))
@@ -162,10 +174,18 @@ class CodexTools:
         _bounded(max_results, "max_results", 1000)
         context = {"dataset_id": dataset_id}
         page_token = decode_cursor(cursor, "bigquery", "list_tables", context)
-        arguments: Dict[str, Any] = {"max_results": max_results}
-        if page_token:
-            arguments["page_token"] = page_token
-        iterator = self._bigquery()._client.list_tables(dataset_id, **arguments)
+        helper = self._bigquery()
+        if _has_public_method(helper, "list_tables"):
+            iterator = helper.list_tables(
+                dataset_id,
+                max_results=max_results,
+                page_token=page_token or None,
+            )
+        else:
+            arguments: Dict[str, Any] = {"max_results": max_results}
+            if page_token:
+                arguments["page_token"] = page_token
+            iterator = helper._client.list_tables(dataset_id, **arguments)
         tables = list(iterator)
         limited = tables[:max_results]
         provider_cursor = _optional_str(getattr(iterator, "next_page_token", None))
@@ -187,7 +207,11 @@ class CodexTools:
 
     def bigquery_table_schema(self, table_id: str) -> Dict[str, Any]:
         """Describe a BigQuery table and its schema."""
-        table = self._bigquery()._client.get_table(table_id)
+        helper = self._bigquery()
+        if _has_public_method(helper, "get_table"):
+            table = helper.get_table(table_id)
+        else:
+            table = helper._client.get_table(table_id)
         return {
             "table_id": getattr(table, "full_table_id", table_id),
             "table_type": getattr(table, "table_type", None),
@@ -298,13 +322,22 @@ class CodexTools:
         _bounded(max_results, "max_results", 1000)
         context = {"bucket_name": bucket_name, "prefix": prefix}
         page_token = decode_cursor(cursor, "cloud_storage", "list_objects", context)
-        arguments: Dict[str, Any] = {
-            "prefix": prefix,
-            "max_results": max_results,
-        }
-        if page_token:
-            arguments["page_token"] = page_token
-        iterator = self._storage()._client.list_blobs(bucket_name, **arguments)
+        helper = self._storage()
+        if _has_public_method(helper, "list_objects"):
+            iterator = helper.list_objects(
+                bucket_name,
+                prefix=prefix,
+                max_results=max_results,
+                page_token=page_token or None,
+            )
+        else:
+            arguments: Dict[str, Any] = {
+                "prefix": prefix,
+                "max_results": max_results,
+            }
+            if page_token:
+                arguments["page_token"] = page_token
+            iterator = helper._client.list_blobs(bucket_name, **arguments)
         blobs = list(iterator)
         limited = blobs[:max_results]
         provider_cursor = _optional_str(getattr(iterator, "next_page_token", None))
@@ -322,7 +355,13 @@ class CodexTools:
         self, bucket_name: str, object_name: str
     ) -> Dict[str, Any]:
         """Return metadata for one Cloud Storage object."""
-        blob = self._storage()._client.bucket(bucket_name).get_blob(object_name)
+        helper = self._storage()
+        if _has_public_method(helper, "get_object_metadata"):
+            try:
+                return helper.get_object_metadata(bucket_name, object_name)
+            except FileNotFoundError as exc:
+                raise ValueError("Object not found: {0}".format(object_name)) from exc
+        blob = helper._client.bucket(bucket_name).get_blob(object_name)
         if blob is None:
             raise ValueError("Object not found: {0}".format(object_name))
         return {
@@ -345,7 +384,13 @@ class CodexTools:
         """Read at most ``max_bytes`` without downloading the complete object."""
         _bounded(max_bytes, "max_bytes", 1000000)
         _bounded(timeout_seconds, "timeout_seconds", 300)
-        blob = self._storage()._client.bucket(bucket_name).blob(object_name)
+        helper = self._storage()
+        if _has_public_method(helper, "get_object"):
+            blob = helper.get_object(bucket_name, object_name)
+            if blob is None:
+                raise ValueError("Object not found: {0}".format(object_name))
+        else:
+            blob = helper._client.bucket(bucket_name).blob(object_name)
         data = blob.download_as_bytes(
             start=0,
             end=max_bytes,

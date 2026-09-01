@@ -7,7 +7,7 @@ surface and evidence-backed release gates.
 
 - README.md: installation, SDK usage, MCP/Codex setup, and quick start
 - PRODUCT.md: product promise, users, and principles
-- docs/public-api.md: stable imports, naming, exceptions, and compatibility
+- docs/public-api.md: stable imports, naming, resource reads, exceptions, and compatibility
 - docs/ai-native-platform.md: strict contracts, billable reads, bounds, and errors
 - docs/ai-native-scorecard.md: enforced release gates and mutation guardrails
 - docs/ai-readiness.md: behavioral evaluations and generated release evidence
@@ -22,6 +22,11 @@ surface and evidence-backed release gates.
 - AI_NATIVE_PLATFORM.yaml: pinned AI-native product contract and repository evidence
 - schemas/ai-native-platform.schema.json: vendored schema pinned to the declared standard ref
 - scripts/validate_ai_native_platform.py: deterministic contract and evidence validator
+- GoogleCloudPlatformAPI.BigQuery.list_datasets / get_dataset / list_tables / get_table / get_table_schema
+- GoogleCloudPlatformAPI.CloudStorage.list_objects / get_object / get_object_metadata / object_exists
+- GoogleCloudPlatformAPI.AdManager.AudienceService.get
+- GoogleCloudPlatformAPI.AdManager.CustomTargetingService.get
+- GoogleCloudPlatformAPI.AdManager.TargetingPresetService.get
 - GoogleCloudPlatformAPI.ai_native.capability_registry
 - GoogleCloudPlatformAPI.ai_native.execute_capability
 - GoogleCloudPlatformAPI.ai_native.readiness_score
@@ -52,6 +57,7 @@ surface and evidence-backed release gates.
 - Compatibility snapshots classify schema, safety, and timeout changes.
 - BigQuery queries are dry-run, cost-bound, time-bound billable reads.
 - Discovery uses opaque context-bound pagination cursors.
+- BigQuery and Cloud Storage discovery/inspection use the public resource helpers.
 - Cloud Storage reads use provider byte ranges.
 - Provider failures use stable redacted machine-readable errors.
 - Golden scenarios gate tool selection, arguments, sequencing, refusal, recovery,

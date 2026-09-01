@@ -250,6 +250,8 @@ class AudienceService:
     -------
     create(...)
         Create a new audience segment.
+    get(audience_segment_id)
+        Return one first-party audience segment by ID.
     list()
         List all first-party audience segments.
     list_all()
@@ -323,19 +325,13 @@ class AudienceService:
             If the API returns an error.
         """
         logging.debug(f"Audience::create:{name}")
-        # Initialize appropriate services.
         network_service = NetworkService(app_name=APP_NAME, network_code=network_code)
-        # Get the root ad unit ID used to target the entire network.
         root_ad_unit_id = network_service.effective_root_ad_unit_id()
-
-        # Create inventory targeting (pointed at root ad unit i.e. the whole network)
         inventory_targeting = {"targetedAdUnits": [{"adUnitId": root_ad_unit_id}]}
-        # Create the audience segment rule.
         rule = {
             "inventoryRule": inventory_targeting,
             "customCriteriaRule": custom_targeting,
         }
-        # Create an audience segment.
         audience_segment = [
             {
                 "xsi_type": "RuleBasedFirstPartyAudienceSegment",
@@ -356,6 +352,32 @@ class AudienceService:
                 f'"{created_audience_segment["type"]}" was created.'
             )
 
+    def get(self, audience_segment_id: int) -> Optional[Dict[str, Any]]:
+        """Return one first-party audience segment by ID.
+
+        Parameters
+        ----------
+        audience_segment_id : int
+            Audience segment identifier.
+
+        Returns
+        -------
+        dict[str, Any] or None
+            The matching audience segment, or ``None`` when it is absent.
+        """
+        statement = (
+            ad_manager.StatementBuilder(version=GAM_VERSION)
+            .Where("Type = :type AND Id = :audience_segment_id")
+            .WithBindVariable("audience_segment_id", int(audience_segment_id))
+            .WithBindVariable("type", "FIRST_PARTY")
+            .Limit(1)
+        )
+        response = self._gam_service.getAudienceSegmentsByStatement(
+            statement.ToStatement()
+        )
+        results = response.get("results", []) if response else []
+        return results[0] if results else None
+
     def list(self) -> List[Dict[str, Any]]:
         """
         List all first-party audience segments.
@@ -371,15 +393,12 @@ class AudienceService:
             If the API returns an error.
         """
         logging.debug("Audience::list")
-        # Create a statement to select audience segments.
         statement = (
             ad_manager.StatementBuilder(version=GAM_VERSION)
             .Where("Type = :type")
             .WithBindVariable("type", "FIRST_PARTY")
         )
         results = []
-        # Retrieve a small amount of audience segments at a time, paging
-        # through until all audience segments have been retrieved.
         while True:
             logging.debug(
                 f"getAudienceSegmentsByStatement:statement.offset:{statement.offset}"
@@ -409,12 +428,9 @@ class AudienceService:
         googleads.errors.GoogleAdsError
             If the API returns an error.
         """
-        # Create a statement to select audience segments.
         statement = ad_manager.StatementBuilder(version=GAM_VERSION)
         results = []
 
-        # Retrieve a small amount of audience segments at a time, paging
-        # through until all audience segments have been retrieved.
         while True:
             response = self._gam_service.getAudienceSegmentsByStatement(
                 statement.ToStatement()
@@ -463,7 +479,7 @@ class AudienceService:
         pageviews : int, optional
             The number of pageviews required. Defaults to 1.
         recencydays : int, optional
-            The number of recency days. Defaults to 1.
+            The number of recency days required. Defaults to 1.
         membershipexpirationdays : int, optional
             The membership expiration in days. Defaults to 90.
 
@@ -472,7 +488,6 @@ class AudienceService:
         googleads.errors.GoogleAdsError
             If the API returns an error.
         """
-        # Create statement object to get the specified first party audience segment.
         statement = (
             ad_manager.StatementBuilder(version=GAM_VERSION)
             .Where("Type = :type AND Id = :audience_segment_id")
@@ -480,8 +495,6 @@ class AudienceService:
             .WithBindVariable("type", "FIRST_PARTY")
             .Limit(1)
         )
-
-        # Get audience segments by statement.
         response = self._gam_service.getAudienceSegmentsByStatement(
             statement.ToStatement()
         )
@@ -565,6 +578,8 @@ class CustomTargetingService:
 
     Methods
     -------
+    get(targeting_key_id, targeting_value_id)
+        Return one custom-targeting value.
     list(targeting_key_id)
         List all active key-value pairs for a given targeting key.
     delete(targeting_key_id, key_value_pairs)
@@ -601,6 +616,36 @@ class CustomTargetingService:
             service_name=self._service_name, gam_version=gam_version
         )
 
+    def get(
+        self, targeting_key_id: int, targeting_value_id: int
+    ) -> Optional[KeyValuePair]:
+        """Return one custom-targeting value by key and value ID.
+
+        Parameters
+        ----------
+        targeting_key_id : int
+            Custom-targeting key identifier.
+        targeting_value_id : int
+            Custom-targeting value identifier.
+
+        Returns
+        -------
+        KeyValuePair or None
+            The matching value, or ``None`` when it is absent.
+        """
+        statement = (
+            ad_manager.StatementBuilder(version=GAM_VERSION)
+            .Where("customTargetingKeyId = :key_id AND id = :value_id")
+            .WithBindVariable("key_id", int(targeting_key_id))
+            .WithBindVariable("value_id", int(targeting_value_id))
+            .Limit(1)
+        )
+        response = self._gam_service.getCustomTargetingValuesByStatement(
+            statement.ToStatement()
+        )
+        results = response.get("results", []) if response else []
+        return results[0] if results else None
+
     def list(self, targeting_key_id: int) -> List[KeyValuePair]:
         """
         List all active key-value pairs for a given targeting key.
@@ -623,15 +668,12 @@ class CustomTargetingService:
         logging.debug(
             f"AdManager::CustomTargeting::get_key_value_pairs::{targeting_key_id}"
         )
-        # Create a statement to select custom targeting values.
         key_value_pairs_statement = (
             ad_manager.StatementBuilder(version=GAM_VERSION)
             .Where("customTargetingKeyId IN (:id) and status='ACTIVE'")
             .WithBindVariable("id", targeting_key_id)
         )
 
-        # Retrieve a small amount of custom targeting values at a time, paging
-        # through until all custom targeting values have been retrieved.
         key_value_pairs_list = []
         while True:
             response = self._gam_service.getCustomTargetingValuesByStatement(
@@ -715,7 +757,6 @@ class CustomTargetingService:
             key_value_pairs
         )
 
-        # Display results.
         for updated_key_value_pair in updated_key_value_pairs:
             logging.debug(
                 f'Custom targeting value with id "{updated_key_value_pair["id"]}", '
@@ -741,7 +782,6 @@ class CustomTargetingService:
 
         values = self._gam_service.createCustomTargetingValues(created_values)
 
-        # Display results.
         for value in values:
             logging.debug(
                 f'Custom targeting value with id "{value["id"]}", '
@@ -755,6 +795,8 @@ class TargetingPresetService:
 
     Methods
     -------
+    get(targeting_preset_id)
+        Return one targeting preset by ID.
     create(targeting)
         Create a list of targeting presets.
     update(targeting)
@@ -788,6 +830,31 @@ class TargetingPresetService:
         self._gam_service = gam_client.get_service(
             service_name=self._service_name, gam_version=gam_version
         )
+
+    def get(self, targeting_preset_id: int) -> Optional[TargetingPreset]:
+        """Return one targeting preset by ID.
+
+        Parameters
+        ----------
+        targeting_preset_id : int
+            Targeting preset identifier.
+
+        Returns
+        -------
+        TargetingPreset or None
+            The matching preset, or ``None`` when it is absent.
+        """
+        statement = (
+            ad_manager.StatementBuilder(version=GAM_VERSION)
+            .Where("id = :targeting_preset_id")
+            .WithBindVariable("targeting_preset_id", int(targeting_preset_id))
+            .Limit(1)
+        )
+        response = self._gam_service.getTargetingPresetsByStatement(
+            statement.ToStatement()
+        )
+        results = response.get("results", []) if response else []
+        return results[0] if results else None
 
     def create(self, targeting: List[TargetingPreset]) -> None:
         """
@@ -845,15 +912,12 @@ class TargetingPresetService:
         logging.debug(
             f"TargetingPreset::get_targeting_presets_by_prefix:{targeting_preset_prefix}"
         )
-        # Create a statement to select targeting presets
         targeting_statement = (
             ad_manager.StatementBuilder(version=GAM_VERSION)
             .Where("name LIKE :prefix")
             .WithBindVariable("prefix", f"{targeting_preset_prefix}%")
         )
 
-        # Retrieve a small amount of custom targeting values at a time, paging
-        # through until all custom targeting values have been retrieved.
         targeting_presets: Dict[str, TargetingPreset] = {}
         while True:
             response = self._gam_service.getTargetingPresetsByStatement(
@@ -930,12 +994,10 @@ class ReportService:
             If the report fails to generate.
         """
         logging.debug("Report::_get_report_by_report_job")
-        # Initialize a DataDownloader.
         report_job_id = None
         report_downloader = self.data_downloader
 
         try:
-            # Run the report and wait for it to finish.
             report_job_id = report_downloader.WaitForReport(report_job)
         except errors.AdManagerReportError as e:
             logging.error(f"Failed to generate report. Error was: {e}")
@@ -946,7 +1008,6 @@ class ReportService:
         report_file_gz = tempfile.NamedTemporaryFile(suffix=".csv.gz", delete=False)
         report_file = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
 
-        # Download report data.
         report_downloader.DownloadReportToFile(
             report_job_id, export_format, report_file_gz
         )
@@ -1054,7 +1115,6 @@ class ReportService:
 
         start_date = report_end - datetime.timedelta(days=report_days)
 
-        # Create report job.
         report_query_job = {
             "reportQuery": {
                 "dimensions": dimensions,
@@ -1318,9 +1378,6 @@ class ForecastService:
         timeWindows = [report_date + datetime.timedelta(days=d) for d in range(days)]
         forecast_options = {
             "includeContendingLineItems": True,
-            # The field includeTargetingCriteriaBreakdown can only be set if
-            # breakdowns are not manually specified.
-            # 'includeTargetingCriteriaBreakdown': True,
             "breakdown": {"timeWindows": timeWindows, "targets": targets},
         }
         return forecast_options
@@ -1348,9 +1405,6 @@ class ForecastService:
         ]
         forecast_options = {
             "includeContendingLineItems": True,
-            # The field includeTargetingCriteriaBreakdown can only be set if
-            # breakdowns are not manually specified.
-            # 'includeTargetingCriteriaBreakdown': True,
             "breakdown": {"timeWindows": timeWindows, "targets": targets},
         }
         return forecast_options
@@ -1392,14 +1446,12 @@ class ForecastService:
             If the API returns an error.
         """
         logging.debug("Forecast::get_forecast")
-        # Create prospective line item.
         prospective_line_item = self._gen_line_item(
             targetedAdUnits, creativePlaceholders, report_date, days
         )
 
         forecast_options = self._gen_forecast_options(targets_list, report_date, days)
 
-        # Get forecast.
         forecast = self._gam_service.getAvailabilityForecast(
             prospective_line_item, forecast_options
         )
@@ -1466,7 +1518,6 @@ class ForecastService:
             If the API returns an error.
         """
         logging.debug("Forecast::get_forecast_by_targeting_preset")
-        # Create prospective line item.
         prospective_line_item = self._gen_line_item(
             targetedAdUnits, creativePlaceholders, report_date, days
         )
@@ -1475,7 +1526,6 @@ class ForecastService:
             targeting_presets, report_date, days
         )
 
-        # Get forecast.
         forecast = self._gam_service.getAvailabilityForecast(
             prospective_line_item, forecast_options
         )
@@ -1603,7 +1653,6 @@ class TrafficService:
                 current_date = time_series_start_date + datetime.timedelta(days=offset)
             return time_series_forecast_data
 
-        # the time-lapse to for forecast
         start_date = report_date.date() - datetime.timedelta(days=days)
         end_date = report_date.date() + datetime.timedelta(days=days)
 
@@ -1614,13 +1663,11 @@ class TrafficService:
                 ]
             }
 
-        # Create targeting.
         targeting = {
             "inventoryTargeting": inventory_targeting,
             "customTargeting": custom_targeting,
         }
 
-        # Request the traffic forecast data.
         start = datetime.datetime.now()
         traffic_data = self._gam_service.getTrafficData(
             {
