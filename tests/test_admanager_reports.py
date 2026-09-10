@@ -140,8 +140,7 @@ def test_compact_filters_support_operators_and_metric_fields():
     assert country.operation == admanager_v1.ReportDefinition.Filter.Operation.NOT_IN
     assert [value.string_value for value in country.values] == ["Germany", "Spain"]
     assert (
-        line_item.operation
-        == admanager_v1.ReportDefinition.Filter.Operation.CONTAINS
+        line_item.operation == admanager_v1.ReportDefinition.Filter.Operation.CONTAINS
     )
     assert [value.string_value for value in line_item.values] == ["Brand"]
     assert visitors.field.metric == admanager_v1.ReportDefinition.Metric.UNIQUE_VISITORS
