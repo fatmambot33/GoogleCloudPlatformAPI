@@ -6,6 +6,9 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- Added Google Ad Manager v1 Interactive Reach reporting with a public
+  `ReachReportService` for creating and running reports, fetching paginated result
+  rows, and returning reach metrics as pandas DataFrames.
 - Adopted the pinned `fatmambot33/ai-native-platform` repository contract with a
   machine-readable manifest, vendored schema, deterministic validator, dedicated
   validation check, and governed self-improvement issue discovery.
