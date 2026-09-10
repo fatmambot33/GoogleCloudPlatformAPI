@@ -91,6 +91,103 @@ def test_average_frequency_requires_country_dimension():
     )
 
 
+def test_compact_filters_convert_scalars_and_lists_to_in_filters():
+    """Turn compact scalar/list filters into native IN filters joined by AND."""
+    report = ReachReportService.build_report(
+        "filtered reach",
+        filters={
+            "LINE_ITEM_ID": [101, 202],
+            "COUNTRY_NAME": "France",
+        },
+    )
+
+    filters = list(report.report_definition.filters)
+    assert len(filters) == 1
+    native_filters = list(filters[0].and_filter.filters)
+    assert len(native_filters) == 2
+
+    line_items = native_filters[0].field_filter
+    assert line_items.field.dimension == (
+        admanager_v1.ReportDefinition.Dimension.LINE_ITEM_ID
+    )
+    assert line_items.operation == admanager_v1.ReportDefinition.Filter.Operation.IN
+    assert [value.int_value for value in line_items.values] == [101, 202]
+
+    country = native_filters[1].field_filter
+    assert country.field.dimension == (
+        admanager_v1.ReportDefinition.Dimension.COUNTRY_NAME
+    )
+    assert country.operation == admanager_v1.ReportDefinition.Filter.Operation.IN
+    assert [value.string_value for value in country.values] == ["France"]
+
+
+def test_compact_filters_support_operators_and_metric_fields():
+    """Support concise operators and resolve metric fields when needed."""
+    report = ReachReportService.build_report(
+        "advanced filters",
+        filters={
+            "COUNTRY_NAME": {"not_in": ["Germany", "Spain"]},
+            "LINE_ITEM_NAME": {"contains": "Brand"},
+            "UNIQUE_VISITORS": {"gte": 100},
+        },
+    )
+
+    native_filters = list(report.report_definition.filters[0].and_filter.filters)
+    country = native_filters[0].field_filter
+    line_item = native_filters[1].field_filter
+    visitors = native_filters[2].field_filter
+
+    assert country.operation == admanager_v1.ReportDefinition.Filter.Operation.NOT_IN
+    assert [value.string_value for value in country.values] == ["Germany", "Spain"]
+    assert (
+        line_item.operation
+        == admanager_v1.ReportDefinition.Filter.Operation.CONTAINS
+    )
+    assert [value.string_value for value in line_item.values] == ["Brand"]
+    assert visitors.field.metric == admanager_v1.ReportDefinition.Metric.UNIQUE_VISITORS
+    assert (
+        visitors.operation
+        == admanager_v1.ReportDefinition.Filter.Operation.GREATER_THAN_EQUALS
+    )
+    assert visitors.values[0].int_value == 100
+
+
+def test_compact_filters_validate_fields_operators_and_cardinality():
+    """Reject malformed compact filters before making an API request."""
+    with pytest.raises(ValueError, match="Unknown report filter field"):
+        ReachReportService.build_report("reach", filters={"NOT_A_FIELD": 1})
+
+    with pytest.raises(ValueError, match="Unknown filter operation"):
+        ReachReportService.build_report(
+            "reach", filters={"LINE_ITEM_ID": {"approximately": 1}}
+        )
+
+    with pytest.raises(ValueError, match="exactly two"):
+        ReachReportService.build_report(
+            "reach", filters={"LINE_ITEM_ID": {"between": [1]}}
+        )
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        ReachReportService.build_report("reach", filters={"LINE_ITEM_ID": []})
+
+
+def test_raw_google_filters_remain_supported():
+    """Keep generated Google filter messages as an advanced escape hatch."""
+    raw_filter = admanager_v1.ReportDefinition.Filter(
+        field_filter=admanager_v1.ReportDefinition.Filter.FieldFilter(
+            field=admanager_v1.ReportDefinition.Field(
+                dimension=admanager_v1.ReportDefinition.Dimension.LINE_ITEM_ID
+            ),
+            operation=admanager_v1.ReportDefinition.Filter.Operation.IN,
+            values=[admanager_v1.ReportValue(int_value=101)],
+        )
+    )
+
+    report = ReachReportService.build_report("raw filter", filters=(raw_filter,))
+
+    assert report.report_definition.filters[0] == raw_filter
+
+
 def test_create_report_uses_network_parent():
     """Create the report under the configured network resource."""
     client = MagicMock()
