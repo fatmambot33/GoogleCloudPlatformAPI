@@ -21,6 +21,7 @@ from .AdManager import (
     TargetingPresetService,
     TrafficService,
 )
+from .AdManagerReports import ReachReportService
 
 """Public package exports for GoogleCloudPlatformAPI."""
 __all__ = [
@@ -33,6 +34,7 @@ __all__ = [
     "NetworkService",
     "CustomTargetingService",
     "TargetingPresetService",
+    "ReachReportService",
     "ReportService",
     "TrafficService",
     "Operator",
