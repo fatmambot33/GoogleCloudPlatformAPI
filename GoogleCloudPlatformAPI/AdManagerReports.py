@@ -3,10 +3,6 @@
 This module provides a focused wrapper around the Google Ad Manager v1 Report
 API. It complements the legacy SOAP-based ``ReportService`` in
 ``GoogleCloudPlatformAPI.AdManager`` and is intended for Interactive reports.
-
-Public Classes
---------------
-- ReachReportService: Create, run, and read Ad Manager Reach reports.
 """
 
 import datetime
@@ -26,7 +22,41 @@ DEFAULT_REACH_DATE_RANGE = "LAST_30_DAYS"
 COUNTRY_DIMENSIONS = ("COUNTRY_CODE", "COUNTRY_ID", "COUNTRY_NAME")
 AVERAGE_FREQUENCY_METRIC = "AVERAGE_IMPRESSIONS_PER_UNIQUE_VISITOR"
 
+FILTER_OPERATIONS = {
+    "in": "IN",
+    "eq": "IN",
+    "equals": "IN",
+    "not_in": "NOT_IN",
+    "ne": "NOT_IN",
+    "not_equals": "NOT_IN",
+    "contains": "CONTAINS",
+    "not_contains": "NOT_CONTAINS",
+    "lt": "LESS_THAN",
+    "less_than": "LESS_THAN",
+    "lte": "LESS_THAN_EQUALS",
+    "less_than_equals": "LESS_THAN_EQUALS",
+    "gt": "GREATER_THAN",
+    "greater_than": "GREATER_THAN",
+    "gte": "GREATER_THAN_EQUALS",
+    "greater_than_equals": "GREATER_THAN_EQUALS",
+    "between": "BETWEEN",
+    "matches": "MATCHES",
+    "not_matches": "NOT_MATCHES",
+}
+
+_SINGLE_VALUE_OPERATIONS = {
+    "LESS_THAN",
+    "LESS_THAN_EQUALS",
+    "GREATER_THAN",
+    "GREATER_THAN_EQUALS",
+}
+
 ReportEnumValue = Union[str, int]
+FilterScalar = Union[str, int, float, bool, bytes]
+FilterOperand = Union[FilterScalar, Sequence[FilterScalar]]
+FilterRule = Union[FilterOperand, Mapping[str, FilterOperand]]
+FilterSpec = Mapping[str, FilterRule]
+FilterInput = Union[FilterSpec, Sequence[Any]]
 
 
 class ReachReportService:
@@ -157,6 +187,131 @@ class ReachReportService:
         )
         return admanager_v1.ReportDefinition.DateRange(relative=relative)
 
+    @staticmethod
+    def _filter_values(value: Any) -> List[Any]:
+        """Normalize a compact filter operand to a non-empty value list."""
+        if isinstance(value, Sequence) and not isinstance(
+            value, (str, bytes, bytearray)
+        ):
+            values = list(value)
+        else:
+            values = [value]
+        if not values:
+            raise ValueError("filter values must not be empty")
+        return values
+
+    @staticmethod
+    def _report_value(value: Any) -> admanager_v1.ReportValue:
+        """Convert a Python scalar to the corresponding ReportValue."""
+        if isinstance(value, bool):
+            return admanager_v1.ReportValue(bool_value=value)
+        if isinstance(value, int):
+            return admanager_v1.ReportValue(int_value=value)
+        if isinstance(value, float):
+            return admanager_v1.ReportValue(double_value=value)
+        if isinstance(value, str):
+            return admanager_v1.ReportValue(string_value=value)
+        if isinstance(value, (bytes, bytearray)):
+            return admanager_v1.ReportValue(bytes_value=bytes(value))
+        raise TypeError(
+            "filter values must be str, int, float, bool, or bytes; "
+            f"got {type(value).__name__}"
+        )
+
+    @classmethod
+    def _filter_field(cls, field_name: str) -> admanager_v1.ReportDefinition.Field:
+        """Resolve a compact field name to a dimension or metric field."""
+        if not isinstance(field_name, str):
+            raise TypeError("filter field names must be strings")
+
+        try:
+            dimension = cls._coerce_enum(
+                admanager_v1.ReportDefinition.Dimension,
+                field_name,
+                "dimension",
+            )
+        except ValueError:
+            try:
+                metric = cls._coerce_enum(
+                    admanager_v1.ReportDefinition.Metric,
+                    field_name,
+                    "metric",
+                )
+            except ValueError as exc:
+                raise ValueError(f"Unknown report filter field: {field_name}") from exc
+            return admanager_v1.ReportDefinition.Field(metric=metric)
+        return admanager_v1.ReportDefinition.Field(dimension=dimension)
+
+    @classmethod
+    def _filter_operation_and_values(
+        cls,
+        rule: Any,
+    ) -> tuple[Any, List[admanager_v1.ReportValue]]:
+        """Resolve a compact rule to an API operation and ReportValues."""
+        if isinstance(rule, Mapping):
+            if len(rule) != 1:
+                raise ValueError(
+                    "operator filter mappings must contain exactly one operation"
+                )
+            operation_key, raw_values = next(iter(rule.items()))
+            if not isinstance(operation_key, str):
+                raise TypeError("filter operation names must be strings")
+            normalized_key = operation_key.strip().lower().replace("-", "_")
+            try:
+                operation_name = FILTER_OPERATIONS[normalized_key]
+            except KeyError as exc:
+                raise ValueError(f"Unknown filter operation: {operation_key}") from exc
+        else:
+            operation_name = "IN"
+            raw_values = rule
+
+        values = cls._filter_values(raw_values)
+        if operation_name in _SINGLE_VALUE_OPERATIONS and len(values) != 1:
+            raise ValueError(f"{operation_name} requires exactly one filter value")
+        if operation_name == "BETWEEN" and len(values) != 2:
+            raise ValueError("BETWEEN requires exactly two filter values")
+
+        operation = admanager_v1.ReportDefinition.Filter.Operation[operation_name]
+        return operation, [cls._report_value(value) for value in values]
+
+    @classmethod
+    def _compact_filter(
+        cls,
+        field_name: str,
+        rule: Any,
+    ) -> admanager_v1.ReportDefinition.Filter:
+        """Build one native Ad Manager filter from a compact filter rule."""
+        operation, values = cls._filter_operation_and_values(rule)
+        return admanager_v1.ReportDefinition.Filter(
+            field_filter=admanager_v1.ReportDefinition.Filter.FieldFilter(
+                field=cls._filter_field(field_name),
+                operation=operation,
+                values=values,
+            )
+        )
+
+    @classmethod
+    def _normalize_filters(cls, filters: Optional[FilterInput]) -> List[Any]:
+        """Expand compact filters while preserving raw Google filters."""
+        if filters is None:
+            return []
+        if not isinstance(filters, Mapping):
+            return list(filters)
+
+        compact_filters = [
+            cls._compact_filter(field_name, rule)
+            for field_name, rule in filters.items()
+        ]
+        if len(compact_filters) <= 1:
+            return compact_filters
+        return [
+            admanager_v1.ReportDefinition.Filter(
+                and_filter=admanager_v1.ReportDefinition.Filter.FilterList(
+                    filters=compact_filters
+                )
+            )
+        ]
+
     @classmethod
     def build_report(
         cls,
@@ -166,7 +321,7 @@ class ReachReportService:
         relative_date_range: Optional[ReportEnumValue] = None,
         start_date: Optional[datetime.date] = None,
         end_date: Optional[datetime.date] = None,
-        filters: Optional[Sequence[Any]] = None,
+        filters: Optional[FilterInput] = None,
     ) -> admanager_v1.Report:
         """Build a Reach report resource without sending it to Google.
 
@@ -185,8 +340,10 @@ class ReachReportService:
             Start of an explicit fixed date range, inclusive.
         end_date : datetime.date, optional
             End of an explicit fixed date range, inclusive.
-        filters : sequence, optional
-            Generated ``ReportDefinition.Filter`` messages or compatible mappings.
+        filters : mapping or sequence, optional
+            Compact mapping of dimension or metric names to scalar/list values,
+            or to one-operation mappings such as ``{"not_in": [1, 2]}``.
+            A sequence preserves raw generated Google filter messages/mappings.
 
         Returns
         -------
@@ -196,9 +353,7 @@ class ReachReportService:
         Raises
         ------
         ValueError
-            If date arguments are inconsistent, an enum name is unknown, no
-            metrics are supplied, or average frequency is requested without a
-            country dimension.
+            If date arguments, enums, filters, or Reach combinations are invalid.
         """
         if not display_name.strip():
             raise ValueError("display_name must not be empty")
@@ -232,7 +387,7 @@ class ReachReportService:
         report_definition = admanager_v1.ReportDefinition(
             dimensions=dimension_values,
             metrics=metric_values,
-            filters=list(filters or []),
+            filters=cls._normalize_filters(filters),
             date_range=cls._build_date_range(
                 relative_date_range=relative_date_range,
                 start_date=start_date,
@@ -253,7 +408,7 @@ class ReachReportService:
         relative_date_range: Optional[ReportEnumValue] = None,
         start_date: Optional[datetime.date] = None,
         end_date: Optional[datetime.date] = None,
-        filters: Optional[Sequence[Any]] = None,
+        filters: Optional[FilterInput] = None,
     ) -> admanager_v1.Report:
         """Create a hidden Reach report in Google Ad Manager.
 
@@ -272,8 +427,8 @@ class ReachReportService:
             Start of an explicit fixed date range, inclusive.
         end_date : datetime.date, optional
             End of an explicit fixed date range, inclusive.
-        filters : sequence, optional
-            Generated ``ReportDefinition.Filter`` messages or compatible mappings.
+        filters : mapping or sequence, optional
+            Compact filter mapping or raw Google filters.
 
         Returns
         -------
@@ -498,7 +653,7 @@ class ReachReportService:
         relative_date_range: Optional[ReportEnumValue] = None,
         start_date: Optional[datetime.date] = None,
         end_date: Optional[datetime.date] = None,
-        filters: Optional[Sequence[Any]] = None,
+        filters: Optional[FilterInput] = None,
         timeout: Optional[float] = None,
         page_size: int = 10_000,
     ) -> pd.DataFrame:
@@ -518,8 +673,8 @@ class ReachReportService:
             Start of an explicit fixed date range, inclusive.
         end_date : datetime.date, optional
             End of an explicit fixed date range, inclusive.
-        filters : sequence, optional
-            Generated ``ReportDefinition.Filter`` messages or compatible mappings.
+        filters : mapping or sequence, optional
+            Compact filter mapping or raw Google filters.
         timeout : float, optional
             Maximum seconds to wait for report generation.
         page_size : int, optional
