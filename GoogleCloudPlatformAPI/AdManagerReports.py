@@ -377,14 +377,19 @@ class ReachReportService:
         """Convert a ReportValue or compatible mapping to a Python value."""
         if isinstance(value, Mapping):
             data = dict(value)
-        else:
-            data = type(value).to_dict(value)
+            if not data:
+                return None
+            _, raw_value = next(iter(data.items()))
+            if isinstance(raw_value, Mapping) and "values" in raw_value:
+                return list(raw_value["values"])
+            return raw_value
 
-        if not data:
+        field_name = type(value).pb(value).WhichOneof("value")
+        if field_name is None:
             return None
-        _, raw_value = next(iter(data.items()))
-        if isinstance(raw_value, Mapping) and "values" in raw_value:
-            return list(raw_value["values"])
+        raw_value = getattr(value, field_name)
+        if field_name.endswith("_list_value"):
+            return list(raw_value.values)
         return raw_value
 
     @classmethod
