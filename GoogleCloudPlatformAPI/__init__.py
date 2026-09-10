@@ -15,6 +15,7 @@ from .AdManager import (
     TargetingPresetService,
     TrafficService,
 )
+from .AdManagerReports import ReachReportService
 from .Analytics import Analytics
 from .BigQuery import BigQuery
 from .CloudStorage import CloudStorage
@@ -43,6 +44,7 @@ __all__ = [
     "KeyValuePair",
     "NetworkService",
     "Operator",
+    "ReachReportService",
     "ReportService",
     "ServiceAccount",
     "ServiceError",
