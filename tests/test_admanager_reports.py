@@ -54,9 +54,7 @@ def test_build_report_supports_fixed_date_range():
 def test_build_report_rejects_inconsistent_dates():
     """Reject incomplete, reversed, or conflicting date arguments."""
     with pytest.raises(ValueError, match="provided together"):
-        ReachReportService.build_report(
-            "reach", start_date=datetime.date(2026, 8, 1)
-        )
+        ReachReportService.build_report("reach", start_date=datetime.date(2026, 8, 1))
 
     with pytest.raises(ValueError, match="on or before"):
         ReachReportService.build_report(
