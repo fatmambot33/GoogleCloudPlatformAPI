@@ -227,9 +227,7 @@ class ReachReportService:
         if AVERAGE_FREQUENCY_METRIC in metric_names and not (
             dimension_names & set(COUNTRY_DIMENSIONS)
         ):
-            raise ValueError(
-                f"{AVERAGE_FREQUENCY_METRIC} requires a country dimension"
-            )
+            raise ValueError(f"{AVERAGE_FREQUENCY_METRIC} requires a country dimension")
 
         report_definition = admanager_v1.ReportDefinition(
             dimensions=dimension_values,
@@ -340,11 +338,11 @@ class ReachReportService:
             response = operation.result()
         else:
             response = operation.result(timeout=timeout)
+        if response is None:
+            raise RuntimeError("Ad Manager report operation completed without a result")
         return str(response.report_result)
 
-    def fetch_rows(
-        self, result_name: str, page_size: int = 10_000
-    ) -> List[Any]:
+    def fetch_rows(self, result_name: str, page_size: int = 10_000) -> List[Any]:
         """Fetch all rows for a completed report result.
 
         Parameters
