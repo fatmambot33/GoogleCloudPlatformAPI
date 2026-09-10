@@ -179,6 +179,35 @@ storage.upload_file_from_filename(
 
 ### Ad Manager
 
+The existing `ReportService` continues to use the Ad Manager SOAP API. New Reach
+reporting uses the v1 Interactive Report API:
+
+```python
+from GoogleCloudPlatformAPI import ReachReportService
+
+# Assumes Application Default Credentials are configured.
+reach = ReachReportService(network_code="123456")
+df = reach.create_and_get_dataframe(
+    display_name="30-day line-item reach",
+    dimensions=("LINE_ITEM_ID", "LINE_ITEM_NAME"),
+    metrics=("REACH_IMPRESSIONS", "UNIQUE_VISITORS"),
+    relative_date_range="LAST_30_DAYS",
+)
+print(df)
+```
+
+You can also run an existing Interactive report by its ID without creating a new
+report resource:
+
+```python
+from GoogleCloudPlatformAPI import ReachReportService
+
+reach = ReachReportService(network_code="123456")
+df = reach.get_report_dataframe(report_id_or_name=987654321)
+```
+
+For lower-level SOAP services:
+
 ```python
 from GoogleCloudPlatformAPI.AdManager import GamClient
 
