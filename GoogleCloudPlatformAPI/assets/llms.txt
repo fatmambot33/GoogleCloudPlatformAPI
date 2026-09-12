@@ -39,6 +39,7 @@ surface and evidence-backed release gates.
 - GoogleCloudPlatformAPI.agents.build_openai_agent
 - GoogleCloudPlatformAPI.assets.read_text_resource
 - GoogleCloudPlatformAPI.GoogleCloudPlatformAPIError
+- GoogleCloudPlatformAPI.ReachReportService
 - gcp-api-mcp
 - gcp-api-agent --list-capabilities
 - gcp-api-eval --output build/ai-readiness --fail-under 100
