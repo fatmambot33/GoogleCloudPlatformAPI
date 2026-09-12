@@ -11,6 +11,7 @@ from google.auth.credentials import Credentials
 DEFAULT_REACH_DIMENSIONS: tuple[str, str]
 DEFAULT_REACH_METRICS: tuple[str, str]
 DEFAULT_REACH_DATE_RANGE: str
+DEFAULT_MAX_ROWS: int
 COUNTRY_DIMENSIONS: tuple[str, str, str]
 AVERAGE_FREQUENCY_METRIC: str
 FILTER_OPERATIONS: dict[str, str]
@@ -59,7 +60,12 @@ class ReachReportService:
         report_id_or_name: Union[int, str],
         timeout: Optional[float] = ...,
     ) -> str: ...
-    def fetch_rows(self, result_name: str, page_size: int = ...) -> List[Any]: ...
+    def fetch_rows(
+        self,
+        result_name: str,
+        page_size: int = ...,
+        max_rows: int = ...,
+    ) -> List[Any]: ...
     @classmethod
     def rows_to_dataframe(
         cls,
@@ -72,6 +78,7 @@ class ReachReportService:
         report_id_or_name: Union[int, str],
         timeout: Optional[float] = ...,
         page_size: int = ...,
+        max_rows: int = ...,
     ) -> pd.DataFrame: ...
     def create_and_get_dataframe(
         self,
@@ -84,4 +91,5 @@ class ReachReportService:
         filters: Optional[FilterInput] = ...,
         timeout: Optional[float] = ...,
         page_size: int = ...,
+        max_rows: int = ...,
     ) -> pd.DataFrame: ...
