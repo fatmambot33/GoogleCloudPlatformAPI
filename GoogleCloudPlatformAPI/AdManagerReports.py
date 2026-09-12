@@ -6,6 +6,7 @@ API. It complements the legacy SOAP-based ``ReportService`` in
 """
 
 import datetime
+import math
 from collections.abc import Mapping, Sequence
 from itertools import islice
 from typing import Any, Dict, List, NoReturn, Optional, Union
@@ -24,6 +25,7 @@ DEFAULT_REACH_DIMENSIONS = ("LINE_ITEM_ID", "LINE_ITEM_NAME")
 DEFAULT_REACH_METRICS = ("REACH_IMPRESSIONS", "UNIQUE_VISITORS")
 DEFAULT_REACH_DATE_RANGE = "LAST_30_DAYS"
 DEFAULT_MAX_ROWS = 100_000
+DEFAULT_REPORT_TIMEOUT_SECONDS = 300.0
 COUNTRY_DIMENSIONS = ("COUNTRY_CODE", "COUNTRY_ID", "COUNTRY_NAME")
 AVERAGE_FREQUENCY_METRIC = "AVERAGE_IMPRESSIONS_PER_UNIQUE_VISITOR"
 
@@ -173,6 +175,17 @@ class ReachReportService:
             raise ValueError("page_size must be between 1 and 10000")
         if not isinstance(max_rows, int) or isinstance(max_rows, bool) or max_rows < 1:
             raise ValueError("max_rows must be a positive integer")
+
+    @staticmethod
+    def _validate_timeout(timeout: float) -> None:
+        """Validate a finite positive report execution timeout."""
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, (int, float))
+            or not math.isfinite(timeout)
+            or timeout <= 0
+        ):
+            raise ValueError("timeout must be a finite positive number of seconds")
 
     @staticmethod
     def _raise_google_error(operation: str, exc: Exception) -> NoReturn:
@@ -538,7 +551,7 @@ class ReachReportService:
     def run_report(
         self,
         report_id_or_name: Union[int, str],
-        timeout: Optional[float] = None,
+        timeout: float = DEFAULT_REPORT_TIMEOUT_SECONDS,
     ) -> str:
         """Run an existing report and return the completed result resource name.
 
@@ -547,23 +560,21 @@ class ReachReportService:
         report_id_or_name : int or str
             Bare report ID or full report resource name.
         timeout : float, optional
-            Maximum seconds to wait for the long-running operation. ``None`` uses
-            the client library default.
+            Maximum seconds to wait for the long-running operation. Defaults to
+            300 seconds and must be finite and positive.
 
         Returns
         -------
         str
             Report result resource name suitable for ``fetch_rows``.
         """
+        self._validate_timeout(timeout)
         request = admanager_v1.RunReportRequest(
             name=self.report_name(report_id_or_name)
         )
         try:
             operation = self._client.run_report(request=request)
-            if timeout is None:
-                response = operation.result()
-            else:
-                response = operation.result(timeout=timeout)
+            response = operation.result(timeout=timeout)
         except Exception as exc:
             self._raise_google_error("admanager.run_report", exc)
         if response is None:
@@ -713,7 +724,7 @@ class ReachReportService:
     def get_report_dataframe(
         self,
         report_id_or_name: Union[int, str],
-        timeout: Optional[float] = None,
+        timeout: float = DEFAULT_REPORT_TIMEOUT_SECONDS,
         page_size: int = 10_000,
         max_rows: int = DEFAULT_MAX_ROWS,
     ) -> pd.DataFrame:
@@ -724,7 +735,7 @@ class ReachReportService:
         report_id_or_name : int or str
             Bare report ID or full report resource name.
         timeout : float, optional
-            Maximum seconds to wait for report generation.
+            Maximum seconds to wait for report generation. Defaults to 300 seconds.
         page_size : int, optional
             Rows requested per result page. Maximum 10,000.
         max_rows : int, optional
@@ -735,6 +746,7 @@ class ReachReportService:
         pandas.DataFrame
             Report data with dimensions followed by metrics.
         """
+        self._validate_timeout(timeout)
         self._validate_pagination(page_size=page_size, max_rows=max_rows)
         report = self.get_report(report_id_or_name)
         result_name = self.run_report(report.name, timeout=timeout)
@@ -758,7 +770,7 @@ class ReachReportService:
         start_date: Optional[datetime.date] = None,
         end_date: Optional[datetime.date] = None,
         filters: Optional[FilterInput] = None,
-        timeout: Optional[float] = None,
+        timeout: float = DEFAULT_REPORT_TIMEOUT_SECONDS,
         page_size: int = 10_000,
         max_rows: int = DEFAULT_MAX_ROWS,
     ) -> pd.DataFrame:
@@ -781,7 +793,7 @@ class ReachReportService:
         filters : mapping or sequence, optional
             Compact filter mapping or raw Google filters.
         timeout : float, optional
-            Maximum seconds to wait for report generation.
+            Maximum seconds to wait for report generation. Defaults to 300 seconds.
         page_size : int, optional
             Rows requested per result page. Maximum 10,000.
         max_rows : int, optional
@@ -792,6 +804,7 @@ class ReachReportService:
         pandas.DataFrame
             Report data with dimensions followed by Reach metrics.
         """
+        self._validate_timeout(timeout)
         self._validate_pagination(page_size=page_size, max_rows=max_rows)
         report = self.create_report(
             display_name=display_name,
