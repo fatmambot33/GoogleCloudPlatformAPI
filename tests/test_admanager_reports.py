@@ -9,7 +9,10 @@ from google.ads import admanager_v1
 from google.api_core import exceptions as google_api_exceptions
 from google.auth import exceptions as google_auth_exceptions
 
-from GoogleCloudPlatformAPI.AdManagerReports import ReachReportService
+from GoogleCloudPlatformAPI.AdManagerReports import (
+    DEFAULT_REPORT_TIMEOUT_SECONDS,
+    ReachReportService,
+)
 from GoogleCloudPlatformAPI.exceptions import (
     AuthenticationError,
     ServiceError,
@@ -277,6 +280,21 @@ def test_run_report_waits_for_operation_and_returns_result_name():
     assert result_name == "networks/123/reports/456/results/789"
 
 
+def test_run_report_uses_finite_default_timeout():
+    """Bound report execution even when the caller accepts all defaults."""
+    client = MagicMock()
+    operation = MagicMock()
+    operation.result.return_value = admanager_v1.RunReportResponse(
+        report_result="networks/123/reports/456/results/789"
+    )
+    client.run_report.return_value = operation
+    service = ReachReportService(network_code="123", client=client)
+
+    service.run_report(456)
+
+    operation.result.assert_called_once_with(timeout=DEFAULT_REPORT_TIMEOUT_SECONDS)
+
+
 def test_fetch_rows_enforces_api_page_size_limit():
     """Keep result pagination within the API's documented bounds."""
     service = ReachReportService(network_code="123", client=MagicMock())
@@ -300,8 +318,8 @@ def test_fetch_rows_enforces_total_row_limit_without_truncation():
     assert exc_info.value.details == {"max_rows": 2}
 
 
-def test_create_dataframe_validates_pagination_before_remote_mutation():
-    """Reject invalid pagination before creating a persistent report."""
+def test_create_dataframe_validates_bounds_before_remote_mutation():
+    """Reject invalid local bounds before creating a persistent report."""
     client = MagicMock()
     service = ReachReportService(network_code="123", client=client)
 
@@ -310,6 +328,9 @@ def test_create_dataframe_validates_pagination_before_remote_mutation():
 
     with pytest.raises(ValueError, match="positive integer"):
         service.create_and_get_dataframe("reach", max_rows=0)
+
+    with pytest.raises(ValueError, match="finite positive"):
+        service.create_and_get_dataframe("reach", timeout=float("inf"))
 
     client.create_report.assert_not_called()
     client.run_report.assert_not_called()
