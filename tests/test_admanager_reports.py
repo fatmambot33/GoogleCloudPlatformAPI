@@ -6,8 +6,15 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 from google.ads import admanager_v1
+from google.api_core import exceptions as google_api_exceptions
+from google.auth import exceptions as google_auth_exceptions
 
 from GoogleCloudPlatformAPI.AdManagerReports import ReachReportService
+from GoogleCloudPlatformAPI.exceptions import (
+    AuthenticationError,
+    ServiceError,
+    TransportError,
+)
 
 
 def test_build_report_uses_reach_defaults():
@@ -205,6 +212,53 @@ def test_create_report_uses_network_parent():
     assert created.name == "networks/123/reports/456"
 
 
+def test_create_report_normalizes_service_errors():
+    """Translate Google API failures without leaking provider messages."""
+    client = MagicMock()
+    client.create_report.side_effect = google_api_exceptions.InvalidArgument(
+        "sensitive provider detail"
+    )
+    service = ReachReportService(network_code="123", client=client)
+
+    with pytest.raises(ServiceError) as exc_info:
+        service.create_report("reach")
+
+    error = exc_info.value
+    assert error.operation == "admanager.create_report"
+    assert error.details == {"provider_error_type": "InvalidArgument"}
+    assert "sensitive provider detail" not in str(error)
+
+
+def test_get_report_normalizes_authentication_errors():
+    """Translate Google authentication failures to the package hierarchy."""
+    client = MagicMock()
+    client.get_report.side_effect = google_auth_exceptions.RefreshError(
+        "sensitive credential detail"
+    )
+    service = ReachReportService(network_code="123", client=client)
+
+    with pytest.raises(AuthenticationError) as exc_info:
+        service.get_report(456)
+
+    assert exc_info.value.operation == "admanager.get_report"
+    assert "sensitive credential detail" not in str(exc_info.value)
+
+
+def test_run_report_normalizes_transport_errors():
+    """Translate transient Google transport failures to TransportError."""
+    client = MagicMock()
+    client.run_report.side_effect = google_api_exceptions.ServiceUnavailable(
+        "provider unavailable detail"
+    )
+    service = ReachReportService(network_code="123", client=client)
+
+    with pytest.raises(TransportError) as exc_info:
+        service.run_report(456)
+
+    assert exc_info.value.operation == "admanager.run_report"
+    assert "provider unavailable detail" not in str(exc_info.value)
+
+
 def test_run_report_waits_for_operation_and_returns_result_name():
     """Run an Interactive report through the long-running operation API."""
     client = MagicMock()
@@ -229,6 +283,36 @@ def test_fetch_rows_enforces_api_page_size_limit():
 
     with pytest.raises(ValueError, match="between 1 and 10000"):
         service.fetch_rows("result", page_size=10_001)
+
+
+def test_fetch_rows_enforces_total_row_limit_without_truncation():
+    """Stop pager iteration at the configured bound and fail explicitly."""
+    client = MagicMock()
+    client.fetch_report_result_rows.return_value = iter([object(), object(), object()])
+    service = ReachReportService(network_code="123", client=client)
+
+    with pytest.raises(ServiceError, match="row limit") as exc_info:
+        service.fetch_rows("result", page_size=100, max_rows=2)
+
+    request = client.fetch_report_result_rows.call_args.kwargs["request"]
+    assert request.page_size == 3
+    assert exc_info.value.operation == "admanager.fetch_report_rows"
+    assert exc_info.value.details == {"max_rows": 2}
+
+
+def test_create_dataframe_validates_pagination_before_remote_mutation():
+    """Reject invalid pagination before creating a persistent report."""
+    client = MagicMock()
+    service = ReachReportService(network_code="123", client=client)
+
+    with pytest.raises(ValueError, match="between 1 and 10000"):
+        service.create_and_get_dataframe("reach", page_size=10_001)
+
+    with pytest.raises(ValueError, match="positive integer"):
+        service.create_and_get_dataframe("reach", max_rows=0)
+
+    client.create_report.assert_not_called()
+    client.run_report.assert_not_called()
 
 
 def test_rows_to_dataframe_preserves_definition_order_and_value_types():
