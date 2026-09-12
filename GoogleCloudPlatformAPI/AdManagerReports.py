@@ -7,18 +7,23 @@ API. It complements the legacy SOAP-based ``ReportService`` in
 
 import datetime
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Optional, Union
+from itertools import islice
+from typing import Any, Dict, List, NoReturn, Optional, Union
 
 import pandas as pd
 from google.ads import admanager_v1
+from google.api_core import exceptions as google_api_exceptions
+from google.auth import exceptions as google_auth_exceptions
 from google.auth.credentials import Credentials
 
 from .AdManager import NETWORK_CODE
+from .exceptions import AuthenticationError, ServiceError, TransportError
 
 
 DEFAULT_REACH_DIMENSIONS = ("LINE_ITEM_ID", "LINE_ITEM_NAME")
 DEFAULT_REACH_METRICS = ("REACH_IMPRESSIONS", "UNIQUE_VISITORS")
 DEFAULT_REACH_DATE_RANGE = "LAST_30_DAYS"
+DEFAULT_MAX_ROWS = 100_000
 COUNTRY_DIMENSIONS = ("COUNTRY_CODE", "COUNTRY_ID", "COUNTRY_NAME")
 AVERAGE_FREQUENCY_METRIC = "AVERAGE_IMPRESSIONS_PER_UNIQUE_VISITOR"
 
@@ -88,12 +93,19 @@ class ReachReportService:
         client: Optional[Any] = None,
     ) -> None:
         self.network_code = str(network_code)
-        if client is not None:
-            self._client = client
-        elif credentials is not None:
-            self._client = admanager_v1.ReportServiceClient(credentials=credentials)
-        else:
-            self._client = admanager_v1.ReportServiceClient()
+        try:
+            if client is not None:
+                self._client = client
+            elif credentials is not None:
+                self._client = admanager_v1.ReportServiceClient(credentials=credentials)
+            else:
+                self._client = admanager_v1.ReportServiceClient()
+        except google_auth_exceptions.GoogleAuthError as exc:
+            raise AuthenticationError(
+                "Google Ad Manager authentication failed.",
+                operation="admanager.client_init",
+                details={"provider_error_type": type(exc).__name__},
+            ) from exc
 
     @property
     def parent(self) -> str:
@@ -149,6 +161,62 @@ class ReachReportService:
     def _date_to_mapping(value: datetime.date) -> Dict[str, int]:
         """Convert a date to the Google type Date mapping shape."""
         return {"year": value.year, "month": value.month, "day": value.day}
+
+    @staticmethod
+    def _validate_pagination(page_size: int, max_rows: int) -> None:
+        """Validate page and total-row bounds before remote work."""
+        if (
+            not isinstance(page_size, int)
+            or isinstance(page_size, bool)
+            or not 1 <= page_size <= 10_000
+        ):
+            raise ValueError("page_size must be between 1 and 10000")
+        if (
+            not isinstance(max_rows, int)
+            or isinstance(max_rows, bool)
+            or max_rows < 1
+        ):
+            raise ValueError("max_rows must be a positive integer")
+
+    @staticmethod
+    def _raise_google_error(operation: str, exc: Exception) -> NoReturn:
+        """Normalize Google client failures to package-level exceptions."""
+        details = {"provider_error_type": type(exc).__name__}
+        if isinstance(
+            exc,
+            (
+                google_auth_exceptions.GoogleAuthError,
+                google_api_exceptions.Unauthenticated,
+            ),
+        ):
+            raise AuthenticationError(
+                "Google Ad Manager authentication failed.",
+                operation=operation,
+                details=details,
+            ) from exc
+        if isinstance(
+            exc,
+            (
+                google_api_exceptions.DeadlineExceeded,
+                google_api_exceptions.ServiceUnavailable,
+                google_api_exceptions.RetryError,
+                TimeoutError,
+                ConnectionError,
+                OSError,
+            ),
+        ):
+            raise TransportError(
+                "Google Ad Manager request could not complete.",
+                operation=operation,
+                details=details,
+            ) from exc
+        if isinstance(exc, google_api_exceptions.GoogleAPICallError):
+            raise ServiceError(
+                "Google Ad Manager rejected the request.",
+                operation=operation,
+                details=details,
+            ) from exc
+        raise exc
 
     @classmethod
     def _build_date_range(
@@ -445,7 +513,10 @@ class ReachReportService:
             filters=filters,
         )
         request = admanager_v1.CreateReportRequest(parent=self.parent, report=report)
-        return self._client.create_report(request=request)
+        try:
+            return self._client.create_report(request=request)
+        except Exception as exc:
+            self._raise_google_error("admanager.create_report", exc)
 
     def get_report(self, report_id_or_name: Union[int, str]) -> admanager_v1.Report:
         """Get an existing Reach or Interactive report definition.
@@ -463,7 +534,10 @@ class ReachReportService:
         request = admanager_v1.GetReportRequest(
             name=self.report_name(report_id_or_name)
         )
-        return self._client.get_report(request=request)
+        try:
+            return self._client.get_report(request=request)
+        except Exception as exc:
+            self._raise_google_error("admanager.get_report", exc)
 
     def run_report(
         self,
@@ -488,17 +562,28 @@ class ReachReportService:
         request = admanager_v1.RunReportRequest(
             name=self.report_name(report_id_or_name)
         )
-        operation = self._client.run_report(request=request)
-        if timeout is None:
-            response = operation.result()
-        else:
-            response = operation.result(timeout=timeout)
+        try:
+            operation = self._client.run_report(request=request)
+            if timeout is None:
+                response = operation.result()
+            else:
+                response = operation.result(timeout=timeout)
+        except Exception as exc:
+            self._raise_google_error("admanager.run_report", exc)
         if response is None:
-            raise RuntimeError("Ad Manager report operation completed without a result")
+            raise ServiceError(
+                "Ad Manager report operation completed without a result.",
+                operation="admanager.run_report",
+            )
         return str(response.report_result)
 
-    def fetch_rows(self, result_name: str, page_size: int = 10_000) -> List[Any]:
-        """Fetch all rows for a completed report result.
+    def fetch_rows(
+        self,
+        result_name: str,
+        page_size: int = 10_000,
+        max_rows: int = DEFAULT_MAX_ROWS,
+    ) -> List[Any]:
+        """Fetch bounded rows for a completed report result.
 
         Parameters
         ----------
@@ -506,6 +591,9 @@ class ReachReportService:
             Full report result resource name returned by ``run_report``.
         page_size : int, optional
             Requested rows per page. Ad Manager allows at most 10,000.
+        max_rows : int, optional
+            Maximum total rows to materialize. Defaults to 100,000. If the
+            result exceeds this bound, the method raises instead of truncating.
 
         Returns
         -------
@@ -515,15 +603,27 @@ class ReachReportService:
         Raises
         ------
         ValueError
-            If ``page_size`` is outside the supported range.
+            If pagination bounds are invalid.
+        ServiceError
+            If the report result exceeds ``max_rows``.
         """
-        if not 1 <= page_size <= 10_000:
-            raise ValueError("page_size must be between 1 and 10000")
+        self._validate_pagination(page_size=page_size, max_rows=max_rows)
         request = admanager_v1.FetchReportResultRowsRequest(
             name=result_name,
-            page_size=page_size,
+            page_size=min(page_size, max_rows + 1),
         )
-        return list(self._client.fetch_report_result_rows(request=request))
+        try:
+            pager = self._client.fetch_report_result_rows(request=request)
+            rows = list(islice(pager, max_rows + 1))
+        except Exception as exc:
+            self._raise_google_error("admanager.fetch_report_rows", exc)
+        if len(rows) > max_rows:
+            raise ServiceError(
+                "Ad Manager report result exceeds the configured row limit.",
+                operation="admanager.fetch_report_rows",
+                details={"max_rows": max_rows},
+            )
+        return rows
 
     @staticmethod
     def _report_value_to_python(value: Any) -> Any:
@@ -619,6 +719,7 @@ class ReachReportService:
         report_id_or_name: Union[int, str],
         timeout: Optional[float] = None,
         page_size: int = 10_000,
+        max_rows: int = DEFAULT_MAX_ROWS,
     ) -> pd.DataFrame:
         """Run an existing report and return its primary values as a DataFrame.
 
@@ -630,15 +731,22 @@ class ReachReportService:
             Maximum seconds to wait for report generation.
         page_size : int, optional
             Rows requested per result page. Maximum 10,000.
+        max_rows : int, optional
+            Maximum total rows to materialize. Defaults to 100,000.
 
         Returns
         -------
         pandas.DataFrame
             Report data with dimensions followed by metrics.
         """
+        self._validate_pagination(page_size=page_size, max_rows=max_rows)
         report = self.get_report(report_id_or_name)
         result_name = self.run_report(report.name, timeout=timeout)
-        rows = self.fetch_rows(result_name=result_name, page_size=page_size)
+        rows = self.fetch_rows(
+            result_name=result_name,
+            page_size=page_size,
+            max_rows=max_rows,
+        )
         return self.rows_to_dataframe(
             rows=rows,
             dimensions=report.report_definition.dimensions,
@@ -656,6 +764,7 @@ class ReachReportService:
         filters: Optional[FilterInput] = None,
         timeout: Optional[float] = None,
         page_size: int = 10_000,
+        max_rows: int = DEFAULT_MAX_ROWS,
     ) -> pd.DataFrame:
         """Create a Reach report, run it, and return the result DataFrame.
 
@@ -679,12 +788,15 @@ class ReachReportService:
             Maximum seconds to wait for report generation.
         page_size : int, optional
             Rows requested per result page. Maximum 10,000.
+        max_rows : int, optional
+            Maximum total rows to materialize. Defaults to 100,000.
 
         Returns
         -------
         pandas.DataFrame
             Report data with dimensions followed by Reach metrics.
         """
+        self._validate_pagination(page_size=page_size, max_rows=max_rows)
         report = self.create_report(
             display_name=display_name,
             dimensions=dimensions,
@@ -695,7 +807,11 @@ class ReachReportService:
             filters=filters,
         )
         result_name = self.run_report(report.name, timeout=timeout)
-        rows = self.fetch_rows(result_name=result_name, page_size=page_size)
+        rows = self.fetch_rows(
+            result_name=result_name,
+            page_size=page_size,
+            max_rows=max_rows,
+        )
         return self.rows_to_dataframe(
             rows=rows,
             dimensions=report.report_definition.dimensions,
