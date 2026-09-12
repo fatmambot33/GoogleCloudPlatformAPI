@@ -9,6 +9,7 @@ from GoogleCloudPlatformAPI import (
     CloudStorage,
     ConfigurationError,
     GoogleCloudPlatformAPIError,
+    ReachReportService,
     ServiceError,
     TransportError,
 )
