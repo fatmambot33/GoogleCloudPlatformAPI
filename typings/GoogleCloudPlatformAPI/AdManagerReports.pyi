@@ -12,6 +12,7 @@ DEFAULT_REACH_DIMENSIONS: tuple[str, str]
 DEFAULT_REACH_METRICS: tuple[str, str]
 DEFAULT_REACH_DATE_RANGE: str
 DEFAULT_MAX_ROWS: int
+DEFAULT_REPORT_TIMEOUT_SECONDS: float
 COUNTRY_DIMENSIONS: tuple[str, str, str]
 AVERAGE_FREQUENCY_METRIC: str
 FILTER_OPERATIONS: dict[str, str]
@@ -58,7 +59,7 @@ class ReachReportService:
     def run_report(
         self,
         report_id_or_name: Union[int, str],
-        timeout: Optional[float] = ...,
+        timeout: float = ...,
     ) -> str: ...
     def fetch_rows(
         self,
@@ -76,7 +77,7 @@ class ReachReportService:
     def get_report_dataframe(
         self,
         report_id_or_name: Union[int, str],
-        timeout: Optional[float] = ...,
+        timeout: float = ...,
         page_size: int = ...,
         max_rows: int = ...,
     ) -> pd.DataFrame: ...
@@ -89,7 +90,7 @@ class ReachReportService:
         start_date: Optional[datetime.date] = ...,
         end_date: Optional[datetime.date] = ...,
         filters: Optional[FilterInput] = ...,
-        timeout: Optional[float] = ...,
+        timeout: float = ...,
         page_size: int = ...,
         max_rows: int = ...,
     ) -> pd.DataFrame: ...
