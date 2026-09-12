@@ -171,11 +171,7 @@ class ReachReportService:
             or not 1 <= page_size <= 10_000
         ):
             raise ValueError("page_size must be between 1 and 10000")
-        if (
-            not isinstance(max_rows, int)
-            or isinstance(max_rows, bool)
-            or max_rows < 1
-        ):
+        if not isinstance(max_rows, int) or isinstance(max_rows, bool) or max_rows < 1:
             raise ValueError("max_rows must be a positive integer")
 
     @staticmethod
