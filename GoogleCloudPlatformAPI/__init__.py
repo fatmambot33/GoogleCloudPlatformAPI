@@ -92,9 +92,7 @@ def _load_lazy_export(name: str) -> Any:
     try:
         module_name, attribute_name = _LAZY_EXPORTS[name]
     except KeyError:
-        raise AttributeError(
-            f"module {__name__!r} has no attribute {name!r}"
-        ) from None
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
 
     value = getattr(import_module(module_name, __name__), attribute_name)
     globals()[name] = value
