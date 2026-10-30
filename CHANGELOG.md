@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 2.8.2 - 2026-10-30
+
 ### Added
 
 - Adopted the pinned `fatmambot33/ai-native-platform` repository contract with a
@@ -25,6 +27,10 @@ All notable changes to this project are documented in this file.
   and installed distributions ship synchronized copies of those resources.
 
 ### Fixed
+
+- Package-root service exports are now lazy while retaining their class identities regardless of submodule import order.
+- Analytics and Google Cloud helpers no longer initialize the independent Google Ad Manager client stack.
+- Restored OAuth mock compatibility while deferring Google Ads imports until an Ads helper is used.
 
 - Removed stale package-version literals from CI wheel validation.
 - MCP initialization now reports installed package metadata and uses an explicit
