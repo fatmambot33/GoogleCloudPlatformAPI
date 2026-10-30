@@ -26,7 +26,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
-- Removed stale package-version literals from CI wheel validation.
+- Package-root service exports now load lazily, so Analytics imports do not load Ad Manager or require its optional `googleads` dependency.\n- Removed stale package-version literals from CI wheel validation.
 - MCP initialization now reports installed package metadata and uses an explicit
   `0+unknown` fallback when distribution metadata is unavailable.
 - Added regression coverage so package and MCP version reporting cannot drift
