@@ -5,6 +5,8 @@ keeps a light package import from initializing unrelated Google client stacks.
 """
 
 from importlib import import_module
+import sys
+from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
 from .exceptions import (
@@ -85,8 +87,8 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str) -> Any:
-    """Load a public service symbol on first access."""
+def _load_lazy_export(name: str) -> Any:
+    """Resolve a public service symbol without exposing its submodule."""
     try:
         module_name, attribute_name = _LAZY_EXPORTS[name]
     except KeyError:
@@ -99,6 +101,23 @@ def __getattr__(name: str) -> Any:
     return value
 
 
+class _LazyPackage(ModuleType):
+    """Keep package-level service exports stable after submodule imports."""
+
+    def __getattribute__(self, name: str) -> Any:
+        if name in _LAZY_EXPORTS:
+            return _load_lazy_export(name)
+        return super().__getattribute__(name)
+
+
+def __getattr__(name: str) -> Any:
+    """Load a public service symbol on first access."""
+    return _load_lazy_export(name)
+
+
 def __dir__() -> list[str]:
     """Return the complete public package surface for interactive tooling."""
     return sorted(set(globals()) | set(__all__))
+
+
+sys.modules[__name__].__class__ = _LazyPackage
