@@ -5,6 +5,8 @@ not import unrelated provider clients during package initialization.
 """
 
 from importlib import import_module
+import sys
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, Dict
 
 from .exceptions import (
@@ -98,3 +100,23 @@ def __getattr__(name: str) -> Any:
 def __dir__() -> list[str]:
     """Return module attributes including lazy public exports."""
     return sorted(set(globals()) | set(__all__))
+
+
+class _LazyExportModule(ModuleType):
+    """Module type that preserves lazy class exports after direct module imports."""
+
+    def __getattribute__(self, name: str) -> Any:
+        """Resolve an exported class when its submodule shadows the package name."""
+        module_name = _EXPORT_MODULES.get(name)
+        if module_name is not None:
+            current = ModuleType.__getattribute__(self, "__dict__").get(name)
+            if isinstance(current, ModuleType):
+                value = getattr(current, name)
+                ModuleType.__setattr__(self, name, value)
+                return value
+            if current is None:
+                return __getattr__(name)
+        return ModuleType.__getattribute__(self, name)
+
+
+sys.modules[__name__].__class__ = _LazyExportModule
