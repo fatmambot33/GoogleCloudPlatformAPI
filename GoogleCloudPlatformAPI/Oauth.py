@@ -18,8 +18,20 @@ from typing import TYPE_CHECKING, List, Optional, Union
 from google.oauth2 import credentials, service_account
 
 if TYPE_CHECKING:
-    from googleads import oauth2
+    from googleads import oauth2 as googleads_oauth2
     from googleads.oauth2 import GoogleOAuth2Client
+
+
+class _LazyGoogleAdsOauth2:
+    """Load the Google Ads OAuth module only when an Ads helper uses it."""
+
+    def __getattr__(self, name: str) -> object:
+        from googleads import oauth2 as googleads_oauth2
+
+        return getattr(googleads_oauth2, name)
+
+
+oauth2 = _LazyGoogleAdsOauth2()
 
 
 class ClientCredentials:
@@ -69,7 +81,7 @@ class ClientCredentials:
     @property
     def get_service_account_client(
         self,
-    ) -> Union["oauth2.GoogleServiceAccountClient", "GoogleOAuth2Client"]:
+    ) -> Union["googleads_oauth2.GoogleServiceAccountClient", "GoogleOAuth2Client"]:
         """
         Return a Google Ads service account client.
 
@@ -83,8 +95,6 @@ class ClientCredentials:
         google.auth.exceptions.DefaultCredentialsError
             If no credentials are found in the environment.
         """
-        from googleads import oauth2
-
         scope = oauth2.GetAPIScope("ad_manager")
         if self.credentials_path is not None:
             logging.debug(
@@ -182,7 +192,7 @@ class ServiceAccount:
     @staticmethod
     def get_service_account_client(
         credentials: Optional[str] = None, scope: Optional[str] = "ad_manager"
-    ) -> "oauth2.GoogleServiceAccountClient":
+    ) -> "googleads_oauth2.GoogleServiceAccountClient":
         """
         Return a Google Ads service account client.
 
@@ -213,8 +223,6 @@ class ServiceAccount:
         ads_client = ServiceAccount.get_service_account_client()
         ```
         """
-        from googleads import oauth2
-
         if credentials is None:
             credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         return oauth2.GoogleServiceAccountClient(
