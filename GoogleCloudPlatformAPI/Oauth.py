@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from google.oauth2 import credentials, service_account
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 class _LazyGoogleAdsOauth2:
     """Load the Google Ads OAuth module only when an Ads helper uses it."""
 
-    def __getattr__(self, name: str) -> object:
+    def __getattr__(self, name: str) -> Any:
         from googleads import oauth2 as googleads_oauth2
 
         return getattr(googleads_oauth2, name)
