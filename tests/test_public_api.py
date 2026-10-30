@@ -52,3 +52,22 @@ def test_analytics_import_does_not_load_ad_manager() -> None:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_package_export_remains_a_class_after_direct_module_import() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import GoogleCloudPlatformAPI.BigQuery; "
+                "import GoogleCloudPlatformAPI as gcp; "
+                "assert gcp.BigQuery.__name__ == 'BigQuery'"
+            ),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
