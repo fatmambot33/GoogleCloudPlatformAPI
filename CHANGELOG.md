@@ -4,6 +4,11 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Breaking changes
+
+- Google Ad Manager is no longer installed by default. Install
+  `GoogleCloudPlatformAPI[gam]` for Ad Manager support.
+
 ### Added
 
 - Adopted the pinned `fatmambot33/ai-native-platform` repository contract with a
