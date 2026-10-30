@@ -10,6 +10,12 @@ boilerplate when building data pipelines or analytics tools.
 pip install GoogleCloudPlatformAPI
 ```
 
+Ad Manager support is optional, so install it only when needed:
+
+```bash
+pip install 'GoogleCloudPlatformAPI[gam]'
+```
+
 Python 3.10 through 3.14 are supported. Runtime dependencies use bounded
 compatibility ranges, and CI tests both the minimum Python 3.10 dependency set
 and the newest compatible dependencies.
