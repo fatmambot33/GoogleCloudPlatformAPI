@@ -88,9 +88,7 @@ def __getattr__(name: str) -> Any:
     """Resolve a declared public service export when it is first accessed."""
     module_name = _EXPORT_MODULES.get(name)
     if module_name is None:
-        raise AttributeError(
-            f"module {__name__!r} has no attribute {name!r}"
-        ) from None
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
 
     value = getattr(import_module(module_name, __name__), name)
     globals()[name] = value
