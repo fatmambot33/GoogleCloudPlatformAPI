@@ -1,6 +1,8 @@
 """Tests for the stable package-level public API."""
 
 import json
+import subprocess
+import sys
 
 import GoogleCloudPlatformAPI as gcp
 
@@ -30,3 +32,42 @@ def test_exception_hierarchy_is_stable_and_serializable():
         "details": {"reason": "invalid"},
     }
     json.dumps(error.to_dict())
+
+
+def test_analytics_import_does_not_load_ad_manager() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "from GoogleCloudPlatformAPI import Analytics; "
+                "assert Analytics.__name__ == 'Analytics'; "
+                "assert 'GoogleCloudPlatformAPI.AdManager' not in sys.modules"
+            ),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_package_export_remains_a_class_after_direct_module_import() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import GoogleCloudPlatformAPI.BigQuery; "
+                "import GoogleCloudPlatformAPI as gcp; "
+                "assert gcp.BigQuery.__name__ == 'BigQuery'"
+            ),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr

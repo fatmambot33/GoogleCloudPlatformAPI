@@ -4,6 +4,11 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Breaking changes
+
+- Google Ad Manager is no longer installed by default. Install
+  `GoogleCloudPlatformAPI[gam]` for Ad Manager support.
+
 ### Added
 
 - Adopted the pinned `fatmambot33/ai-native-platform` repository contract with a
@@ -26,6 +31,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- Package-root service exports now load lazily, so Analytics imports do not load Ad Manager or require its optional `googleads` dependency.
 - Removed stale package-version literals from CI wheel validation.
 - MCP initialization now reports installed package metadata and uses an explicit
   `0+unknown` fallback when distribution metadata is unavailable.

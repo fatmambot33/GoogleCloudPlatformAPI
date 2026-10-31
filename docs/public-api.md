@@ -16,6 +16,9 @@ from GoogleCloudPlatformAPI import (
 
 Direct module imports such as `from GoogleCloudPlatformAPI.BigQuery import BigQuery` remain supported for backward compatibility.
 
+Package-root service exports are resolved on first access, so importing Analytics
+does not load Ad Manager. Install `GoogleCloudPlatformAPI[gam]` to use Ad Manager.
+
 ## Naming
 
 - Service helpers use singular PascalCase class names.
