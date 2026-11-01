@@ -33,7 +33,7 @@ gcp-api-eval = "GoogleCloudPlatformAPI.ai_native.eval_cli:main"
 [project.optional-dependencies]
 gam = ["googleads>=47.0,<51.0"]
 dev = [
-    "black==24.8.0",
+    "black==26.10.1",
     "build>=1.2,<2",
     "jsonschema>=4.23,<5",
     "pydocstyle>=6.3,<7",
