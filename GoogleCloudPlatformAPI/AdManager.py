@@ -36,7 +36,6 @@ from googleads import ad_manager, errors
 from .Oauth import ServiceAccount
 from .Utils import ListHelper
 
-
 PYTZ_TIMEZONE = "UTC"
 AD_UNIT_VIEW = "TOP_LEVEL"
 METRICS = [

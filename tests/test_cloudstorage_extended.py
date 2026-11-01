@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 from GoogleCloudPlatformAPI.CloudStorage import CloudStorage
 
-
 CLOUD_STORAGE_MODULE = importlib.import_module("GoogleCloudPlatformAPI.CloudStorage")
 
 
